@@ -20,6 +20,7 @@ import {DialogAddTaskReminderComponent} from './dialog-add-task-reminder/dialog-
 import {TaskSummaryTableComponent} from './task-summary-table/task-summary-table.component';
 import {DialogAddTimeEstimateForOtherDayComponent} from './dialog-add-time-estimate-for-other-day/dialog-add-time-estimate-for-other-day.component';
 import {TaskRepeatCfgModule} from '../task-repeat-cfg/task-repeat-cfg.module';
+import {DialogFullscreenTaskComponent} from './dialog-fullscreen-task/dialog-fullscreen-task.component';
 
 @NgModule({
   imports: [
@@ -41,6 +42,7 @@ import {TaskRepeatCfgModule} from '../task-repeat-cfg/task-repeat-cfg.module';
     DialogViewTaskReminderComponent,
     DialogAddTaskReminderComponent,
     DialogAddTimeEstimateForOtherDayComponent,
+    DialogFullscreenTaskComponent,
     TaskAdditionalInfoComponent,
     SelectTaskComponent,
     FilterDoneTasksPipe,
@@ -58,6 +60,7 @@ import {TaskRepeatCfgModule} from '../task-repeat-cfg/task-repeat-cfg.module';
     DialogViewTaskReminderComponent,
     DialogAddTaskReminderComponent,
     DialogAddTimeEstimateForOtherDayComponent,
+    DialogFullscreenTaskComponent,
   ]
 
 })

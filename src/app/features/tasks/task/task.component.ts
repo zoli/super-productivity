@@ -32,6 +32,7 @@ import {DialogEditTaskRepeatCfgComponent} from '../../task-repeat-cfg/dialog-edi
 import {ProjectService} from '../../project/project.service';
 import {Project} from '../../project/project.model';
 import {T} from '../../../t.const';
+import {DialogFullscreenTaskComponent} from '../dialog-fullscreen-task/dialog-fullscreen-task.component';
 
 @Component({
   selector: 'task',
@@ -227,6 +228,21 @@ export class TaskComponent implements OnInit, OnDestroy, AfterViewInit {
       this._taskService.update(this.task.id, {title: newTitle});
     }
     this.focusSelf();
+  }
+
+  enterFocusMode() {
+    this._matDialog
+      .open(DialogFullscreenTaskComponent, {
+        width: '100%',
+        height: '100%',
+        maxWidth: '100vw',
+        data: {task: this.task},
+        autoFocus: !isTouch(),
+      })
+      .afterClosed()
+      .subscribe(result => {
+        this.focusSelf();
+      });
   }
 
   estimateTime() {

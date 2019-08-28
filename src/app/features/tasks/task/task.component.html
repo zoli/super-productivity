@@ -134,6 +134,14 @@
             <mat-icon *ngIf="task.isDone">undo</mat-icon>
             <mat-icon *ngIf="!task.isDone">check</mat-icon>
           </button>
+          <button (click)="enterFocusMode()"
+                  class="ico-btn"
+                  color=""
+                  mat-icon-button
+                  tabindex="2"
+                  [title]="T.F.TASK.CMP.FULLSCREEN|translate">
+            <mat-icon>fullscreen</mat-icon>
+          </button>
           <button (click)="estimateTime()"
                   *ngIf="!task.subTasks?.length"
                   class="ico-btn time-btn hide-xs"
