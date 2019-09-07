@@ -16,6 +16,7 @@ import {backupData} from './backup';
 import {JiraCfg} from '../src/app/features/issue/jira/jira';
 import {KeyboardConfig} from '../src/app/features/config/global-config.model';
 import lockscreen from './lockscreen';
+import {showAwesomeBar} from './awesome-bar';
 import BrowserWindow = Electron.BrowserWindow;
 
 const ICONS_FOLDER = __dirname + '/assets/icons/';
@@ -43,7 +44,8 @@ interface MyApp extends App {
 
 const appIN: MyApp = app;
 
-initDebug({showDevTools: IS_DEV}, IS_DEV);
+// initDebug({showDevTools: IS_DEV}, IS_DEV);
+initDebug({showDevTools: false}, IS_DEV);
 
 // TODO maybe reimplement when fixed
 // electronDl({openFolderWhenDone: true});
@@ -242,9 +244,12 @@ function createMainWin() {
     // indicatorMod,
   });
   initGoogleAuth();
+
+  showAwesomeBar();
 }
 
 function registerShowAppShortCuts(cfg: KeyboardConfig) {
+  return;
   // unregister all previous
   globalShortcut.unregisterAll();
   const GLOBAL_KEY_CFG_KEYS: (keyof KeyboardConfig)[] = [

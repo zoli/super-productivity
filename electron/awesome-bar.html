@@ -1,0 +1,118 @@
+<head>
+  <style>
+    body {
+      margin: 0;
+      /* for box shadow */
+      padding: 16px;
+      font-family: sans-serif;
+    }
+
+    #inp,
+    button,
+    body {
+      font-size: 14px;
+    }
+
+    #inp {
+      width: 100%;
+      display: block;
+      border: 3px solid rgba(3, 169, 244, 1);
+      padding: 0 8px;
+      line-height: 42px;
+      box-shadow: none;
+      border-bottom: 0;
+    }
+
+    *:focus,
+    #inp:focus {
+      outline: none;
+    }
+
+    .project-indicator,
+    .tabs button {
+      background: rgba(3, 169, 244);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      user-select: none;
+      opacity: 0.8;
+      padding: 2px 6px;
+    }
+
+    .tabs button.active {
+      opacity: 1;
+    }
+
+    .project-indicator {
+      opacity: 1;
+    }
+
+    .box {
+      box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
+    }
+  </style>
+</head>
+<body>
+
+<div class="tabs">
+  <button>Add Task(1)</button>
+  <button>Add Sub Task(2)</button>
+  <button>Select Task to track(3)</button>
+  <button>Add Note(4)</button>
+</div>
+
+<div class="box">
+  <input type="text"
+         placeholder="Add new task"
+         id="inp">
+
+  <div class="project-indicator">
+    => (5) Current Project
+  </div>
+</div>
+
+<script>
+  const {ipcRenderer} = require('electron');
+  const btns = document.querySelectorAll('.tabs button');
+  const modeFn = [];
+  let currentMode;
+
+  Array.from(btns).forEach((btn, i) => addMode(btn, i));
+
+
+  function addMode(btn, i) {
+    modeFn[i] = () => {
+      currentMode = i;
+      removeActive();
+      btn.classList.add('active');
+    };
+    btn.addEventListener('click', modeFn[i]);
+  }
+
+  function removeActive() {
+    Array.from(btns).forEach(btn => btn.classList.remove('active'));
+  }
+
+  function response() {
+    ipcRenderer.send('closeDialog', document.getElementById('inp').value)
+    this.close();
+  }
+
+
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.ctrlKey || ev.altKey) && [1, 2, 3, 4].includes(+ev.key)) {
+      modeFn[ev.key - 1]();
+    }
+  });
+
+
+  window.onload = function () {
+    // var options = ipcRenderer.sendSync("openDialog", "")
+    // var params = JSON.parse(options)
+
+    const inp = document.getElementById('inp');
+    modeFn[0]();
+    inp.focus();
+  }
+</script>
+</body>
