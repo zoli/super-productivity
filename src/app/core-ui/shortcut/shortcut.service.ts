@@ -10,7 +10,9 @@ import {TaskService} from '../../features/tasks/task.service';
 import {MatDialog} from '@angular/material/dialog';
 import {DialogAddNoteComponent} from '../../features/note/dialog-add-note/dialog-add-note.component';
 import {BookmarkService} from '../../features/bookmark/bookmark.service';
-import {IPC} from '../../../../electron/ipc-events.const';
+import {AwesomeAddTaskPayload, IPC} from '../../../../electron/ipc-events.const';
+import {PersistenceService} from '../../core/persistence/persistence.service';
+import {take} from 'rxjs/operators';
 import {UiHelperService} from '../../features/ui-helper/ui-helper.service';
 
 
@@ -31,6 +33,7 @@ export class ShortcutService {
     private _activatedRoute: ActivatedRoute,
     private _uiHelperService: UiHelperService,
     private _bookmarkService: BookmarkService,
+    private _persistenceService: PersistenceService,
     private _ngZone: NgZone,
   ) {
     this._activatedRoute.queryParams
@@ -58,6 +61,45 @@ export class ShortcutService {
             this._matDialog.open(DialogAddNoteComponent);
           });
         }
+      });
+
+      // TODO add desktop notifications
+      this._electronService.ipcRenderer.on(IPC.AWE_ADD_TASK, (ev, param: AwesomeAddTaskPayload) => {
+        this._ngZone.run(() => {
+          // TODO add logic to add to another project
+          if (param.projectId) {
+          } else {
+            this._taskService.add(param.title);
+          }
+        });
+      });
+
+      this._electronService.ipcRenderer.on(IPC.AWE_ADD_SUB_TASK, (ev, param: AwesomeAddTaskPayload) => {
+        this._ngZone.run(() => {
+          if (!this._taskService.currentTaskId) {
+            return;
+          }
+
+          // TODO add logic to add to another project
+          if (param.projectId) {
+          } else {
+            // TODO use new service method instead
+            this._taskService.currentTaskOrCurrentParent$.pipe(take(1)).subscribe((task) => {
+              console.log(task);
+              this._taskService.addSubTaskTo(task.id, param.title);
+            });
+          }
+        });
+      });
+
+      this._electronService.ipcRenderer.on(IPC.AWE_ADD_NOTE, (ev, param: AwesomeAddTaskPayload) => {
+        this._ngZone.run(() => {
+          // TODO add logic to add to another project
+          if (param.projectId) {
+          } else {
+            this._noteService.add({content: param.title});
+          }
+        });
       });
     }
   }

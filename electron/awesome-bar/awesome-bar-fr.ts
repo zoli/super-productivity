@@ -1,5 +1,5 @@
 import {ipcRenderer} from 'electron';
-import {IPC} from '../ipc-events.const';
+import {AwesomeAddTaskPayload, IPC} from '../ipc-events.const';
 
 const LS_KEY = 'SP_TMP_INP';
 
@@ -32,16 +32,41 @@ document.addEventListener('keydown', (ev) => {
   } else if (ev.key === 'Enter' && inp.value === '') {
     this.close();
   } else if (ev.key === 'Enter') {
-    ipcRenderer.send(IPC.AWE_ADD_TASK, {
-      value: inp.value,
-      projectId: ''
-    });
+    addItem(inp.value);
     inp.value = '';
+    localStorage.setItem(LS_KEY, inp.value);
   } else {
     localStorage.setItem(LS_KEY, inp.value);
   }
 });
 
+function addItem(title) {
+  console.log(currentMode);
+
+  switch (currentMode) {
+    case 0:
+      ipcRenderer.send(IPC.AWE_ADD_TASK, {
+        title,
+        projectId: null
+      } as AwesomeAddTaskPayload);
+      break;
+    case 1:
+      ipcRenderer.send(IPC.AWE_ADD_SUB_TASK, {
+        title,
+        projectId: null
+      } as AwesomeAddTaskPayload);
+      break;
+    case 2:
+      // TODO selection
+    case 3:
+      ipcRenderer.send(IPC.AWE_ADD_NOTE, {
+        title,
+        projectId: null
+      } as AwesomeAddTaskPayload);
+      break;
+  }
+
+}
 
 window.onload = () => {
   // var options = ipcRenderer.sendSync("openDialog", "")

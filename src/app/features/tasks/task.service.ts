@@ -369,9 +369,9 @@ export class TaskService {
     this._store.dispatch(new MoveDown({id}));
   }
 
-  addSubTaskTo(parentId) {
+  addSubTaskTo(parentId: string, title = '') {
     this._store.dispatch(new AddSubTask({
-      task: this.createNewTaskWithDefaults(''),
+      task: this.createNewTaskWithDefaults(title),
       parentId
     }));
   }

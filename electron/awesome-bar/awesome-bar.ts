@@ -1,20 +1,40 @@
-import {BrowserWindow} from 'electron';
+import {BrowserWindow, ipcMain} from 'electron';
 import {join, normalize} from 'path';
 import {format} from 'url';
+import {IPC} from '../ipc-events.const';
+import {getWin} from '../main-window';
+
 
 let promptWindow;
 
-export const showAwesomeBar = () => {
-  console.log('SHOW AWE');
+// We need to forward the event
+ipcMain.on(IPC.AWE_ADD_TASK, (ev, data) => {
+  const mainWin = getWin();
+  mainWin.webContents.send(IPC.AWE_ADD_TASK, data);
+});
+ipcMain.on(IPC.AWE_ADD_SUB_TASK, (ev, data) => {
+  const mainWin = getWin();
+  mainWin.webContents.send(IPC.AWE_ADD_SUB_TASK, data);
+});
+ipcMain.on(IPC.AWE_SELECT_TASK, (ev, data) => {
+  const mainWin = getWin();
+  mainWin.webContents.send(IPC.AWE_SELECT_TASK, data);
+});
+ipcMain.on(IPC.AWE_ADD_NOTE, (ev, data) => {
+  const mainWin = getWin();
+  mainWin.webContents.send(IPC.AWE_ADD_NOTE, data);
+});
 
+
+export const showAwesomeBar = () => {
   if (promptWindow) {
-    promptWindow.show();
+    promptWindow.close();
     return;
   }
 
   promptWindow = new BrowserWindow({
-    // width: 540, height: 160,
-    width: 540, height: 400,
+    width: 540, height: 160,
+    // width: 540, height: 400,
     transparent: true,
     show: false,
     modal: false,
@@ -44,8 +64,6 @@ export const showAwesomeBar = () => {
   }));
 
   promptWindow.once('ready-to-show', () => {
-    console.log('READY');
-
     promptWindow.show();
   });
 };
