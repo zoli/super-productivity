@@ -2,12 +2,19 @@ import {BrowserWindow} from 'electron';
 import {join, normalize} from 'path';
 import {format} from 'url';
 
+let promptWindow;
+
 export const showAwesomeBar = () => {
   console.log('SHOW AWE');
 
-  let promptWindow = new BrowserWindow({
-    // width: 420, height: 120,
-    width: 540, height: 420,
+  if (promptWindow) {
+    promptWindow.show();
+    return;
+  }
+
+  promptWindow = new BrowserWindow({
+    // width: 540, height: 160,
+    width: 540, height: 400,
     transparent: true,
     show: false,
     modal: false,
@@ -24,9 +31,8 @@ export const showAwesomeBar = () => {
     promptWindow = null;
   });
   promptWindow.on('blur', () => {
-    // promptWindow.close();
+    promptWindow.close();
   });
-  console.log(promptWindow);
 
   // Load the HTML dialog box
   promptWindow.loadURL(join(__dirname, './awesome-bar.html'));

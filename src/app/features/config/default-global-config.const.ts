@@ -43,6 +43,7 @@ export const DEFAULT_GLOBAL_CONFIG: GlobalConfigState = {
   },
   keyboard: {
     globalShowHide: 'Ctrl+Shift+X',
+    globalShowAwesomeBar: 'Ctrl+Shift+Y',
     globalToggleTaskStart: null,
     globalAddNote: null,
     globalAddTask: null,

@@ -14,8 +14,10 @@ import {backupData} from './backup';
 import {JiraCfg} from '../src/app/features/issue/jira/jira';
 import {KeyboardConfig} from '../src/app/features/config/global-config.model';
 import lockscreen from './lockscreen';
-import {showAwesomeBar} from './awesome-bar/awesome-bar';
+import {createWindow} from './main-window';
+import {initGoogleAuth} from './google-auth';
 import BrowserWindow = Electron.BrowserWindow;
+import {showAwesomeBar} from './awesome-bar/awesome-bar';
 
 const ICONS_FOLDER = __dirname + '/assets/icons/';
 const IS_MAC = process.platform === 'darwin';
@@ -231,26 +233,26 @@ function createIndicator() {
 }
 
 function createMainWin() {
-  // mainWin = createWindow({
-  //   app,
-  //   IS_DEV,
-  //   ICONS_FOLDER,
-  //   IS_MAC,
-  //   quitApp,
-  //   nestedWinParams,
-  //   // TODO fix
-  //   // indicatorMod,
-  // });
-  // initGoogleAuth();
-  setTimeout(() => showAwesomeBar(), 300);
+  mainWin = createWindow({
+    app,
+    IS_DEV,
+    ICONS_FOLDER,
+    IS_MAC,
+    quitApp,
+    nestedWinParams,
+    // TODO fix
+    // indicatorMod,
+  });
+  initGoogleAuth();
 }
 
+
 function registerShowAppShortCuts(cfg: KeyboardConfig) {
-  return;
   // unregister all previous
   globalShortcut.unregisterAll();
   const GLOBAL_KEY_CFG_KEYS: (keyof KeyboardConfig)[] = [
     'globalShowHide',
+    'globalShowAwesomeBar',
     'globalToggleTaskStart',
     'globalAddNote',
     'globalAddTask',
@@ -292,6 +294,12 @@ function registerShowAppShortCuts(cfg: KeyboardConfig) {
               showOrFocus(mainWin);
               // NOTE: delay slightly to make sure app is ready
               mainWin.webContents.send(IPC.ADD_TASK);
+            };
+            break;
+
+          case 'globalShowAwesomeBar':
+            actionFn = () => {
+              showAwesomeBar();
             };
             break;
         }

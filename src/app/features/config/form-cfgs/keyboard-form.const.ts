@@ -28,6 +28,13 @@ export const KEYBOARD_SETTINGS_FORM_CFG: ConfigFormSection<KeyboardConfig> = {
           },
         },
         {
+          key: 'globalShowAwesomeBar',
+          type: 'keyboard',
+          templateOptions: {
+            label: T.GCF.KEYBOARD.GLOBAL_SHOW_AWESOME_BAR
+          },
+        },
+        {
           key: 'globalToggleTaskStart',
           type: 'keyboard',
           templateOptions: {

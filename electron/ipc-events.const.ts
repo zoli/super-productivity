@@ -47,5 +47,8 @@ export enum IPC {
   // awesome bar
   AWE_BAR_OPEN = 'AWE_BAR_OPEN',
   AWE_BAR_CLOSE = 'AWE_BAR_CLOSE',
+  AWE_ADD_TASK = 'AWE_ADD_TASK',
+  AWE_ADD_SUB_TASK = 'AWE_ADD_SUB_TASK',
+  AWE_ADD_NOTE = 'AWE_ADD_NOTE',
 }
 

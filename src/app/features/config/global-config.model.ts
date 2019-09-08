@@ -4,6 +4,7 @@ import {LanguageCode} from '../../app.constants';
 
 export type KeyboardConfig = Readonly<{
   globalShowHide: string,
+  globalShowAwesomeBar: string;
   globalAddNote: string,
   globalAddTask: string,
   toggleBacklog: string,

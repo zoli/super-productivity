@@ -1,9 +1,12 @@
-// import {ipcRenderer} from 'electron';
+import {ipcRenderer} from 'electron';
+import {IPC} from '../ipc-events.const';
 
+const LS_KEY = 'SP_TMP_INP';
 
 const btns = document.querySelectorAll('.tabs button');
 const modeFn = [];
 let currentMode;
+const inp = document.getElementById('inp') as HTMLInputElement;
 
 Array.from(btns).forEach((btn, i) => addMode(btn, i));
 
@@ -21,15 +24,21 @@ function removeActive() {
   Array.from(btns).forEach(btn => btn.classList.remove('active'));
 }
 
-function response() {
-  // ipcRenderer.send('closeDialog', document.getElementById('inp').value);
-  this.close();
-}
-
-
 document.addEventListener('keydown', (ev) => {
   if ((ev.ctrlKey || ev.altKey) && [1, 2, 3, 4].includes(+ev.key)) {
     modeFn[+ev.key - 1]();
+  } else if (ev.key === 'Escape') {
+    this.close();
+  } else if (ev.key === 'Enter' && inp.value === '') {
+    this.close();
+  } else if (ev.key === 'Enter') {
+    ipcRenderer.send(IPC.AWE_ADD_TASK, {
+      value: inp.value,
+      projectId: ''
+    });
+    inp.value = '';
+  } else {
+    localStorage.setItem(LS_KEY, inp.value);
   }
 });
 
@@ -38,7 +47,10 @@ window.onload = () => {
   // var options = ipcRenderer.sendSync("openDialog", "")
   // var params = JSON.parse(options)
 
-  const inp = document.getElementById('inp');
+  console.log(localStorage.getItem(LS_KEY));
+
+  inp.value = localStorage.getItem(LS_KEY) || '';
+
   modeFn[0]();
   inp.focus();
 };
