@@ -4,11 +4,9 @@ import {info} from 'electron-log';
 import {CONFIG} from './CONFIG';
 
 import {initIndicator} from './indicator';
-import {createWindow} from './main-window';
 
 import {sendJiraRequest, setupRequestHeadersForImages} from './jira';
 import {getGitLog} from './git-log';
-import {initGoogleAuth} from './google-auth';
 import {errorHandler} from './error-handler';
 import {initDebug} from './debug';
 import {IPC} from './ipc-events.const';
@@ -16,7 +14,7 @@ import {backupData} from './backup';
 import {JiraCfg} from '../src/app/features/issue/jira/jira';
 import {KeyboardConfig} from '../src/app/features/config/global-config.model';
 import lockscreen from './lockscreen';
-import {showAwesomeBar} from './awesome-bar';
+import {showAwesomeBar} from './awesome-bar/awesome-bar';
 import BrowserWindow = Electron.BrowserWindow;
 
 const ICONS_FOLDER = __dirname + '/assets/icons/';
@@ -233,19 +231,18 @@ function createIndicator() {
 }
 
 function createMainWin() {
-  mainWin = createWindow({
-    app,
-    IS_DEV,
-    ICONS_FOLDER,
-    IS_MAC,
-    quitApp,
-    nestedWinParams,
-    // TODO fix
-    // indicatorMod,
-  });
-  initGoogleAuth();
-
-  showAwesomeBar();
+  // mainWin = createWindow({
+  //   app,
+  //   IS_DEV,
+  //   ICONS_FOLDER,
+  //   IS_MAC,
+  //   quitApp,
+  //   nestedWinParams,
+  //   // TODO fix
+  //   // indicatorMod,
+  // });
+  // initGoogleAuth();
+  setTimeout(() => showAwesomeBar(), 300);
 }
 
 function registerShowAppShortCuts(cfg: KeyboardConfig) {
@@ -329,7 +326,7 @@ function showOrFocus(passedWin) {
 
   // sometimes when starting a second instance we get here although we don't want to
   if (!win) {
-    info('special case occurred when showOrFocus is called even though, this is a second instance of the app');
+    // info('special case occurred when showOrFocus is called even though, this is a second instance of the app');
     return;
   }
 

@@ -1,12 +1,13 @@
 import {BrowserWindow} from 'electron';
-import {join} from 'path';
+import {join, normalize} from 'path';
+import {format} from 'url';
 
 export const showAwesomeBar = () => {
   console.log('SHOW AWE');
 
   let promptWindow = new BrowserWindow({
     // width: 420, height: 120,
-    width: 480, height: 420,
+    width: 540, height: 420,
     transparent: true,
     show: false,
     modal: false,
@@ -29,6 +30,12 @@ export const showAwesomeBar = () => {
 
   // Load the HTML dialog box
   promptWindow.loadURL(join(__dirname, './awesome-bar.html'));
+  promptWindow.loadURL(format({
+    // pathname: normalize(join(__dirname, '../dist/index.html')),
+    pathname: normalize(join(__dirname, './awesome-bar.html')),
+    protocol: 'file:',
+    slashes: true,
+  }));
 
   promptWindow.once('ready-to-show', () => {
     console.log('READY');
