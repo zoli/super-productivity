@@ -27,6 +27,7 @@ function removeActive() {
 document.addEventListener('keydown', (ev) => {
   if ((ev.ctrlKey || ev.altKey) && [1, 2, 3, 4].includes(+ev.key)) {
     modeFn[+ev.key - 1]();
+    inp.focus();
   } else if (ev.key === 'Escape') {
     this.close();
   } else if (ev.key === 'Enter' && inp.value === '') {
@@ -57,7 +58,7 @@ function addItem(title) {
       } as AwesomeAddTaskPayload);
       break;
     case 2:
-      // TODO selection
+    // TODO selection
     case 3:
       ipcRenderer.send(IPC.AWE_ADD_NOTE, {
         title,
@@ -79,3 +80,7 @@ window.onload = () => {
   modeFn[0]();
   inp.focus();
 };
+
+window.addEventListener('focus', (event) => {
+  inp.focus();
+}, false);

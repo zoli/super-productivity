@@ -27,43 +27,55 @@ ipcMain.on(IPC.AWE_ADD_NOTE, (ev, data) => {
 
 
 export const showAwesomeBar = () => {
-  if (promptWindow) {
-    promptWindow.close();
-    return;
-  }
+  console.log('showAwesomeBar()');
 
-  promptWindow = new BrowserWindow({
-    width: 540, height: 160,
-    // width: 540, height: 400,
-    transparent: true,
-    show: false,
-    modal: false,
-    frame: false,
-    // center: true,
-    alwaysOnTop: true,
-    autoHideMenuBar: true,
-    webPreferences: {
-      nodeIntegration: true,
-      sandbox: false
-    }
-  });
-  promptWindow.on('closed', () => {
-    promptWindow = null;
-  });
-  promptWindow.on('blur', () => {
-    promptWindow.close();
-  });
-
-  // Load the HTML dialog box
-  promptWindow.loadURL(join(__dirname, './awesome-bar.html'));
-  promptWindow.loadURL(format({
-    // pathname: normalize(join(__dirname, '../dist/index.html')),
-    pathname: normalize(join(__dirname, './awesome-bar.html')),
-    protocol: 'file:',
-    slashes: true,
-  }));
-
-  promptWindow.once('ready-to-show', () => {
+  if (promptWindow && promptWindow.isVisible()) {
+    promptWindow.hide();
+    console.log('hide');
+  } else if (promptWindow) {
     promptWindow.show();
-  });
+    console.log('show');
+  } else {
+    promptWindow = new BrowserWindow({
+      // width: 540, height: 160,
+      width: 540, height: 400,
+      transparent: true,
+      show: true,
+      modal: true,
+      frame: false,
+      center: true,
+      fullscreenable: false,
+      skipTaskbar: true,
+      alwaysOnTop: true,
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: true,
+        sandbox: false,
+      }
+    });
+    // promptWindow.on('closed', () => {
+    // promptWindow = null;
+    // });
+    promptWindow.on('blur', () => {
+      promptWindow.hide();
+    });
+
+    // Load the HTML dialog box
+    promptWindow.loadURL(format({
+      // pathname: normalize(join(__dirname, '../dist/index.html')),
+      pathname: normalize(join(__dirname, './awesome-bar.html')),
+      protocol: 'file:',
+      slashes: true,
+    }));
+    // promptWindow.setVisibleOnAllWorkspaces(true);
+
+    promptWindow.once('ready-to-show', () => {
+      promptWindow.show();
+      // setTimeout(() => {
+      //   if (promptWindow) {
+      //     promptWindow.webContents.openDevTools();
+      //   }
+      // }, 2000);
+    });
+  }
 };
