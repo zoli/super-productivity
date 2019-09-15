@@ -30,6 +30,7 @@ import {T} from './t.const';
 import {TranslateService} from '@ngx-translate/core';
 import {GlobalThemeService} from './core/theme/global-theme.service';
 import {UiHelperService} from './features/ui-helper/ui-helper.service';
+import {TaskService} from './features/tasks/task.service';
 
 const SIDE_PANEL_BREAKPOINT = 900;
 
@@ -71,6 +72,7 @@ export class AppComponent {
     private _swUpdate: SwUpdate,
     private _translateService: TranslateService,
     private _globalThemeService: GlobalThemeService,
+    private _taskService: TaskService,
     private _breakPointObserver: BreakpointObserver,
     private _uiHelperService: UiHelperService,
     private _store: Store<any>,
@@ -91,6 +93,7 @@ export class AppComponent {
     if (IS_ELECTRON) {
       this._electronService.ipcRenderer.send(IPC.APP_READY);
       this._initElectronErrorHandler();
+      this._initAwesomeBarDataTransfer();
       this._uiHelperService.initElectron();
 
 
@@ -176,6 +179,28 @@ export class AppComponent {
         type: 'ERROR'
       });
       console.error(data);
+    });
+  }
+
+  private _initAwesomeBarDataTransfer() {
+    this._electronService.ipcRenderer.on(IPC.AWE_REQUEST_DATA, () => {
+      combineLatest(
+        this._projectService.currentProject$,
+        this._projectService.list$,
+        this._taskService.currentTaskId$,
+        this._taskService.allTasks$,
+      ).pipe(
+        map(([currentProject, projectList, currentTaskId, allTasks]) => ({
+          currentProject,
+          projectList,
+          currentTaskId,
+          allTasks,
+        })),
+        take(1),
+      ).subscribe(data => {
+        console.log(data);
+        this._electronService.ipcRenderer.send(IPC.AWE_SENT_DATA, data);
+      });
     });
   }
 

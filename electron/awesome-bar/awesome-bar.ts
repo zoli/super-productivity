@@ -25,6 +25,17 @@ ipcMain.on(IPC.AWE_ADD_NOTE, (ev, data) => {
   mainWin.webContents.send(IPC.AWE_ADD_NOTE, data);
 });
 
+ipcMain.on(IPC.AWE_SENT_DATA, (ev, data) => {
+  if (promptWindow) {
+    promptWindow.webContents.send(IPC.AWE_SENT_DATA, data);
+  }
+});
+
+
+const requestData = () => {
+  const mainWin = getWin();
+  mainWin.webContents.send(IPC.AWE_REQUEST_DATA);
+};
 
 export const showAwesomeBar = () => {
   console.log('showAwesomeBar()');
@@ -35,7 +46,7 @@ export const showAwesomeBar = () => {
   } else if (promptWindow) {
     promptWindow.center();
     promptWindow.show();
-    console.log('show');
+    requestData();
   } else {
     promptWindow = new BrowserWindow({
       // width: 540, height: 160,
@@ -54,6 +65,8 @@ export const showAwesomeBar = () => {
         sandbox: false,
       }
     });
+    requestData();
+
     promptWindow.on('closed', () => {
       promptWindow = null;
     });

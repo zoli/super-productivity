@@ -51,6 +51,8 @@ export enum IPC {
   AWE_ADD_SUB_TASK = 'AWE_ADD_SUB_TASK',
   AWE_ADD_NOTE = 'AWE_ADD_NOTE',
   AWE_SELECT_TASK = 'AWE_SELECT_TASK',
+  AWE_REQUEST_DATA = 'AWE_REQUEST_DATA',
+  AWE_SENT_DATA = 'AWE_SENT_DATA',
 }
 
 export interface AwesomeAddTaskPayload {

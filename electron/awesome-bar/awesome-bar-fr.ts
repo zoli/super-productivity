@@ -72,9 +72,6 @@ function addItem(title) {
 window.onload = () => {
   // var options = ipcRenderer.sendSync("openDialog", "")
   // var params = JSON.parse(options)
-
-  console.log(localStorage.getItem(LS_KEY));
-
   inp.value = localStorage.getItem(LS_KEY) || '';
 
   modeFn[0]();
@@ -84,3 +81,7 @@ window.onload = () => {
 window.addEventListener('focus', (event) => {
   inp.focus();
 }, false);
+
+ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, data) => {
+  console.log(ev, data);
+});
