@@ -4,6 +4,13 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --mc: #0b77d2;
+      --ac: #ff4081;
+      --cc: #fff;
+      --mbg: #fff;
+    }
+
     body {
       margin: 0;
       /* for box shadow */
@@ -11,7 +18,7 @@
       font-family: 'Roboto', sans-serif;
       -webkit-user-select: none;
       -webkit-app-region: drag;
-      /*border: 2px solid rgba(3, 169, 244, 1);*/
+      /*border: 2px solid var(--mc);*/
     }
 
     #inp,
@@ -23,7 +30,7 @@
     #inp {
       width: 100%;
       display: block;
-      border: 3px solid rgba(3, 169, 244, 1);
+      border: 3px solid var(--mc);
       padding: 0 8px;
       margin: 8px 0;
       line-height: 42px;
@@ -51,28 +58,41 @@
       /*flex: 1;*/
       display: block;
       border: none;
-      background: #fff;
-      color: rgba(3, 169, 244);
-      border: 1px solid rgba(3, 169, 244);
+      background: var(--mbg);
+      color: #000000;
+      border: 1px solid var(--mc);
       cursor: pointer;
       user-select: none;
       border-radius: 12px;
       line-height: 28px;
+      height: 28px;
 
       padding: 0 8px;
       -webkit-app-region: no-drag;
       box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
-
     }
 
+    .mode-btn {
+      /*max-width: 80px;*/
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+
+    .project-indicator,
     .tabs button:not(:first-child) {
       margin-left: 8px;
     }
 
-
+    .project-indicator:focus,
     .tabs button.active {
-      color: #fff;
-      background: rgba(3, 169, 244);
+      color: var(--cc);
+      background: var(--mc);
+    }
+
+    .project-indicator:focus {
+      color: var(--cc);
+      background: var(--ac);
     }
 
     .tabs button.drag-handle {
@@ -84,13 +104,6 @@
       cursor: move;
     }
 
-    .project-indicator {
-      opacity: 1;
-      display: inline-block;
-      background: rgba(3, 169, 244);
-      color: #fff;
-    }
-
   </style>
   <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,400i,500,700&display=swap"
         rel="stylesheet">
@@ -98,20 +111,26 @@
 <body>
 
 <div class="tabs">
-  <button>Add Task(1)</button>
-  <button>Add Sub Task(2)</button>
-  <!--  <button>Select Task (3)</button>-->
-  <button>Add Note(4)</button>
-  <button class="drag-handle">#</button>
+  <button class="mode-btn"
+          id="add">1 task
+  </button>
+  <button class="mode-btn"
+          id="add-sub">2 sub Task
+  </button>
+  <button class="mode-btn">3 select
+  </button>
+  <button class="mode-btn"
+          id="add-node">4 note
+  </button>
+  <select id="switch-project"
+          class="project-indicator">
+  </select>
+<!--  <button class="drag-handle">#</button>-->
 </div>
 
 <input type="text"
        placeholder="Add new task"
        id="inp">
-
-<!--<div class="project-indicator">-->
-<!--  => (5) Current Project-->
-<!--</div>-->
 
 <script>var exports = {};</script>
 <script src="./awesome-bar-fr.js"></script>

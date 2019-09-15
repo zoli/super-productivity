@@ -31,6 +31,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {GlobalThemeService} from './core/theme/global-theme.service';
 import {UiHelperService} from './features/ui-helper/ui-helper.service';
 import {TaskService} from './features/tasks/task.service';
+import {AwesomeBarDataTransfer} from '../../electron/awesome-bar/awesome-bar.model';
 
 const SIDE_PANEL_BREAKPOINT = 900;
 
@@ -197,7 +198,7 @@ export class AppComponent {
           allTasks,
         })),
         take(1),
-      ).subscribe(data => {
+      ).subscribe((data: AwesomeBarDataTransfer) => {
         console.log(data);
         this._electronService.ipcRenderer.send(IPC.AWE_SENT_DATA, data);
       });

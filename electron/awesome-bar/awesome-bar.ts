@@ -65,7 +65,6 @@ export const showAwesomeBar = () => {
         sandbox: false,
       }
     });
-    requestData();
 
     promptWindow.on('closed', () => {
       promptWindow = null;
@@ -85,6 +84,7 @@ export const showAwesomeBar = () => {
 
     promptWindow.once('ready-to-show', () => {
       promptWindow.show();
+      requestData();
       // setTimeout(() => {
       //   if (promptWindow) {
       //     promptWindow.webContents.openDevTools();
