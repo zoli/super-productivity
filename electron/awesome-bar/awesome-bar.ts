@@ -33,6 +33,7 @@ export const showAwesomeBar = () => {
     promptWindow.hide();
     console.log('hide');
   } else if (promptWindow) {
+    promptWindow.center();
     promptWindow.show();
     console.log('show');
   } else {
