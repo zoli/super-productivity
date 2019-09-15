@@ -53,9 +53,9 @@ export const showAwesomeBar = () => {
         sandbox: false,
       }
     });
-    // promptWindow.on('closed', () => {
-    // promptWindow = null;
-    // });
+    promptWindow.on('closed', () => {
+      promptWindow = null;
+    });
     promptWindow.on('blur', () => {
       promptWindow.hide();
     });
