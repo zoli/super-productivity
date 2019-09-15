@@ -133,7 +133,13 @@ ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, d: AwesomeBarDataTransfer) => {
 });
 
 projectSwitcher.onchange = (event) => {
-  console.log(event, projectSwitcher.value);
-  // TODO handle selection
   selectedProjectId = projectSwitcher.value;
+  if (selectedProjectId === data.currentProject.id && data.currentTaskId) {
+    ctrlItems[1].show();
+  } else {
+    ctrlItems[1].hide();
+    if (currentMode === 1) {
+      ctrlItems[0].enableMode();
+    }
+  }
 };
