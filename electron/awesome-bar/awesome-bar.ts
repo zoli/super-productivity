@@ -50,8 +50,9 @@ export const showAwesomeBar = () => {
   } else {
     promptWindow = new BrowserWindow({
       // width: 540, height: 160,
-      width: 540, height: 400,
-      transparent: true,
+      width: 540, height: 76,
+      // width: 540, height: 400,
+      transparent: false,
       show: true,
       modal: true,
       frame: false,

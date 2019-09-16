@@ -13,7 +13,6 @@ const projectSwitcher = document.getElementById('switch-project') as HTMLSelectE
 
 Array.from(btns).forEach((btn, i) => addMode(btn, i));
 
-
 function addMode(btn, i) {
   ctrlItems.push({
     enableMode: () => {
@@ -25,13 +24,13 @@ function addMode(btn, i) {
           inp.placeholder = 'Add Task';
           break;
         case 1:
-          inp.placeholder = 'Add Sub Task';
+          inp.placeholder = 'Add Sub Task to current task';
           break;
         case 2:
-          inp.placeholder = 'Select Task';
+          inp.placeholder = 'Add Note';
           break;
         case 3:
-          inp.placeholder = 'Add Note';
+          inp.placeholder = 'Select Task';
       }
     },
     show: () => {
@@ -85,13 +84,13 @@ function addItem(title) {
       } as AwesomeAddTaskPayload);
       break;
     case 2:
-    // TODO selection
-    case 3:
       ipcRenderer.send(IPC.AWE_ADD_NOTE, {
         title,
         projectId: selectedProjectId
       } as AwesomeAddTaskPayload);
       break;
+    case 3:
+    // TODO selection
   }
 
 }
@@ -116,9 +115,8 @@ ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, d: AwesomeBarDataTransfer) => {
   root.style.setProperty('--ac', d.currentProject.theme.accent);
   data = d;
   if (projectSwitcher.options) {
-    for (const optionsKey in projectSwitcher.options) {
-      // tslint:disable-next-line
-      delete projectSwitcher.options[optionsKey];
+    for (let i = 0; i < projectSwitcher.options.length; i++) {
+      projectSwitcher.options.remove(i);
     }
   }
   d.projectList.forEach((project, i) => {
@@ -148,4 +146,5 @@ projectSwitcher.onchange = (event) => {
       ctrlItems[0].enableMode();
     }
   }
+  inp.focus();
 };

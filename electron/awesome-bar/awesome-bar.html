@@ -13,8 +13,8 @@
 
     body {
       margin: 0;
+      padding: 0;
       /* for box shadow */
-      padding: 16px;
       font-family: 'Roboto', sans-serif;
       -webkit-user-select: none;
       -webkit-app-region: drag;
@@ -32,15 +32,14 @@
       display: block;
       border: 3px solid var(--mc);
       padding: 0 8px;
-      margin: 8px 0;
+      /*margin: 8px 0;*/
+      position: relative;
       line-height: 42px;
-      box-shadow: none;
       /*border-bottom: 0;*/
       border-radius: 4px;
       -webkit-app-region: no-drag;
       box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
-      position: relative;
-      z-index: 1;
+      z-index: 2;
     }
 
     *:focus,
@@ -57,15 +56,15 @@
     .tabs button {
       /*flex: 1;*/
       display: block;
-      border: none;
       background: var(--mbg);
       color: #000000;
-      border: 1px solid var(--mc);
+      border: 2px solid var(--mc);
+      border-bottom: 0;
       cursor: pointer;
       user-select: none;
-      border-radius: 12px;
       line-height: 28px;
       height: 28px;
+      color: rgba(0, 0, 0, 0.8);
 
       padding: 0 8px;
       -webkit-app-region: no-drag;
@@ -78,22 +77,27 @@
       text-overflow: ellipsis;
     }
 
-
-    .project-indicator,
-    .tabs button:not(:first-child) {
-      margin-left: 8px;
+    .mode-btn span {
+      font-size: 70%;
+      margin-right: 4px;
     }
 
-    .project-indicator:focus,
     .tabs button.active {
       color: var(--cc);
       background: var(--mc);
     }
 
-    .project-indicator:focus {
-      color: var(--cc);
-      background: var(--ac);
+    .project-indicator {
+      flex-grow: 1;
+      border-radius: 0;
+      -webkit-appearance: none;
+      -webkit-border-radius: 0px;
     }
+
+    /*.project-indicator:focus {*/
+    /*  color: var(--cc);*/
+    /*  background: var(--ac);*/
+    /*}*/
 
     .tabs button.drag-handle {
       margin-left: auto;
@@ -112,20 +116,21 @@
 
 <div class="tabs">
   <button class="mode-btn"
-          id="add">1 task
+          id="add"><span>1</span>✓
   </button>
   <button class="mode-btn"
-          id="add-sub">2 sub Task
-  </button>
-  <button class="mode-btn">3 select
+          id="add-sub"><span>2</span>✓✓
   </button>
   <button class="mode-btn"
-          id="add-node">4 note
+          id="add-note"><span>3</span>▤
   </button>
+  <button class="mode-btn"><span>4</span>▶
+  </button>
+
   <select id="switch-project"
           class="project-indicator">
   </select>
-<!--  <button class="drag-handle">#</button>-->
+    <button class="drag-handle">☩</button>
 </div>
 
 <input type="text"
