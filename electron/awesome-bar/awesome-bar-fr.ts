@@ -7,7 +7,7 @@ let data: AwesomeBarDataTransfer;
 const btns = document.querySelectorAll('.mode-btn');
 const ctrlItems = [];
 let currentMode;
-let selectedProjectId = undefined;
+let selectedProjectId;
 const inp = document.getElementById('inp') as HTMLInputElement;
 const projectSwitcher = document.getElementById('switch-project') as HTMLSelectElement;
 
@@ -50,7 +50,7 @@ function removeActive() {
 
 
 document.addEventListener('keydown', (ev) => {
-  if ((ev.ctrlKey || ev.altKey) && [1, 2, 3, 4].includes(+ev.key)) {
+  if ((ev.ctrlKey || ev.altKey || ev.metaKey) && [1, 2, 3, 4].includes(+ev.key)) {
     ctrlItems[+ev.key - 1].enableMode();
     inp.focus();
   } else if ((ev.ctrlKey || ev.altKey) && [5].includes(+ev.key)) {
@@ -115,6 +115,12 @@ ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, d: AwesomeBarDataTransfer) => {
   root.style.setProperty('--mc', d.currentProject.theme.primary);
   root.style.setProperty('--ac', d.currentProject.theme.accent);
   data = d;
+  if (projectSwitcher.options) {
+    for (const optionsKey in projectSwitcher.options) {
+      // tslint:disable-next-line
+      delete projectSwitcher.options[optionsKey];
+    }
+  }
   d.projectList.forEach((project, i) => {
     projectSwitcher.options[projectSwitcher.options.length] = new Option(project.title, project.id);
     if (project.id === d.currentProject.id) {
