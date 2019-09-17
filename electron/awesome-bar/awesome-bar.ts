@@ -53,6 +53,7 @@ export const showAwesomeBar = () => {
       width: 540, height: 76,
       // width: 540, height: 400,
       transparent: false,
+      hasShadow: true,
       show: true,
       modal: true,
       frame: false,
@@ -71,7 +72,7 @@ export const showAwesomeBar = () => {
       promptWindow = null;
     });
     promptWindow.on('blur', () => {
-      promptWindow.hide();
+      // promptWindow.hide();
     });
 
     // Load the HTML dialog box

@@ -4,6 +4,6 @@ import {Task} from '../../src/app/features/tasks/task.model';
 export interface AwesomeBarDataTransfer {
   currentProject: Project;
   projectList: Project[];
-  currentTaskId: string;
+  currentTask: Task;
   allTasks: Task[];
 }

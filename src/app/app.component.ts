@@ -188,13 +188,13 @@ export class AppComponent {
       combineLatest(
         this._projectService.currentProject$,
         this._projectService.list$,
-        this._taskService.currentTaskId$,
+        this._taskService.currentTask$,
         this._taskService.allTasks$,
       ).pipe(
-        map(([currentProject, projectList, currentTaskId, allTasks]) => ({
+        map(([currentProject, projectList, currentTask, allTasks]) => ({
           currentProject,
           projectList,
-          currentTaskId,
+          currentTask,
           allTasks,
         })),
         take(1),

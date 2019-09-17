@@ -10,6 +10,7 @@ let currentMode;
 let selectedProjectId;
 const inp = document.getElementById('inp') as HTMLInputElement;
 const projectSwitcher = document.getElementById('switch-project') as HTMLSelectElement;
+const currentTaskTitleEl = document.getElementById('current-task-title');
 
 Array.from(btns).forEach((btn, i) => addMode(btn, i));
 
@@ -119,6 +120,8 @@ ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, d: AwesomeBarDataTransfer) => {
       projectSwitcher.options.remove(i);
     }
   }
+  projectSwitcher.options.length = 0;
+
   d.projectList.forEach((project, i) => {
     projectSwitcher.options[projectSwitcher.options.length] = new Option(project.title, project.id);
     if (project.id === d.currentProject.id) {
@@ -126,19 +129,21 @@ ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, d: AwesomeBarDataTransfer) => {
     }
   });
 
-  if (d.currentTaskId) {
+  if (d.currentTask) {
+    currentTaskTitleEl.innerText = d.currentTask.title;
     ctrlItems[1].show();
     if (currentMode === 0) {
       ctrlItems[1].enableMode();
     }
   } else {
+    currentTaskTitleEl.innerText = 'none';
     ctrlItems[1].hide();
   }
 });
 
 projectSwitcher.onchange = (event) => {
   selectedProjectId = projectSwitcher.value;
-  if (selectedProjectId === data.currentProject.id && data.currentTaskId) {
+  if (selectedProjectId === data.currentProject.id && data.currentTask) {
     ctrlItems[1].show();
   } else {
     ctrlItems[1].hide();

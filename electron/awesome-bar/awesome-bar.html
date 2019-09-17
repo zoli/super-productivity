@@ -11,6 +11,12 @@
       --mbg: #fff;
     }
 
+    .wrapper {
+      /*border-radius: 4px;*/
+      overflow: hidden;
+      border: 2px solid var(--mc);
+    }
+
     body {
       margin: 0;
       padding: 0;
@@ -25,21 +31,6 @@
     button,
     body {
       font-size: 14px;
-    }
-
-    #inp {
-      width: 100%;
-      display: block;
-      border: 3px solid var(--mc);
-      padding: 0 8px;
-      /*margin: 8px 0;*/
-      position: relative;
-      line-height: 42px;
-      /*border-bottom: 0;*/
-      border-radius: 4px;
-      -webkit-app-region: no-drag;
-      box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
-      z-index: 2;
     }
 
     *:focus,
@@ -58,17 +49,28 @@
       display: block;
       background: var(--mbg);
       color: #000000;
-      border: 2px solid var(--mc);
+      border: 1px solid var(--mc);
+      border-top: 0;
       border-bottom: 0;
+      /*border-top-width: 2px;*/
       cursor: pointer;
       user-select: none;
       line-height: 28px;
       height: 28px;
       color: rgba(0, 0, 0, 0.8);
+      margin-right: -1px;
 
       padding: 0 8px;
       -webkit-app-region: no-drag;
-      box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
+    }
+
+    .tabs button:first-child {
+      /*border-left-width: 2px;*/
+    }
+
+    .tabs button:last-child {
+      /*border-right-width: 2px;*/
+      margin-right: 0px;
     }
 
     .mode-btn {
@@ -85,27 +87,66 @@
     .tabs button.active {
       color: var(--cc);
       background: var(--mc);
+      position: relative;
     }
 
     .project-indicator {
       flex-grow: 1;
       border-radius: 0;
       -webkit-appearance: none;
-      -webkit-border-radius: 0px;
+      -webkit-border-radius: 0;
     }
 
-    /*.project-indicator:focus {*/
-    /*  color: var(--cc);*/
-    /*  background: var(--ac);*/
-    /*}*/
+    .project-indicator:focus {
+      color: var(--cc);
+      background: var(--ac);
+    }
 
     .tabs button.drag-handle {
-      margin-left: auto;
-      align-self: flex-end;
       text-align: center;
       width: 28px;
       -webkit-app-region: drag;
-      cursor: move;
+      cursor: grab;
+      padding: 0;
+      font-weight: bold;
+    }
+
+    .tabs button.drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .current-task-title-wrapper {
+      background: #fff;
+      line-height: 20px;
+      min-height: 20px;
+      border: 1px solid var(--mc);
+      border-top-width: 0;
+      color: gray;
+      font-size: 12px;
+      padding-left: 4px;
+    }
+
+    .current-task-title-wrapper span {
+      border-left: 1px solid var(--mc);
+      display: inline-block;
+      color: rgba(0, 0, 0, 0.8);
+      padding-left: 8px;
+    }
+
+    #inp {
+      width: 100%;
+      display: block;
+      border: 3px solid var(--mc);
+      padding: 0 8px;
+      /*margin: 8px 0;*/
+      position: relative;
+      line-height: 42px;
+      /*border-bottom: 0;*/
+      border-radius: 0;
+      -webkit-app-region: no-drag;
+      box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
+      z-index: 2;
+      /*box-shadow: inset 3px 3px 5px 6px #ccc;*/
     }
 
   </style>
@@ -114,29 +155,30 @@
 </head>
 <body>
 
-<div class="tabs">
-  <button class="mode-btn"
-          id="add"><span>1</span>✓
-  </button>
-  <button class="mode-btn"
-          id="add-sub"><span>2</span>✓✓
-  </button>
-  <button class="mode-btn"
-          id="add-note"><span>3</span>▤
-  </button>
-  <button class="mode-btn"><span>4</span>▶
-  </button>
+<div class="wrapper">
+  <div class="tabs">
+    <button class="mode-btn"
+            id="add"><span>1</span>✓
+    </button>
+    <button class="mode-btn"
+            id="add-sub"><span>2</span>✓✓
+    </button>
+    <button class="mode-btn"
+            id="add-note"><span>3</span>▤
+    </button>
+    <button class="mode-btn"><span>4</span>▶
+    </button>
 
-  <select id="switch-project"
-          class="project-indicator">
-  </select>
+    <select id="switch-project"
+            class="project-indicator">
+    </select>
     <button class="drag-handle">☩</button>
+  </div>
+  <input type="text"
+         placeholder="Add new task"
+         id="inp">
+  <div class="current-task-title-wrapper">Current Task: <span id="current-task-title"></span></div>
 </div>
-
-<input type="text"
-       placeholder="Add new task"
-       id="inp">
-
 <script>var exports = {};</script>
 <script src="./awesome-bar-fr.js"></script>
 </body>
