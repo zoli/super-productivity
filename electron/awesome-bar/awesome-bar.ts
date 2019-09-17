@@ -47,10 +47,11 @@ export const showAwesomeBar = () => {
   } else {
     promptWindow = new BrowserWindow({
       // width: 540, height: 160,
-      // width: 540, height: 76,
-      width: 540, height: 400,
+      width: 540, height: 100,
+      // width: 540, height: 400,
       transparent: false,
       hasShadow: true,
+      resizable: false,
       show: true,
       modal: true,
       frame: false,
@@ -83,11 +84,11 @@ export const showAwesomeBar = () => {
 
     promptWindow.once('ready-to-show', () => {
       promptWindow.show();
-      setTimeout(() => {
-        promptWindow.show();
-      });
       requestData();
-      // setTimeout(() => {
+      setTimeout(() => requestData(), 500);
+      setTimeout(() => requestData(), 1000);
+      setTimeout(() => requestData(), 3000);
+      setTimeout(() => requestData(), 4000);
       //   if (promptWindow) {
       //     promptWindow.webContents.openDevTools();
       //   }

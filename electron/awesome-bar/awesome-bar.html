@@ -1,33 +1,54 @@
 <head>
   <style>
+
+    * {
+      transition: 0.3s;
+    }
+
     *, *:after, *:before {
       box-sizing: border-box;
     }
 
-    :root {
+    :global {
       --mc: #0b77d2;
       --ac: #ff4081;
-      --cc: #fff;
+      --mfg: rgba(0, 0, 0, 0.8);
       --mbg: #fff;
-    }
-
-    .wrapper {
-      /*padding: 2px;*/
-      /*border: 1px solid var(--mc);*/
+      --mbge: #ddd;
     }
 
 
     body {
-      border-radius: 4px;
-      overflow: hidden;
-      background: var(--mc);
       margin: 0;
       padding: 0;
       /* for box shadow */
       font-family: 'Roboto', sans-serif;
       -webkit-user-select: none;
       -webkit-app-region: drag;
+      overflow: hidden;
       /*border: 2px solid var(--mc);*/
+    }
+
+    .wrapper {
+      padding: 3px 3px 2px;
+      background: var(--mbg);
+      position: relative;
+      /*padding: 3px;*/
+    }
+
+    .wrapper > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .wrapper:after {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      content: '';
+      border: 2px solid rgba(255, 255, 255, 0.1);
     }
 
     #inp,
@@ -50,28 +71,24 @@
     .tabs button {
       /*flex: 1;*/
       display: block;
-      background: var(--mc);
-      color: var(--cc);
-      border: none;
+      background: var(--mbg);
+      color: var(--mfg);
+      border: 0;
+      border-bottom: 2px solid transparent;
       /*border-top-width: 2px;*/
       cursor: pointer;
       user-select: none;
       line-height: 28px;
       height: 28px;
       /*color: rgba(0, 0, 0, 0.8);*/
-      box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
-
+      /*box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);*/
       padding: 0 8px;
       -webkit-app-region: no-drag;
     }
 
-    .tabs button:first-child {
-      /*border-left-width: 2px;*/
-    }
 
     .tabs button:last-child {
-      /*border-right-width: 2px;*/
-      margin-right: 0px;
+      margin-right: 0;
     }
 
     .mode-btn {
@@ -85,24 +102,30 @@
       margin-right: 4px;
     }
 
-    .tabs button.active {
+    .project-indicator,
+    .tabs button.isActive {
       background: var(--mbg);
-      color: var(--mc);
       position: relative;
       box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
       z-index: 1;
       font-weight: bold;
+      border-top-right-radius: 4px;
+      border-top-left-radius: 4px;
+    }
+
+    .project-indicator:focus,
+    .tabs button.isActive {
+      border-color: var(--mc);
+      background: var(--mbge);
+      z-index: 2;
     }
 
     .project-indicator {
+      background: var(--mbge);
       flex-grow: 1;
       border-radius: 0;
       -webkit-appearance: none;
       -webkit-border-radius: 0;
-    }
-
-    .project-indicator:focus {
-      color: var(--cc);
     }
 
     .tabs button.drag-handle {
@@ -120,36 +143,40 @@
 
     .current-task-title-wrapper {
       line-height: 20px;
-      border: 1px solid var(--mc);
       border-top-width: 0;
-      font-size: 12px;
+      font-size: 13px;
       padding-left: 4px;
-      padding-top: 2px;
-      background: var(--mc);
-      color: var(--cc);
+      padding-top: 3px;
+      background: var(--mbg);
+      color: var(--mfg);
+      white-space: nowrap;
+      display: flex;
     }
 
     .current-task-title-wrapper .label {
-opacity: 0.8;
+      opacity: 0.8;
       display: inline-block;
     }
+
     .current-task-title-wrapper #current-task-title {
       display: inline-block;
       padding-left: 8px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     #inp {
       width: 100%;
       display: block;
       padding: 0 8px;
-      border: none;
-      border: 3px solid var(--mc);
-      border: 3px solid #fff;
       /*margin: 8px 0;*/
       position: relative;
-      line-height: 42px;
-      /*border-bottom: 0;*/
-      border-radius: 0;
+      line-height: 44px;
+      color: var(--mfg);
+      background: var(--mbge);
+      border: 0;
+      /*border: 2px solid var(--mc);*/
+      border-radius: 4px;
       -webkit-app-region: no-drag;
       box-shadow: 0 3px 5px -1px rgba(0, 0, 0, .2), 0 6px 10px 0 rgba(0, 0, 0, .14), 0 1px 18px 0 rgba(0, 0, 0, .12);
       z-index: 3;
@@ -184,7 +211,8 @@ opacity: 0.8;
   <input type="text"
          placeholder="Add new task"
          id="inp">
-  <div class="current-task-title-wrapper"><span class="label">Current Task:</span> <span id="current-task-title"></span></div>
+  <div class="current-task-title-wrapper"><span class="label">Current Task:</span> <span id="current-task-title"></span>
+  </div>
 </div>
 <script>var exports = {};</script>
 <script src="./awesome-bar-fr.js"></script>

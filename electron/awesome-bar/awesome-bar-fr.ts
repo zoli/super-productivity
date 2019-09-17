@@ -1,6 +1,7 @@
 import {ipcRenderer} from 'electron';
 import {AwesomeAddTaskPayload, IPC} from '../ipc-events.const';
 import {AwesomeBarDataTransfer} from './awesome-bar.model';
+import {Project} from '../../src/app/features/project/project.model';
 
 const LS_KEY = 'SP_TMP_INP';
 let data: AwesomeBarDataTransfer;
@@ -23,7 +24,7 @@ function addMode(btn, i) {
 
       currentMode = i;
       removeActive();
-      btn.classList.add('active');
+      btn.classList.add('isActive');
       switch (i) {
         case 0:
           inp.placeholder = 'Add Task';
@@ -49,7 +50,7 @@ function addMode(btn, i) {
 }
 
 function removeActive() {
-  Array.from(btns).forEach(btn => btn.classList.remove('active'));
+  Array.from(btns).forEach(btn => btn.classList.remove('isActive'));
 }
 
 
@@ -113,11 +114,24 @@ window.addEventListener('focus', (event) => {
   inp.focus();
 }, false);
 
-const root = document.documentElement;
+const rootEl = document.documentElement;
+
+function setProjectColors(project: Project) {
+  rootEl.style.setProperty('--mc', project.theme.primary);
+  rootEl.style.setProperty('--ac', project.theme.accent);
+  rootEl.style.setProperty('--mfg', project.theme.isDarkTheme
+    ? 'rgba(255, 255, 255, 0.8)'
+    : 'rgba(0, 0, 0, 0.8)');
+  rootEl.style.setProperty('--mbg', project.theme.isDarkTheme
+    ? 'rgb(48, 48, 48)'
+    : 'rgb(244, 244, 244)');
+  rootEl.style.setProperty('--mbge', project.theme.isDarkTheme
+    ? 'rgb(66, 66, 66)'
+    : '#fff');
+}
 
 ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, d: AwesomeBarDataTransfer) => {
-  root.style.setProperty('--mc', d.currentProject.theme.primary);
-  root.style.setProperty('--ac', d.currentProject.theme.accent);
+  setProjectColors(d.currentProject);
   data = d;
   if (projectSwitcher.options) {
     for (let i = 0; i < projectSwitcher.options.length; i++) {
@@ -147,6 +161,8 @@ ipcRenderer.on(IPC.AWE_SENT_DATA, (ev, d: AwesomeBarDataTransfer) => {
 
 projectSwitcher.onchange = (event) => {
   selectedProjectId = projectSwitcher.value;
+  setProjectColors(data.projectList.find(p => p.id === selectedProjectId));
+
   if (selectedProjectId === data.currentProject.id && data.currentTask) {
     ctrlItems[1].show();
   } else {
@@ -155,5 +171,4 @@ projectSwitcher.onchange = (event) => {
       ctrlItems[0].enableMode();
     }
   }
-  inp.focus();
 };
