@@ -121,6 +121,7 @@
     }
 
     .project-indicator {
+      margin: 0 8px;
       background: var(--mbge);
       flex-grow: 1;
       border-radius: 0;
@@ -146,7 +147,7 @@
       border-top-width: 0;
       font-size: 13px;
       padding-left: 4px;
-      padding-top: 3px;
+      padding-top: 4px;
       background: var(--mbg);
       color: var(--mfg);
       white-space: nowrap;
@@ -200,8 +201,8 @@
     <button class="mode-btn"
             id="add-note"><span>3</span>▤
     </button>
-    <button class="mode-btn"><span>4</span>▶
-    </button>
+<!--    <button class="mode-btn"><span>4</span>▶-->
+<!--    </button>-->
 
     <select id="switch-project"
             class="project-indicator">
@@ -210,6 +211,7 @@
   </div>
   <input type="text"
          placeholder="Add new task"
+         autofocus="autofocus"
          id="inp">
   <div class="current-task-title-wrapper"><span class="label">Current Task:</span> <span id="current-task-title"></span>
   </div>

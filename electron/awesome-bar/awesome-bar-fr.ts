@@ -80,19 +80,19 @@ function addItem(title) {
     case 0:
       ipcRenderer.send(IPC.AWE_ADD_TASK, {
         title,
-        projectId: selectedProjectId
+        // projectId: selectedProjectId
       } as AwesomeAddTaskPayload);
       break;
     case 1:
       ipcRenderer.send(IPC.AWE_ADD_SUB_TASK, {
         title,
-        projectId: selectedProjectId
+        // projectId: selectedProjectId
       } as AwesomeAddTaskPayload);
       break;
     case 2:
       ipcRenderer.send(IPC.AWE_ADD_NOTE, {
         title,
-        projectId: selectedProjectId
+        // projectId: selectedProjectId
       } as AwesomeAddTaskPayload);
       break;
     case 3:
@@ -101,17 +101,23 @@ function addItem(title) {
 
 }
 
+function focusInp() {
+  inp.focus();
+  setTimeout(() => {
+    inp.focus();
+  });
+}
+
 window.onload = () => {
   // var options = ipcRenderer.sendSync("openDialog", "")
   // var params = JSON.parse(options)
   inp.value = localStorage.getItem(LS_KEY) || '';
-
   ctrlItems[0].enableMode();
-  inp.focus();
+  focusInp();
 };
 
 window.addEventListener('focus', (event) => {
-  inp.focus();
+  focusInp();
 }, false);
 
 const rootEl = document.documentElement;
