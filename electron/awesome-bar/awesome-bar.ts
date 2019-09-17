@@ -5,7 +5,7 @@ import {IPC} from '../ipc-events.const';
 import {getWin} from '../main-window';
 
 
-let promptWindow;
+let promptWindow: BrowserWindow;
 
 // We need to forward the event
 ipcMain.on(IPC.AWE_ADD_TASK, (ev, data) => {
@@ -38,11 +38,8 @@ const requestData = () => {
 };
 
 export const showAwesomeBar = () => {
-  console.log('showAwesomeBar()');
-
   if (promptWindow && promptWindow.isVisible()) {
     promptWindow.hide();
-    console.log('hide');
   } else if (promptWindow) {
     promptWindow.center();
     promptWindow.show();
@@ -50,8 +47,8 @@ export const showAwesomeBar = () => {
   } else {
     promptWindow = new BrowserWindow({
       // width: 540, height: 160,
-      width: 540, height: 76,
-      // width: 540, height: 400,
+      // width: 540, height: 76,
+      width: 540, height: 400,
       transparent: false,
       hasShadow: true,
       show: true,
@@ -86,6 +83,9 @@ export const showAwesomeBar = () => {
 
     promptWindow.once('ready-to-show', () => {
       promptWindow.show();
+      setTimeout(() => {
+        promptWindow.show();
+      });
       requestData();
       // setTimeout(() => {
       //   if (promptWindow) {

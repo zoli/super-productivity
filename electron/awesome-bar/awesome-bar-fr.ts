@@ -17,6 +17,10 @@ Array.from(btns).forEach((btn, i) => addMode(btn, i));
 function addMode(btn, i) {
   ctrlItems.push({
     enableMode: () => {
+      if (i === 1 && (!data || !data.currentTask)) {
+        return;
+      }
+
       currentMode = i;
       removeActive();
       btn.classList.add('active');
