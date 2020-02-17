@@ -1,5 +1,5 @@
 'use strict';
-import {App, app, globalShortcut, ipcMain, powerMonitor} from 'electron';
+import {App, app, globalShortcut, ipcMain, powerMonitor, protocol} from 'electron';
 import * as electronDl from 'electron-dl';
 
 import {info} from 'electron-log';
@@ -66,6 +66,8 @@ appIN.on('second-instance', () => {
     mainWin.focus();
   }
 });
+
+initServiceWorkerStuff();
 
 if (!IS_MAC) {
   // make it a single instance by closing other instances but allow for dev mode
@@ -350,6 +352,18 @@ function exec(ev, command) {
   });
 }
 
+function initServiceWorkerStuff() {
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: 'file',
+      privileges: {
+        secure: true,
+        standard: true,
+        allowServiceWorkers: true,
+      }
+    },
+  ]);
+}
 
 // required for graceful closing
 // @see: https://github.com/electron/electron/issues/5708

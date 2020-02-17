@@ -64,13 +64,19 @@ export const createWindow = (params) => {
     show: false,
     webPreferences: {
       scrollBounce: true,
-      webSecurity: !IS_DEV,
+      webSecurity: false,
       nodeIntegration: true,
     },
     icon: ICONS_FOLDER + '/icon_256x256.png'
   });
 
   mainWindowState.manage(mainWin);
+
+  // const url = format({
+  //   pathname: normalize(join(__dirname, '../dist/index.html')),
+  //   protocol: 'file:',
+  //   slashes: true,
+  // });
 
   const url = (IS_DEV)
     ? 'http://localhost:4200'
@@ -79,8 +85,10 @@ export const createWindow = (params) => {
       protocol: 'file:',
       slashes: true,
     });
+  console.log(url);
 
   mainWin.loadURL(url);
+  // mainWin.loadURL('app://./index.html');
 
   // show gracefully
   mainWin.once('ready-to-show', () => {

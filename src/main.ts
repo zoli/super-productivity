@@ -11,10 +11,29 @@ import {androidInterface} from './app/core/android/android-interface';
 if (environment.production) {
   enableProdMode();
 }
+// if ('serviceWorker' in navigator) {
+//   console.log('REGISTER SERVICE WORKER');
+//
+//   // navigator.serviceWorker.register('testsw.js')
+//   //   .then((xx) => console.log('DONEd', xx))
+//   //   .catch((xx) => console.error('FAILEDd', xx));
+//
+//   setTimeout(() => {
+//     navigator.serviceWorker.register('ngsw-worker.js')
+//       .then((xx) => console.log('DONEd', xx))
+//       .catch((xx) => console.error('FAILEDd', xx));
+//
+//   }, 4000);
+//
+//
+//   // navigator.serviceWorker.register('file:///home/johannes/www/super-productivity/dist/ngsw-worker.js')
+//   //   .then((xx) => console.log('DONE', xx))
+//   //   .catch((xx) => console.error('FAILED', xx));
+// }
 
 platformBrowserDynamic().bootstrapModule(AppModule).then(() => {
   // TODO make asset caching work for electron
-  if ('serviceWorker' in navigator && environment.production && !IS_ELECTRON) {
+  if ('serviceWorker' in navigator && environment.production) {
     return navigator.serviceWorker.register('ngsw-worker.js');
   }
 }).catch(err => console.log(err));
