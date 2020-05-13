@@ -4,6 +4,7 @@ import {DBSchema, openDB} from 'idb';
 import {IDBPDatabase} from 'idb/build/esm/entry';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {filter, shareReplay, take} from 'rxjs/operators';
+import {BlockstackService} from '../../features/blockstack/blockstack.service';
 
 const DB_NAME = 'SUP';
 const DB_MAIN_NAME = 'SUP_STORE';
@@ -29,6 +30,7 @@ export class DatabaseService {
 
   constructor(
     private _snackService: SnackService,
+    private _blockstackService: BlockstackService,
   ) {
     this._init().then();
   }
