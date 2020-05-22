@@ -11,6 +11,7 @@ import {MetricModule} from '../../features/metric/metric.module';
 import {MatSidenavModule} from '@angular/material/sidenav';
 import {BetterDrawerModule} from '../../ui/better-drawer/better-drawer.module';
 import {WorkViewComponent} from './work-view.component';
+import {SolidModule} from '../solid/solid.module';
 
 @NgModule({
   imports: [
@@ -25,6 +26,7 @@ import {WorkViewComponent} from './work-view.component';
     MetricModule,
     MatSidenavModule,
     BetterDrawerModule,
+    SolidModule,
   ],
   declarations: [
     WorkViewComponent,

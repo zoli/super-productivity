@@ -162,6 +162,7 @@
     "sass-loader": "^7.1.0",
     "semver": "^7.3.2",
     "shortid": "^2.2.14",
+    "solid-auth-client": "^2.4.1",
     "style-loader": "^0.23.1",
     "throttle-debounce": "^2.0.1",
     "ts-node": "~8.2.0",
