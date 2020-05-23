@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {AppConfig, UserSession} from 'blockstack';
-import {auditTime, debounceTime, filter, map, retry, switchMap} from 'rxjs/operators';
+import {auditTime, debounceTime, filter, map, switchMap, tap} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {
@@ -34,7 +34,7 @@ const PROPS_MAP: { [key: string]: keyof AppDataComplete } = {
 
 
 // TODO improve
-const COMPLETE_KEY = 'COMPLETE';
+const COMPLETE_KEY = 'SP_CPL';
 const BS_AUDIT_TIME = 5000;
 
 @Injectable({
@@ -46,10 +46,7 @@ export class BlockstackService {
   private _inMemoryCopy;
 
   private _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
-    // to always catch updates belonging together being fired at the same time
-    // TODO race condition alert!!! we need to refactor how the persistence service works...
-    debounceTime(99),
-    // tap(({key, isDataImport}) => console.log(key, isDataImport)),
+    tap(({dbKey, isDataImport, data}) => console.log(dbKey, isDataImport, data && data.entities)),
     filter(({dbKey, data, isDataImport}) => !!data && !isDataImport),
     switchMap(({dbKey, data, isDataImport}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
       map(complete => ({
@@ -57,17 +54,27 @@ export class BlockstackService {
         [PROPS_MAP[dbKey]]: data,
       }))
     )),
+    // to always catch updates belonging together being fired at the same time
+    // TODO race condition alert!!! we need to refactor how the persistence service works...
+    debounceTime(99),
     auditTime(BS_AUDIT_TIME),
   );
 
   private _allDataWrite$ = this._allDataSaveTrigger$.pipe(
     switchMap(async (all) => {
       // TODO do conflict resolution here
-      const remoteData = await this._read(COMPLETE_KEY);
-      console.log('BS SAVE!! local/remote', all.lastLocalSyncModelChange, remoteData.lastLocalSyncModelChange);
-      await this._write(COMPLETE_KEY, all);
+      // TODO handle initial creation
+      try {
+        const remoteData = await this._read(COMPLETE_KEY);
+        console.log('BS SAVE!! local/remote', all.lastLocalSyncModelChange, remoteData.lastLocalSyncModelChange);
+        console.log(all, remoteData);
+      } catch (e) {
+        console.error(e);
+      }
+
+      return await this._write(COMPLETE_KEY, all);
     }),
-    retry(1),
+    // retry(2),
   );
 
 
@@ -84,7 +91,20 @@ export class BlockstackService {
 
     // INITIAL LOAD
     // TODO only do so if enabled in settings
-    this._initialSignInAndImport().then();
+
+    if (this.us.isSignInPending()) {
+      this.us.handlePendingSignIn().then((userData) => {
+        if (confirm('Import data')) {
+          this._initialSignInAndImport().then();
+        }
+      });
+    } else if (!this.us.isUserSignedIn()) {
+      this.signIn();
+    } else {
+      if (confirm('Import data')) {
+        this._initialSignInAndImport().then();
+      }
+    }
   }
 
   signIn() {
@@ -132,8 +152,7 @@ export class BlockstackService {
     if (!this.us.isUserSignedIn()) {
       return false;
     }
-
-    const options = {encrypt: true};
+    const options = {encrypt: false};
     return this.us.putFile(key, JSON.stringify(data), options).catch(console.log).then(console.log);
   }
 
@@ -141,7 +160,7 @@ export class BlockstackService {
     if (!this.us.isUserSignedIn()) {
       return false;
     }
-    const options = {decrypt: true};
+    const options = {decrypt: false};
     const data = await this.us.getFile(key, options);
     if (data) {
       return JSON.parse(data.toString());
