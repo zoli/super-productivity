@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {AppConfig, UserSession} from 'blockstack';
-import {auditTime, filter, map, mapTo, switchMap} from 'rxjs/operators';
+import {auditTime, debounceTime, filter, map, retry, switchMap} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {
@@ -16,7 +16,7 @@ import {
 import {AppDataComplete} from '../../imex/sync/sync.model';
 import {SyncService} from '../../imex/sync/sync.service';
 import {ImexMetaService} from '../../imex/imex-meta/imex-meta.service';
-import {from} from 'rxjs';
+import {from, Observable} from 'rxjs';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -35,6 +35,7 @@ const PROPS_MAP: { [key: string]: keyof AppDataComplete } = {
 
 // TODO improve
 const COMPLETE_KEY = 'COMPLETE';
+const BS_AUDIT_TIME = 5000;
 
 @Injectable({
   providedIn: 'root'
@@ -44,25 +45,31 @@ export class BlockstackService {
 
   private _inMemoryCopy;
 
-  private _allData$ = this._persistenceService.onSave$.pipe(
+  private _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
+    // to always catch updates belonging together being fired at the same time
+    // TODO race condition alert!!! we need to refactor how the persistence service works...
+    debounceTime(99),
     // tap(({key, isDataImport}) => console.log(key, isDataImport)),
-    filter(({key, data, isDataImport}) => !!data && !isDataImport),
-    switchMap(({key, data, isDataImport}) => from(this._getComplete()).pipe(
+    filter(({dbKey, data, isDataImport}) => !!data && !isDataImport),
+    switchMap(({dbKey, data, isDataImport}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
       map(complete => ({
         ...complete,
-        [PROPS_MAP[key]]: data
+        [PROPS_MAP[dbKey]]: data,
       }))
     )),
-  );
-  private _allDataSave$ = this._allData$.pipe(
-    switchMap(data => this._imexMetaService.isDataImportInProgress$.pipe(
-      filter(isDataImportInProgress => !isDataImportInProgress),
-      mapTo(data),
-    )),
-    auditTime(5000),
+    auditTime(BS_AUDIT_TIME),
   );
 
-  private _lastData: any;
+  private _allDataWrite$ = this._allDataSaveTrigger$.pipe(
+    switchMap(async (all) => {
+      // TODO do conflict resolution here
+      const remoteData = await this._read(COMPLETE_KEY);
+      console.log('BS SAVE!! local/remote', all.lastLocalSyncModelChange, remoteData.lastLocalSyncModelChange);
+      await this._write(COMPLETE_KEY, all);
+    }),
+    retry(1),
+  );
+
 
   constructor(
     private _persistenceService: PersistenceService,
@@ -70,26 +77,14 @@ export class BlockstackService {
     private _imexMetaService: ImexMetaService,
     private _syncService: SyncService,
   ) {
-    console.log(this.us.isUserSignedIn());
 
 
-    if (this.us.isSignInPending()) {
-      this.us.handlePendingSignIn().then((userData) => {
-        // window.location = window.location.origin;
-      });
-    } else if (!this.us.isUserSignedIn()) {
-      this.signIn();
-    }
-    // this.signIn();
+    // SAVE TRIGGER
+    this._allDataWrite$.subscribe();
 
-    // SAVE TRIGGER TODO improve
-    this._allDataSave$.subscribe(all => {
-      console.log('_allDataSave$');
-      this._write(COMPLETE_KEY, all);
-    });
-
-    // INITIAL LOAD TODO IMPROVE
-    this.initialImport();
+    // INITIAL LOAD
+    // TODO only do so if enabled in settings
+    this._initialSignInAndImport().then();
   }
 
   signIn() {
@@ -100,38 +95,46 @@ export class BlockstackService {
     this.us.signUserOut(window.location.origin);
   }
 
-  async initialImport() {
+  private async _initialSignInAndImport() {
+    if (this.us.isSignInPending()) {
+      this.us.handlePendingSignIn().then((userData) => {
+        // window.location = window.location.origin;
+        return this._importRemote();
+      });
+    } else if (!this.us.isUserSignedIn()) {
+      this.signIn();
+    } else {
+      await this._importRemote();
+    }
+  }
+
+  private async _importRemote() {
     const appComplete = await this._read(COMPLETE_KEY);
     console.log('INITIAL IMPORT', appComplete);
     await this._syncService.importCompleteSyncData(appComplete);
-    console.log('INITIAL IMPORT => DONE');
   }
 
-  async checkForUpdates() {
-  }
-
-
-  private async _getComplete(): Promise<AppDataComplete> {
+  private async _getAppDataCompleteWithLastSyncModelChange(): Promise<AppDataComplete> {
     if (!this._inMemoryCopy) {
       await this._refreshInMemory();
     }
-    return this._inMemoryCopy;
+    return {
+      ...this._inMemoryCopy,
+      lastLocalSyncModelChange: this._persistenceService.getLastLocalSyncModelChange(),
+    };
   }
 
   private async _refreshInMemory() {
     this._inMemoryCopy = await this._persistenceService.loadComplete();
   }
 
-  private async _write(key: string, data: any): Promise<any> {
+  private async _write(key: string, data: AppDataComplete): Promise<any> {
     if (!this.us.isUserSignedIn()) {
       return false;
     }
 
-    // TODO do conflict resolution here
-    await this._read(COMPLETE_KEY);
-
     const options = {encrypt: true};
-    return this.us.putFile(key, JSON.stringify(data), options).catch(console.log);
+    return this.us.putFile(key, JSON.stringify(data), options).catch(console.log).then(console.log);
   }
 
   private async _read(key: string): Promise<any> {

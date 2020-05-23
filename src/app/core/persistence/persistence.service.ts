@@ -137,7 +137,7 @@ export class PersistenceService {
     'obstruction',
   );
 
-  onSave$: Subject<{ key: string, data: any, isDataImport: boolean }> = new Subject();
+  onSave$: Subject<{ dbKey: string, data: any, isDataImport: boolean }> = new Subject();
 
   private _isBlockSaving = false;
 
@@ -460,31 +460,31 @@ export class PersistenceService {
 
   // DATA STORAGE INTERFACE
   // ---------------------
-  private async _saveToDb(key: string, data: any, isDataImport = false): Promise<any> {
+  private async _saveToDb(dbKey: string, data: any, isDataImport = false): Promise<any> {
     if (!this._isBlockSaving || isDataImport === true) {
-      this.onSave$.next({key, data, isDataImport});
-      return await this._databaseService.save(key, data);
+      this.onSave$.next({dbKey, data, isDataImport});
+      return await this._databaseService.save(dbKey, data);
     } else {
-      console.warn('BLOCKED SAVING for ', key);
+      console.warn('BLOCKED SAVING for ', dbKey);
       return Promise.reject('Data import currently in progress. Saving disabled');
     }
   }
 
-  private async _removeFromDb(key: string, isDataImport = false): Promise<any> {
+  private async _removeFromDb(dbKey: string, isDataImport = false): Promise<any> {
     if (!this._isBlockSaving || isDataImport === true) {
-      return this._databaseService.remove(key);
+      return this._databaseService.remove(dbKey);
     } else {
-      console.warn('BLOCKED SAVING for ', key);
+      console.warn('BLOCKED SAVING for ', dbKey);
       return Promise.reject('Data import currently in progress. Removing disabled');
     }
   }
 
-  private async _loadFromDb(key: string): Promise<any> {
+  private async _loadFromDb(dbKey: string): Promise<any> {
     try {
-      return await this._databaseService.load(key) || undefined;
+      return await this._databaseService.load(dbKey) || undefined;
     } catch (e) {
       // NOTE: we use undefined as null does not trigger default function arguments
-      return await this._databaseService.load(key) || undefined;
+      return await this._databaseService.load(dbKey) || undefined;
     }
   }
 }
