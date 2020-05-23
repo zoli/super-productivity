@@ -46,7 +46,7 @@ export class SyncService {
     return await this._persistenceService.loadComplete();
   }
 
-  async loadCompleteSyncData(data: AppDataComplete, isBackupReload = false) {
+  async importCompleteSyncData(data: AppDataComplete, isBackupReload = false) {
     this._snackService.open({msg: T.S.SYNC.IMPORTING, ico: 'cloud_download'});
     this._imexMetaService.setDataImportInProgress(true);
 
@@ -83,8 +83,8 @@ export class SyncService {
 
   private _checkData(data: AppDataComplete) {
     return typeof data === 'object'
-      && typeof data.note === 'object'
-      && typeof data.bookmark === 'object'
+      // && typeof data.note === 'object'
+      // && typeof data.bookmark === 'object'
       // && typeof data.task === 'object'
 
       // NOTE this is not there yet for projects with old data
@@ -108,6 +108,6 @@ export class SyncService {
 
   private async _loadBackup(): Promise<any> {
     const data = await this._persistenceService.loadBackup();
-    return this.loadCompleteSyncData(data, true);
+    return this.importCompleteSyncData(data, true);
   }
 }

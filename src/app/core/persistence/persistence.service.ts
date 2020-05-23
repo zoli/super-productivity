@@ -60,7 +60,7 @@ import {environment} from '../../../environments/environment';
 import {checkFixEntityStateConsistency} from '../../util/check-fix-entity-state-consistency';
 import {SimpleCounter, SimpleCounterState} from '../../features/simple-counter/simple-counter.model';
 import {simpleCounterReducer} from '../../features/simple-counter/store/simple-counter.reducer';
-import {BlockstackService} from '../../features/blockstack/blockstack.service';
+import {Subject} from 'rxjs';
 
 
 @Injectable({
@@ -136,13 +136,15 @@ export class PersistenceService {
     LS_OBSTRUCTION_STATE,
     'obstruction',
   );
+
+  onSave$: Subject<{ key: string, data: any, isForce: boolean }> = new Subject();
+
   private _isBlockSaving = false;
 
   constructor(
     private _snackService: SnackService,
     private _databaseService: DatabaseService,
     private _compressionService: CompressionService,
-    private _blockstackService: BlockstackService,
   ) {
   }
 
@@ -460,11 +462,8 @@ export class PersistenceService {
   // ---------------------
   private async _saveToDb(key: string, data: any, isForce = false): Promise<any> {
     if (!this._isBlockSaving || isForce === true) {
-      const localData = await this._databaseService.load(key);
-      return Promise.all([
-        this._databaseService.save(key, data),
-        this._blockstackService.save(key, data, localData)
-      ]);
+      this.onSave$.next({key, data, isForce});
+      return await this._databaseService.save(key, data);
     } else {
       console.warn('BLOCKED SAVING for ', key);
       return Promise.reject('Data import currently in progress. Saving disabled');
@@ -482,9 +481,7 @@ export class PersistenceService {
 
   private async _loadFromDb(key: string): Promise<any> {
     try {
-      return await this._blockstackService.load(key)
-        || await this._databaseService.load(key)
-        || undefined;
+      return await this._databaseService.load(key) || undefined;
     } catch (e) {
       // NOTE: we use undefined as null does not trigger default function arguments
       return await this._databaseService.load(key) || undefined;
