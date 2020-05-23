@@ -45,9 +45,9 @@ export class BlockstackService {
   private _inMemoryCopy;
 
   private _allData$ = this._persistenceService.onSave$.pipe(
-    // tap(({key, isForce}) => console.log(key, isForce)),
-    filter(({key, data, isForce}) => !!data && !isForce),
-    switchMap(({key, data, isForce}) => from(this._getComplete()).pipe(
+    // tap(({key, isDataImport}) => console.log(key, isDataImport)),
+    filter(({key, data, isDataImport}) => !!data && !isDataImport),
+    switchMap(({key, data, isDataImport}) => from(this._getComplete()).pipe(
       map(complete => ({
         ...complete,
         [PROPS_MAP[key]]: data

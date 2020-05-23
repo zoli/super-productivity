@@ -137,7 +137,7 @@ export class PersistenceService {
     'obstruction',
   );
 
-  onSave$: Subject<{ key: string, data: any, isForce: boolean }> = new Subject();
+  onSave$: Subject<{ key: string, data: any, isDataImport: boolean }> = new Subject();
 
   private _isBlockSaving = false;
 
@@ -165,8 +165,8 @@ export class PersistenceService {
     return await this._loadFromDb(LS_PROJECT_ARCHIVE);
   }
 
-  async saveProjectArchive(data: ProjectArchive, isForce = false): Promise<any> {
-    return await this._saveToDb(LS_PROJECT_ARCHIVE, data, isForce);
+  async saveProjectArchive(data: ProjectArchive, isDataImport = false): Promise<any> {
+    return await this._saveToDb(LS_PROJECT_ARCHIVE, data, isDataImport);
   }
 
   async loadArchivedProject(projectId): Promise<ProjectArchivedRelatedData> {
@@ -357,11 +357,11 @@ export class PersistenceService {
       //   }
       //   return data;
       // },
-      saveState: (data, isForce) => {
+      saveState: (data, isDataImport) => {
         if (data && data.ids && data.entities) {
           data = checkFixEntityStateConsistency(data, appDataKey);
         }
-        return this._saveToDb(lsKey, data, isForce);
+        return this._saveToDb(lsKey, data, isDataImport);
       },
     };
     if (!isSkipPush) {
@@ -406,7 +406,7 @@ export class PersistenceService {
     const model = {
       appDataKey,
       load: (projectId): Promise<S> => this._loadFromDb(this._makeProjectKey(projectId, lsKey)).then(v => migrateFn(v, projectId)),
-      save: (projectId, data, isForce) => this._saveToDb(this._makeProjectKey(projectId, lsKey), data, isForce),
+      save: (projectId, data, isDataImport) => this._saveToDb(this._makeProjectKey(projectId, lsKey), data, isDataImport),
       remove: (projectId) => this._removeFromDb(this._makeProjectKey(projectId, lsKey)),
       ent: {
         getById: async (projectId: string, id: string): Promise<M> => {
@@ -443,11 +443,11 @@ export class PersistenceService {
   }
 
   // tslint:disable-next-line
-  private async _saveForProjectIds(data: any, saveDataFn: Function, isForce = false) {
+  private async _saveForProjectIds(data: any, saveDataFn: Function, isDataImport = false) {
     const promises = [];
     Object.keys(data).forEach(projectId => {
       if (data[projectId]) {
-        promises.push(saveDataFn(projectId, data[projectId], isForce));
+        promises.push(saveDataFn(projectId, data[projectId], isDataImport));
       }
     });
     return await Promise.all(promises);
@@ -460,9 +460,9 @@ export class PersistenceService {
 
   // DATA STORAGE INTERFACE
   // ---------------------
-  private async _saveToDb(key: string, data: any, isForce = false): Promise<any> {
-    if (!this._isBlockSaving || isForce === true) {
-      this.onSave$.next({key, data, isForce});
+  private async _saveToDb(key: string, data: any, isDataImport = false): Promise<any> {
+    if (!this._isBlockSaving || isDataImport === true) {
+      this.onSave$.next({key, data, isDataImport});
       return await this._databaseService.save(key, data);
     } else {
       console.warn('BLOCKED SAVING for ', key);
@@ -470,8 +470,8 @@ export class PersistenceService {
     }
   }
 
-  private async _removeFromDb(key: string, isForce = false): Promise<any> {
-    if (!this._isBlockSaving || isForce === true) {
+  private async _removeFromDb(key: string, isDataImport = false): Promise<any> {
+    if (!this._isBlockSaving || isDataImport === true) {
       return this._databaseService.remove(key);
     } else {
       console.warn('BLOCKED SAVING for ', key);
