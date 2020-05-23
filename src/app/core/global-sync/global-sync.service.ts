@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {Store} from '@ngrx/store';
-import {Observable, of, ReplaySubject} from 'rxjs';
+import {BehaviorSubject, combineLatest, Observable, of, ReplaySubject} from 'rxjs';
 import {concatMap, distinctUntilChanged, filter, map, shareReplay, startWith, switchMap, take} from 'rxjs/operators';
 import {GlobalConfigService} from '../../features/config/global-config.service';
 import {SyncProvider} from './sync-provider';
@@ -12,17 +12,27 @@ import {DataInitService} from '../data-init/data-init.service';
   providedIn: 'root',
 })
 export class GlobalSyncService {
-  private _isSyncActive$: Observable<boolean> = this._dataInitService.isAllDataLoadedInitially$.pipe(
-    switchMap(() => this._globalConfigService.googleDriveSyncCfg$.pipe(
-      map(cfg => cfg && cfg.isEnabled && cfg.isLoadRemoteDataOnStartup && cfg.isAutoLogin),
-      distinctUntilChanged(),
-    )),
+
+  // TODO add to cfg
+  isBlockstackInitialSyncActive$ = new BehaviorSubject(true);
+
+  private _isInitialSyncEnabled$: Observable<boolean> = this._dataInitService.isAllDataLoadedInitially$.pipe(
+    switchMap(() => combineLatest([
+        this._globalConfigService.googleDriveSyncCfg$.pipe(
+          map(cfg => cfg && cfg.isEnabled && cfg.isLoadRemoteDataOnStartup && cfg.isAutoLogin),
+        ),
+        this.isBlockstackInitialSyncActive$,
+      ]).pipe(
+      map(all => all.includes(true)),
+      )
+    ),
+    distinctUntilChanged(),
   );
 
   // keep it super simple for now
   private _isInitialSyncDoneManual$ = new ReplaySubject<boolean>(1);
 
-  private _isInitialSyncDone$: Observable<boolean> = this._isSyncActive$.pipe(
+  private _isInitialSyncDone$: Observable<boolean> = this._isInitialSyncEnabled$.pipe(
     switchMap((isActive) => {
       return isActive
         ? this._isInitialSyncDoneManual$.asObservable()
