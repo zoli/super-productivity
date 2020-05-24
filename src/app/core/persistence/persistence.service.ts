@@ -288,9 +288,10 @@ export class PersistenceService {
 
     return await Promise.all([
       forBase,
-      forProject
+      forProject,
     ])
       .then(() => {
+        this.updateLastLocalSyncModelChange(data.lastLocalSyncModelChange);
         this._isBlockSaving = false;
       })
       .catch(() => {
