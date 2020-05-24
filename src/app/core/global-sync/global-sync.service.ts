@@ -55,6 +55,8 @@ export class GlobalSyncService {
     private readonly _globalConfigService: GlobalConfigService,
     private readonly _dataInitService: DataInitService,
   ) {
+    this.afterInitialSyncDoneAndDataLoadedInitially$.subscribe((v) => console.log('afterInitialSyncDoneAndDataLoadedInitially$', v));
+
   }
 
   // tslint:disable-next-line

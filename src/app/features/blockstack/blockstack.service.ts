@@ -11,7 +11,6 @@ import {
   shareReplay,
   startWith,
   switchMap,
-  take,
   tap,
   throttleTime
 } from 'rxjs/operators';
@@ -23,6 +22,8 @@ import {ImexMetaService} from '../../imex/imex-meta/imex-meta.service';
 import {BehaviorSubject, EMPTY, from, fromEvent, merge, Observable, Subject, timer} from 'rxjs';
 import {AllowedDBKeys, LS_BS_LAST_SYNC_TO_REMOTE} from '../../core/persistence/ls-keys.const';
 import {isOnline$} from '../../util/is-online';
+import {SyncProvider} from '../../core/global-sync/sync-provider';
+import {SnackService} from '../../core/snack/snack.service';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -116,6 +117,7 @@ export class BlockstackService {
     private _persistenceService: PersistenceService,
     private _globalSyncService: GlobalSyncService,
     private _imexMetaService: ImexMetaService,
+    private _snackService: SnackService,
     private _syncService: SyncService,
   ) {
     // SAVE TRIGGER
@@ -139,18 +141,20 @@ export class BlockstackService {
   private async _initialSignInAndImportIfEnabled() {
     const isEnabled = await this.isSyncEnabled$.pipe(first()).toPromise();
     if (!isEnabled) {
+      // TODO can normally be removed
+      this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
       return;
     }
 
     if (this.us.isSignInPending()) {
       this.us.handlePendingSignIn().then((userData) => {
         // window.location = window.location.origin;
-        return this._checkForUpdateAndSync();
+        return this._checkForUpdateAndSyncInitial();
       });
     } else if (!this.us.isUserSignedIn()) {
       this.signIn();
     } else {
-      await this._checkForUpdateAndSync();
+      await this._checkForUpdateAndSyncInitial();
     }
   }
 
@@ -168,6 +172,15 @@ export class BlockstackService {
     await this._write(COMPLETE_KEY, appComplete);
     await this._refreshInMemory(appComplete);
     this._setLasSyncTo(appComplete.lastLocalSyncModelChange);
+  }
+
+  private async _checkForUpdateAndSyncInitial(params: {
+    isManualHandleConflicts?: boolean
+  } = {}) {
+    this._snackService.open({msg: 'BS Snycing'});
+    return await this._checkForUpdateAndSync(params)
+      .then(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack))
+      .catch(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack));
   }
 
   private async _checkForUpdateAndSync({isManualHandleConflicts = false}: {
