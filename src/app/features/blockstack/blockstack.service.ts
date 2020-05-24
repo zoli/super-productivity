@@ -11,15 +11,16 @@ import {
   share,
   startWith,
   switchMap,
-  tap, throttleTime
+  tap,
+  throttleTime
 } from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
 import {SyncService} from '../../imex/sync/sync.service';
 import {ImexMetaService} from '../../imex/imex-meta/imex-meta.service';
-import {BehaviorSubject, EMPTY, from, fromEvent, merge, Observable, timer} from 'rxjs';
-import {AllowedDBKeys} from '../../core/persistence/ls-keys.const';
+import {BehaviorSubject, EMPTY, from, fromEvent, merge, Observable, Subject, timer} from 'rxjs';
+import {AllowedDBKeys, LS_BS_LAST_SYNC_TO_REMOTE} from '../../core/persistence/ls-keys.const';
 import {isOnline$} from '../../util/is-online';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
@@ -73,7 +74,11 @@ export class BlockstackService {
     share(),
   );
 
-  private _allDataWrite$ = this._allDataSaveTrigger$.pipe(
+  private _manualSaveTrigger$ = new Subject<AppDataComplete>();
+  private _allDataWrite$ = merge(
+    this._manualSaveTrigger$,
+    this._allDataSaveTrigger$
+  ).pipe(
     // to always catch updates belonging together being fired at the same time
     // TODO race condition alert!!! we need to refactor how the persistence service works...
     debounceTime(99),
@@ -88,8 +93,7 @@ export class BlockstackService {
       } catch (e) {
         console.error(e);
       }
-
-      return await this._write(COMPLETE_KEY, all);
+      await this._updateRemote(all);
     }),
     // retry(2),
   );
@@ -108,7 +112,7 @@ export class BlockstackService {
     this._initialSignInAndImportIfEnabled();
 
     // SYNC
-    this._checkRemoteUpdateTriggers$.subscribe(() => this._checkForUpdateAndImport());
+    this._checkRemoteUpdateTriggers$.subscribe(() => this._checkForUpdateAndSync());
   }
 
   signIn() {
@@ -128,12 +132,12 @@ export class BlockstackService {
     if (this.us.isSignInPending()) {
       this.us.handlePendingSignIn().then((userData) => {
         // window.location = window.location.origin;
-        return this._checkForUpdateAndImport();
+        return this._checkForUpdateAndSync();
       });
     } else if (!this.us.isUserSignedIn()) {
       this.signIn();
     } else {
-      await this._checkForUpdateAndImport();
+      await this._checkForUpdateAndSync();
     }
   }
 
@@ -143,11 +147,18 @@ export class BlockstackService {
     await this._refreshInMemory(appComplete);
   }
 
-  private async _checkForUpdateAndImport({isHandleLocalIsNewer = false}: {
-    isHandleLocalIsNewer?: boolean
+  private async _updateRemote(appComplete: AppDataComplete) {
+    await this._write(COMPLETE_KEY, appComplete);
+    await this._refreshInMemory(appComplete);
+    this._setLasSyncTo(appComplete.lastLocalSyncModelChange);
+  }
+
+  private async _checkForUpdateAndSync({isManualHandleConflicts = false}: {
+    isManualHandleConflicts?: boolean
   } = {}) {
     const remote = await this._read(COMPLETE_KEY);
     const local = await this._persistenceService.loadComplete();
+    const lastSyncTo = this._getLasSyncTo();
 
     if (!remote || !local) {
       throw new Error('No data available');
@@ -160,8 +171,21 @@ export class BlockstackService {
       console.log('NO UPDATE REQUIRED');
       // No update required
     } else if (local.lastLocalSyncModelChange > remote.lastLocalSyncModelChange) {
-      if (isHandleLocalIsNewer && confirm('Local data is newer. Still import?')) {
-        return await this._importRemote(remote);
+      if (lastSyncTo < local.lastLocalSyncModelChange) {
+        // alert('Update remote');
+        console.log('UPDATE REMOTE INSTEAD');
+        // TODO only trigger if not in progress already
+        // this._manualSaveTrigger$.next(local);
+        // await this._updateRemote(local);
+        // TODO snack
+      } else if (isManualHandleConflicts) {
+        if (lastSyncTo < remote.lastLocalSyncModelChange
+          && confirm('Data has diverged. BETTER HANDLING')) {
+          // return await this._updateRemote(local);
+        } else if (isManualHandleConflicts
+          && confirm('Local data is newer than remote. Still import?')) {
+          return await this._importRemote(remote);
+        }
       }
     } else if (local.lastLocalSyncModelChange < remote.lastLocalSyncModelChange) {
       return await this._importRemote(remote);
@@ -224,6 +248,18 @@ export class BlockstackService {
           : {[appDataKey]: data}
       )
     };
+  }
+
+  private _getLasSyncTo(): number {
+    const la = localStorage.getItem(LS_BS_LAST_SYNC_TO_REMOTE);
+    // NOTE: we need to parse because new Date('1570549698000') is "Invalid Date"
+    return Number.isNaN(Number(la))
+      ? null
+      : +la;
+  }
+
+  private _setLasSyncTo(date: number) {
+    localStorage.setItem(LS_BS_LAST_SYNC_TO_REMOTE, date.toString());
   }
 }
 
