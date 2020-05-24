@@ -24,3 +24,15 @@ export const checkFixEntityStateConsistency = (data: any, additionalStr = ''): a
 
   return data;
 };
+
+export const isEntityStateConsist = (data: any): boolean => {
+  if (!data
+    || !data.entities
+    || !data.ids
+    || Object.keys(data.entities).length !== data.ids.length) {
+    console.log(data);
+    devError(`Inconsistent entity state`);
+    return false;
+  }
+  return true;
+};
