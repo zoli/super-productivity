@@ -1,13 +1,26 @@
 import {Injectable} from '@angular/core';
 import {AppConfig, UserSession} from 'blockstack';
-import {auditTime, concatMap, debounceTime, map, share, switchMap} from 'rxjs/operators';
+import {
+  auditTime,
+  concatMap,
+  debounceTime,
+  filter,
+  first,
+  map,
+  mapTo,
+  share,
+  switchMap,
+  tap,
+  throttleTime
+} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
 import {SyncService} from '../../imex/sync/sync.service';
 import {ImexMetaService} from '../../imex/imex-meta/imex-meta.service';
-import {from, Observable} from 'rxjs';
+import {BehaviorSubject, EMPTY, from, fromEvent, merge, Observable} from 'rxjs';
 import {AllowedDBKeys} from '../../core/persistence/ls-keys.const';
+import {isOnline$} from '../../util/is-online';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -20,13 +33,33 @@ const BS_AUDIT_TIME = 5000;
   providedIn: 'root'
 })
 export class BlockstackService {
+  isSyncEnabled$ = new BehaviorSubject(true);
   us: UserSession = new UserSession({appConfig});
+
+  private _checkRemoteUpdateTriggers$ = this.isSyncEnabled$.pipe(
+    switchMap((isEnabled) => isEnabled
+      ? merge(
+        fromEvent(window, 'focus').pipe(
+          switchMap((ev) => isOnline$.pipe(
+            filter(isOnline => isOnline),
+            mapTo('FOCUS'),
+          ))
+        ),
+        isOnline$.pipe(
+          filter(isOnline => isOnline),
+          mapTo('IS_ONLINE'),
+        ),
+      )
+      : EMPTY),
+    throttleTime(5000),
+    tap((ev) => console.log('__TRIGGER SYNC__', ev))
+  );
 
   private _inMemoryCopy;
 
   private _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
     // tap(({appDataKey, isDataImport, data}) => console.log(appDataKey, isDataImport, data && data.ids)),
-    // filter(({appfDataKey, data, isDataImport}) => !!data && !isDataImport),
+    filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
     concatMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
       // TODO fix error here
       map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data}))
@@ -63,27 +96,14 @@ export class BlockstackService {
     private _imexMetaService: ImexMetaService,
     private _syncService: SyncService,
   ) {
-
-
     // SAVE TRIGGER
     this._allDataWrite$.subscribe();
 
     // INITIAL LOAD
-    // TODO only do so if enabled in settings
-    // return;
-    if (this.us.isSignInPending()) {
-      this.us.handlePendingSignIn().then((userData) => {
-        if (confirm('Import data')) {
-          this._initialSignInAndImport().then();
-        }
-      });
-    } else if (!this.us.isUserSignedIn()) {
-      this.signIn();
-    } else {
-      if (confirm('Import data')) {
-        this._initialSignInAndImport().then();
-      }
-    }
+    this._initialSignInAndImportIfEnabled();
+
+    // SYNC
+    this._checkRemoteUpdateTriggers$.subscribe(() => this._checkForUpdateAndImport());
   }
 
   signIn() {
@@ -94,16 +114,21 @@ export class BlockstackService {
     this.us.signUserOut(window.location.origin);
   }
 
-  private async _initialSignInAndImport() {
+  private async _initialSignInAndImportIfEnabled() {
+    const isEnabled = await this.isSyncEnabled$.pipe(first()).toPromise();
+    if (!isEnabled) {
+      return;
+    }
+
     if (this.us.isSignInPending()) {
       this.us.handlePendingSignIn().then((userData) => {
         // window.location = window.location.origin;
-        return this._importRemote();
+        return this._checkForUpdateAndImport();
       });
     } else if (!this.us.isUserSignedIn()) {
       this.signIn();
     } else {
-      await this._importRemote();
+      await this._checkForUpdateAndImport();
     }
   }
 
@@ -113,6 +138,29 @@ export class BlockstackService {
     await this._syncService.importCompleteSyncData(appComplete);
   }
 
+  private async _checkForUpdateAndImport({isHandleLocalIsNewer = false}: {
+    isHandleLocalIsNewer?: boolean
+  } = {}) {
+    const remote = await this._read(COMPLETE_KEY);
+    const local = await this._persistenceService.loadComplete();
+
+    if (!remote || !local) {
+      throw new Error('No data available');
+    }
+    console.log('isImport', local.lastLocalSyncModelChange < remote.lastLocalSyncModelChange,
+      (local.lastLocalSyncModelChange - remote.lastLocalSyncModelChange) / 1000,
+      local.lastLocalSyncModelChange, remote.lastLocalSyncModelChange);
+
+    if (local.lastLocalSyncModelChange === remote.lastLocalSyncModelChange) {
+      // No update required
+    } else if (local.lastLocalSyncModelChange > remote.lastLocalSyncModelChange) {
+      if (isHandleLocalIsNewer && confirm('Local data is newer. Still import?')) {
+        return await this._importRemote(remote);
+      }
+    } else if (local.lastLocalSyncModelChange < remote.lastLocalSyncModelChange) {
+      return await this._importRemote(remote);
+    }
+  }
 
   private async _getAppDataCompleteWithLastSyncModelChange(): Promise<AppDataComplete> {
     // TODO handle complete import etc
