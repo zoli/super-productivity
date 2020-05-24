@@ -1,11 +1,11 @@
 import {Injectable} from '@angular/core';
 import {
+  AllowedDBKeys,
   LS_BACKUP,
   LS_BOOKMARK_STATE,
   LS_CONTEXT,
   LS_GLOBAL_CFG,
   LS_IMPROVEMENT_STATE,
-  LS_ISSUE_STATE,
   LS_LAST_LOCAL_SYNC_MODEL_CHANGE,
   LS_METRIC_STATE,
   LS_NOTE_STATE,
@@ -21,7 +21,6 @@ import {
   LS_TASK_STATE
 } from './ls-keys.const';
 import {GlobalConfigState} from '../../features/config/global-config.model';
-import {IssueProviderKey} from '../../features/issue/issue.model';
 import {projectReducer, ProjectState} from '../../features/project/store/project.reducer';
 import {ArchiveTask, Task, TaskArchive, TaskState} from '../../features/tasks/task.model';
 import {AppBaseData, AppDataComplete, AppDataForProjects} from '../../imex/sync/sync.model';
@@ -30,7 +29,6 @@ import {NoteState} from '../../features/note/store/note.reducer';
 import {Reminder} from '../../features/reminder/reminder.model';
 import {SnackService} from '../snack/snack.service';
 import {DatabaseService} from './database.service';
-import {issueProviderKeys} from '../../features/issue/issue.const';
 import {DEFAULT_PROJECT_ID} from '../../features/project/project.const';
 import {
   ExportedProject,
@@ -62,7 +60,6 @@ import {SimpleCounter, SimpleCounterState} from '../../features/simple-counter/s
 import {simpleCounterReducer} from '../../features/simple-counter/store/simple-counter.reducer';
 import {Subject} from 'rxjs';
 
-
 @Injectable({
   providedIn: 'root',
 })
@@ -74,7 +71,7 @@ export class PersistenceService {
 
   // TODO auto generate ls keys from appDataKey where possible
   globalConfig = this._cmBase<GlobalConfigState>(LS_GLOBAL_CFG, 'globalConfig', migrateGlobalConfigState);
-  context = this._cmBase<WorkContextState>(LS_CONTEXT, 'context');
+  // context = this._cmBase<WorkContextState>(LS_CONTEXT, 'context');
   reminders = this._cmBase<Reminder[]>(LS_REMINDER, 'reminders');
 
   project = this._cmBaseEntity<ProjectState, Project>(
@@ -137,7 +134,7 @@ export class PersistenceService {
     'obstruction',
   );
 
-  onSave$: Subject<{ dbKey: string, data: any, isDataImport: boolean }> = new Subject();
+  onSave$: Subject<{ dbKey: string, data: any, isDataImport: boolean, projectId?: string }> = new Subject();
 
   private _isBlockSaving = false;
 
@@ -149,28 +146,21 @@ export class PersistenceService {
   }
 
 
-  async loadLegacyProjectModel(lsKey: string, projectId): Promise<any> {
-    return this._loadFromDb(this._makeProjectKey(projectId, lsKey));
-  }
-
-  // ISSUES
-  async removeIssuesForProject(projectId, issueType: IssueProviderKey): Promise<void> {
-    return this._removeFromDb(this._makeProjectKey(projectId, LS_ISSUE_STATE, issueType));
-  }
-
-
   // PROJECT ARCHIVING
   // -----------------
   async loadProjectArchive(): Promise<ProjectArchive> {
-    return await this._loadFromDb(LS_PROJECT_ARCHIVE);
+    return await this._loadFromDb({
+      dbKey: 'archivedProjects',
+      legacyDBKey: LS_PROJECT_ARCHIVE
+    });
   }
 
   async saveProjectArchive(data: ProjectArchive, isDataImport = false): Promise<any> {
-    return await this._saveToDb(LS_PROJECT_ARCHIVE, data, isDataImport);
+    return await this._saveToDb({dbKey: 'archivedProjects', data, isDataImport});
   }
 
   async loadArchivedProject(projectId): Promise<ProjectArchivedRelatedData> {
-    const archive = await this._loadFromDb(LS_PROJECT_ARCHIVE);
+    const archive = await this._loadFromDb({dbKey: 'project', legacyDBKey: LS_PROJECT_ARCHIVE, projectId});
     const projectDataCompressed = archive[projectId];
     const decompressed = await this._compressionService.decompress(projectDataCompressed);
     const parsed = JSON.parse(decompressed);
@@ -179,7 +169,10 @@ export class PersistenceService {
   }
 
   async removeArchivedProject(projectId): Promise<any> {
-    const archive = await this._loadFromDb(LS_PROJECT_ARCHIVE);
+    const archive = await this._loadFromDb({
+      dbKey: 'archivedProjects',
+      legacyDBKey: LS_PROJECT_ARCHIVE
+    });
     delete archive[projectId];
     await this.saveProjectArchive(archive);
   }
@@ -219,9 +212,6 @@ export class PersistenceService {
     await Promise.all(this._projectModels.map((modelCfg) => {
       return modelCfg.remove(projectId);
     }));
-    await issueProviderKeys.forEach(async (key) => {
-      await this.removeIssuesForProject(projectId, key);
-    });
   }
 
   async restoreCompleteRelatedDataForProject(projectId: string, data: ProjectArchivedRelatedData): Promise<any> {
@@ -262,12 +252,12 @@ export class PersistenceService {
   }
 
   async loadBackup(): Promise<AppDataComplete> {
-    return this._loadFromDb(LS_BACKUP);
+    return this._loadFromDb({dbKey: LS_BACKUP, legacyDBKey: LS_BACKUP});
   }
 
   async saveBackup(backup?: AppDataComplete): Promise<any> {
-    const backupData: AppDataComplete = backup || await this.loadComplete();
-    return this._saveToDb(LS_BACKUP, backupData, true);
+    const data: AppDataComplete = backup || await this.loadComplete();
+    return this._saveToDb({dbKey: LS_BACKUP, data, isDataImport: true});
   }
 
   // NOTE: not including backup
@@ -345,8 +335,8 @@ export class PersistenceService {
     const model = {
       appDataKey,
       loadState: (isSkipMigrate = false) => isSkipMigrate
-        ? this._loadFromDb(lsKey)
-        : this._loadFromDb(lsKey).then(migrateFn),
+        ? this._loadFromDb({dbKey: appDataKey, legacyDBKey: lsKey})
+        : this._loadFromDb({dbKey: appDataKey, legacyDBKey: lsKey}).then(migrateFn),
       // In case we want to check on load
       // loadState: async (isSkipMigrate = false) => {
       //   const data = isSkipMigrate
@@ -361,7 +351,7 @@ export class PersistenceService {
         if (data && data.ids && data.entities) {
           data = checkFixEntityStateConsistency(data, appDataKey);
         }
-        return this._saveToDb(lsKey, data, isDataImport);
+        return this._saveToDb({dbKey: appDataKey, data, isDataImport});
       },
     };
     if (!isSkipPush) {
@@ -405,9 +395,18 @@ export class PersistenceService {
   ): PersistenceForProjectModel<S, M> {
     const model = {
       appDataKey,
-      load: (projectId): Promise<S> => this._loadFromDb(this._makeProjectKey(projectId, lsKey)).then(v => migrateFn(v, projectId)),
-      save: (projectId, data, isDataImport) => this._saveToDb(this._makeProjectKey(projectId, lsKey), data, isDataImport),
-      remove: (projectId) => this._removeFromDb(this._makeProjectKey(projectId, lsKey)),
+      load: (projectId): Promise<S> => this._loadFromDb({
+        dbKey: appDataKey,
+        projectId,
+        legacyDBKey: this._makeProjectKey(projectId, lsKey)
+      }).then(v => migrateFn(v, projectId)),
+      save: (projectId, data, isDataImport) => this._saveToDb({
+        dbKey: appDataKey,
+        data,
+        isDataImport,
+        projectId
+      }),
+      remove: (projectId) => this._removeFromDb({dbKey: appDataKey, projectId}),
       ent: {
         getById: async (projectId: string, id: string): Promise<M> => {
           const state = await model.load(projectId) as any;
@@ -460,31 +459,49 @@ export class PersistenceService {
 
   // DATA STORAGE INTERFACE
   // ---------------------
-  private async _saveToDb(dbKey: string, data: any, isDataImport = false): Promise<any> {
+  private _getIDBKey(dbKey: AllowedDBKeys, projectId?: string) {
+    return projectId
+      ? 'p__' + projectId + '__' + dbKey
+      : dbKey;
+  }
+
+  private async _saveToDb({dbKey, data, isDataImport = false, projectId}: {
+    dbKey: AllowedDBKeys;
+    data: any;
+    projectId?: string,
+    isDataImport?: boolean,
+  }): Promise<any> {
     if (!this._isBlockSaving || isDataImport === true) {
-      this.onSave$.next({dbKey, data, isDataImport});
-      return await this._databaseService.save(dbKey, data);
+      this.onSave$.next({dbKey, data, isDataImport, projectId});
+      const idbKey = this._getIDBKey(dbKey, projectId);
+      return await this._databaseService.save(idbKey, data);
     } else {
       console.warn('BLOCKED SAVING for ', dbKey);
       return Promise.reject('Data import currently in progress. Saving disabled');
     }
   }
 
-  private async _removeFromDb(dbKey: string, isDataImport = false): Promise<any> {
+  private async _removeFromDb({dbKey, isDataImport = false, projectId}: {
+    dbKey: AllowedDBKeys;
+    projectId?: string,
+    isDataImport?: boolean,
+  }): Promise<any> {
+    const idbKey = this._getIDBKey(dbKey, projectId);
     if (!this._isBlockSaving || isDataImport === true) {
-      return this._databaseService.remove(dbKey);
+      return this._databaseService.remove(idbKey);
     } else {
       console.warn('BLOCKED SAVING for ', dbKey);
       return Promise.reject('Data import currently in progress. Removing disabled');
     }
   }
 
-  private async _loadFromDb(dbKey: string): Promise<any> {
-    try {
-      return await this._databaseService.load(dbKey) || undefined;
-    } catch (e) {
-      // NOTE: we use undefined as null does not trigger default function arguments
-      return await this._databaseService.load(dbKey) || undefined;
-    }
+  private async _loadFromDb({legacyDBKey, dbKey, projectId}: {
+    legacyDBKey: string,
+    dbKey: AllowedDBKeys,
+    projectId?: string,
+  }): Promise<any> {
+    const idbKey = this._getIDBKey(dbKey, projectId);
+    // TODO remove legacy stuff
+    return await this._databaseService.load(idbKey) || await this._databaseService.load(legacyDBKey) || undefined;
   }
 }

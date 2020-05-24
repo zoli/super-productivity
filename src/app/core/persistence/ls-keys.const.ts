@@ -1,9 +1,13 @@
 import {ProjectDataLsKey} from './persistence.model';
+import {AppDataComplete} from '../../imex/sync/sync.model';
+
+export type AllowedDBKeys = keyof AppDataComplete | 'SUP_COMPLETE_BACKUP';
+
 
 export const LS_PREFIX = 'SUP_';
 export const LS_PROJECT_PREFIX = LS_PREFIX + 'P_';
 export const LS_GLOBAL_CFG = LS_PREFIX + 'GLOBAL_CFG';
-export const LS_BACKUP = LS_PREFIX + 'COMPLETE_BACKUP';
+export const LS_BACKUP: AllowedDBKeys = LS_PREFIX + 'COMPLETE_BACKUP' as AllowedDBKeys;
 export const LS_LAST_LOCAL_SYNC_MODEL_CHANGE = LS_PREFIX + 'LAST_LOCAL_SYNC_MODEL_CHANGE';
 export const LS_REMINDER = LS_PREFIX + 'REMINDER';
 export const LS_CONTEXT = LS_PREFIX + 'CONTEXT';
@@ -25,11 +29,8 @@ export const LS_BOOKMARK_STATE: ProjectDataLsKey = 'BOOKMARK_STATE';
 export const LS_METRIC_STATE: ProjectDataLsKey = 'METRIC_STATE';
 export const LS_IMPROVEMENT_STATE: ProjectDataLsKey = 'IMPROVEMENT_STATE';
 export const LS_OBSTRUCTION_STATE: ProjectDataLsKey = 'OBSTRUCTION_STATE';
-// TODO remove later
-export const LS_ISSUE_STATE: ProjectDataLsKey = 'ISSUE_STATE';
 
 // REAL LS
-export const LS_GITHUB_ISSUE_CACHE_PREFIX = LS_PREFIX + 'GITHUB_ISSUE_CACHE_';
 export const LS_LOCAL_UI_HELPER = LS_PREFIX + 'UI_HELPER';
 export const LS_LAST_REMINDER_DATE = LS_PREFIX + 'LAST_REMINDER_DATE';
 export const LS_INITIAL_DIALOG_NR = LS_PREFIX + 'INITIAL_DIALOG_NR';
@@ -40,6 +41,5 @@ export const LS_GOOGLE_LOCAL_LAST_SYNC = LS_PREFIX + 'GOOGLE_LOCAL_LAST_SYNC';
 const SS_PREFIX = 'SUP_SS_';
 export const SS_NOTE_TMP = SS_PREFIX + 'NOTE_TMP_EDIT';
 export const SS_PROJECT_TMP = SS_PREFIX + 'PROJECT_TMP_EDIT';
-export const SS_GOOGLE_TIME_SUBMITTED = SS_PREFIX + 'GOOGLE_TIME_SUBMITTED';
 export const SS_WEB_APP_INSTALL = LS_PREFIX + 'WEB_APP_INSTALL';
 
