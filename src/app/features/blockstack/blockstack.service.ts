@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {AppConfig, UserSession} from 'blockstack';
-import {auditTime, debounceTime, filter, map, switchMap, tap} from 'rxjs/operators';
+import {auditTime, concatMap, debounceTime, map, share, switchMap} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
@@ -25,18 +25,21 @@ export class BlockstackService {
   private _inMemoryCopy;
 
   private _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
-    tap(({appDataKey, isDataImport, data}) => console.log(appDataKey, isDataImport, data && data.entities)),
-    filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
-    switchMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
+    // tap(({appDataKey, isDataImport, data}) => console.log(appDataKey, isDataImport, data && data.ids)),
+    // filter(({appfDataKey, data, isDataImport}) => !!data && !isDataImport),
+    concatMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
+      // TODO fix error here
       map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data}))
     )),
+    // NOTE: share is important here, because we're executing a side effect
+    share(),
+  );
+
+  private _allDataWrite$ = this._allDataSaveTrigger$.pipe(
     // to always catch updates belonging together being fired at the same time
     // TODO race condition alert!!! we need to refactor how the persistence service works...
     debounceTime(99),
     auditTime(BS_AUDIT_TIME),
-  );
-
-  private _allDataWrite$ = this._allDataSaveTrigger$.pipe(
     switchMap(async (all) => {
       // TODO do conflict resolution here
       // TODO handle initial creation
@@ -104,11 +107,12 @@ export class BlockstackService {
     }
   }
 
-  private async _importRemote() {
-    const appComplete = await this._read(COMPLETE_KEY);
-    console.log('INITIAL IMPORT', appComplete);
+  private async _importRemote(data?: AppDataComplete) {
+    const appComplete = data || await this._read(COMPLETE_KEY);
+    console.log('IMPORT', appComplete);
     await this._syncService.importCompleteSyncData(appComplete);
   }
+
 
   private async _getAppDataCompleteWithLastSyncModelChange(): Promise<AppDataComplete> {
     // TODO handle complete import etc
@@ -150,6 +154,9 @@ export class BlockstackService {
     projectId?: string,
     data: any
   }): AppDataComplete {
+    console.log(appDataKey, data && data.ids && data.ids.length);
+
+
     return {
       ...complete,
       ...(
