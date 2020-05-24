@@ -8,9 +8,10 @@ import {
   first,
   map,
   mapTo,
-  share,
+  shareReplay,
   startWith,
   switchMap,
+  take,
   tap,
   throttleTime
 } from 'rxjs/operators';
@@ -38,24 +39,26 @@ export class BlockstackService {
   isSyncEnabled$ = new BehaviorSubject(true);
   us: UserSession = new UserSession({appConfig});
 
-  private _checkRemoteUpdateTriggers$: Observable<string> = this.isSyncEnabled$.pipe(
+  private _checkRemoteUpdateTriggers$: Observable<string> = merge(
+    fromEvent(window, 'focus').pipe(
+      tap(() => console.log('focus ev')),
+      switchMap((ev) => isOnline$.pipe(
+        filter(isOnline => isOnline),
+      )),
+      switchMap(() => timer(TRIGGER_FOCUS_AGAIN_TIMEOUT_DURATION).pipe(
+        mapTo('FOCUS DELAYED'),
+        startWith('FOCUS') // until the timer fires, you'll have this value
+      ))
+    ),
+    isOnline$.pipe(
+      filter(isOnline => isOnline),
+      mapTo('IS_ONLINE'),
+    ),
+  );
+
+  private _checkRemoteUpdate$: Observable<string> = this.isSyncEnabled$.pipe(
     switchMap((isEnabled) => isEnabled
-      ? merge(
-        fromEvent(window, 'focus').pipe(
-          tap(() => console.log('focus ev')),
-          switchMap((ev) => isOnline$.pipe(
-            filter(isOnline => isOnline),
-          )),
-          switchMap(() => timer(TRIGGER_FOCUS_AGAIN_TIMEOUT_DURATION).pipe(
-            mapTo('FOCUS DELAYED'),
-            startWith('FOCUS') // until the timer fires, you'll have this value
-          ))
-        ),
-        isOnline$.pipe(
-          filter(isOnline => isOnline),
-          mapTo('IS_ONLINE'),
-        ),
-      )
+      ? this._checkRemoteUpdateTriggers$
       : EMPTY),
     throttleTime(5000),
     tap((ev) => console.log('__TRIGGER SYNC__', ev))
@@ -67,16 +70,26 @@ export class BlockstackService {
     // tap(({appDataKey, isDataImport, data}) => console.log(appDataKey, isDataImport, data && data.ids)),
     filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
     concatMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
-      // TODO fix error here
+      // TODO handle side effect smarter
       map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data}))
     )),
     // NOTE: share is important here, because we're executing a side effect
-    share(),
+    // NOTE: share replay is required to make this work with manual save trigger
+    shareReplay(1),
   );
 
   private _manualSaveTrigger$ = new Subject<AppDataComplete>();
   private _allDataWrite$ = merge(
-    this._manualSaveTrigger$,
+    // TODO make this work somehow
+    // this._manualSaveTrigger$.pipe(
+    //   tap((data) => console.log('_manualSaveTrigger$', data)),
+    //   switchMap((data) => merge(
+    //     from(this._refreshInMemory()).pipe(mapTo(data)),
+    //     this._allDataSaveTrigger$
+    //   )),
+    //   take(2),
+    //   tap((data) => console.log('_manualSaveTrigger$ => _allDataSaveTrigger$', data)),
+    // ),
     this._allDataSaveTrigger$
   ).pipe(
     // to always catch updates belonging together being fired at the same time
@@ -112,7 +125,7 @@ export class BlockstackService {
     this._initialSignInAndImportIfEnabled();
 
     // SYNC
-    this._checkRemoteUpdateTriggers$.subscribe(() => this._checkForUpdateAndSync());
+    this._checkRemoteUpdate$.subscribe(() => this._checkForUpdateAndSync());
   }
 
   signIn() {
@@ -148,6 +161,10 @@ export class BlockstackService {
   }
 
   private async _updateRemote(appComplete: AppDataComplete) {
+    if (!appComplete) {
+      throw new Error('No data provided');
+    }
+
     await this._write(COMPLETE_KEY, appComplete);
     await this._refreshInMemory(appComplete);
     this._setLasSyncTo(appComplete.lastLocalSyncModelChange);
@@ -174,9 +191,7 @@ export class BlockstackService {
       if (lastSyncTo < local.lastLocalSyncModelChange) {
         // alert('Update remote');
         console.log('UPDATE REMOTE INSTEAD');
-        // TODO only trigger if not in progress already
-        // this._manualSaveTrigger$.next(local);
-        // await this._updateRemote(local);
+        this._manualSaveTrigger$.next(local);
         // TODO snack
       } else if (isManualHandleConflicts) {
         if (lastSyncTo < remote.lastLocalSyncModelChange
@@ -233,8 +248,6 @@ export class BlockstackService {
     data: any
   }): AppDataComplete {
     console.log(appDataKey, data && data.ids && data.ids.length);
-
-
     return {
       ...complete,
       ...(
