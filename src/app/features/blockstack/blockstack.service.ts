@@ -3,34 +3,13 @@ import {AppConfig, UserSession} from 'blockstack';
 import {auditTime, debounceTime, filter, map, switchMap, tap} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
-import {
-  LS_GLOBAL_CFG,
-  LS_PROJECT_META_LIST,
-  LS_REMINDER,
-  LS_SIMPLE_COUNTER_STATE,
-  LS_TAG_STATE,
-  LS_TASK_ARCHIVE,
-  LS_TASK_REPEAT_CFG_STATE,
-  LS_TASK_STATE
-} from '../../core/persistence/ls-keys.const';
 import {AppDataComplete} from '../../imex/sync/sync.model';
 import {SyncService} from '../../imex/sync/sync.service';
 import {ImexMetaService} from '../../imex/imex-meta/imex-meta.service';
 import {from, Observable} from 'rxjs';
+import {AllowedDBKeys} from '../../core/persistence/ls-keys.const';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
-
-const PROPS_MAP: { [key: string]: keyof AppDataComplete } = {
-  [LS_REMINDER]: 'reminders',
-  [LS_TASK_ARCHIVE]: 'taskArchive',
-  [LS_TASK_STATE]: 'task',
-  [LS_TASK_REPEAT_CFG_STATE]: 'taskRepeatCfg',
-  [LS_PROJECT_META_LIST]: 'project',
-  [LS_TAG_STATE]: 'tag',
-  [LS_SIMPLE_COUNTER_STATE]: 'simpleCounter',
-  [LS_GLOBAL_CFG]: 'globalConfig',
-  // TODO find solution for projct keys
-};
 
 
 // TODO improve
@@ -46,13 +25,10 @@ export class BlockstackService {
   private _inMemoryCopy;
 
   private _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
-    tap(({dbKey, isDataImport, data}) => console.log(dbKey, isDataImport, data && data.entities)),
-    filter(({dbKey, data, isDataImport}) => !!data && !isDataImport),
-    switchMap(({dbKey, data, isDataImport}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
-      map(complete => ({
-        ...complete,
-        [PROPS_MAP[dbKey]]: data,
-      }))
+    tap(({appDataKey, isDataImport, data}) => console.log(appDataKey, isDataImport, data && data.entities)),
+    filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
+    switchMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
+      map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data}))
     )),
     // to always catch updates belonging together being fired at the same time
     // TODO race condition alert!!! we need to refactor how the persistence service works...
@@ -91,7 +67,7 @@ export class BlockstackService {
 
     // INITIAL LOAD
     // TODO only do so if enabled in settings
-
+    // return;
     if (this.us.isSignInPending()) {
       this.us.handlePendingSignIn().then((userData) => {
         if (confirm('Import data')) {
@@ -135,6 +111,7 @@ export class BlockstackService {
   }
 
   private async _getAppDataCompleteWithLastSyncModelChange(): Promise<AppDataComplete> {
+    // TODO handle complete import etc
     if (!this._inMemoryCopy) {
       await this._refreshInMemory();
     }
@@ -165,6 +142,27 @@ export class BlockstackService {
     if (data) {
       return JSON.parse(data.toString());
     }
+  }
+
+  private _extendAppDataComplete({complete, appDataKey, projectId, data}: {
+    complete: AppDataComplete,
+    appDataKey: AllowedDBKeys,
+    projectId?: string,
+    data: any
+  }): AppDataComplete {
+    return {
+      ...complete,
+      ...(
+        projectId
+          ? {
+            [appDataKey]: {
+              ...(complete[appDataKey]),
+              [projectId]: data
+            }
+          }
+          : {[appDataKey]: data}
+      )
+    };
   }
 }
 

@@ -134,7 +134,7 @@ export class PersistenceService {
     'obstruction',
   );
 
-  onSave$: Subject<{ dbKey: string, data: any, isDataImport: boolean, projectId?: string }> = new Subject();
+  onSave$: Subject<{ appDataKey: AllowedDBKeys, data: any, isDataImport: boolean, projectId?: string }> = new Subject();
 
   private _isBlockSaving = false;
 
@@ -472,7 +472,7 @@ export class PersistenceService {
     isDataImport?: boolean,
   }): Promise<any> {
     if (!this._isBlockSaving || isDataImport === true) {
-      this.onSave$.next({dbKey, data, isDataImport, projectId});
+      this.onSave$.next({appDataKey: dbKey, data, isDataImport, projectId});
       const idbKey = this._getIDBKey(dbKey, projectId);
       return await this._databaseService.save(idbKey, data);
     } else {
