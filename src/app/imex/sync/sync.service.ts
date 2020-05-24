@@ -12,6 +12,7 @@ import {MigrationService} from '../../core/migration/migration.service';
 import {DataInitService} from '../../core/data-init/data-init.service';
 import {MODEL_VERSION_KEY} from '../../app.constants';
 import {isEntityStateConsist} from '../../util/check-fix-entity-state-consistency';
+import {isValidAppData} from './is-valid-app-data.util';
 
 // TODO some of this can be done in a background script
 
@@ -58,7 +59,7 @@ export class SyncService {
       await this._persistenceService.clearDatabaseExceptBackup();
     }
 
-    if (this._checkData(data)) {
+    if (isValidAppData(data)) {
       try {
         const migratedData = this._migrationService.migrateIfNecessary(data);
         // save data to database first then load to store from there
@@ -81,64 +82,6 @@ export class SyncService {
       console.error(data);
       this._imexMetaService.setDataImportInProgress(false);
     }
-  }
-
-  // TODO unit test this
-  private _checkData(data: AppDataComplete) {
-    // TODO remove this later on
-    const isCapableModelVersion = data.project && data.project[MODEL_VERSION_KEY] && data.project[MODEL_VERSION_KEY] >= 5;
-
-    return (isCapableModelVersion)
-
-      ? (typeof data === 'object')
-      && typeof data.note === 'object'
-      && typeof data.bookmark === 'object'
-      && typeof data.task === 'object'
-      && typeof data.tag === 'object'
-      && typeof data.globalConfig === 'object'
-      && typeof data.taskArchive === 'object'
-      && typeof data.project === 'object'
-      && Array.isArray(data.reminders)
-      && this._isEntityStatesConsistent(data)
-      && this._isTaskIdsConsistent(data)
-
-      : typeof data === 'object'
-      ;
-  }
-
-  private _isTaskIdsConsistent(data: AppDataComplete) {
-    let allIds = [];
-
-    (data.tag.ids as string[])
-      .map(id => data.tag.entities[id])
-      .forEach(tag => allIds = allIds.concat(tag.taskIds));
-
-    (data.project.ids as string[])
-      .map(id => data.project.entities[id])
-      .forEach(project => allIds = allIds
-        .concat(project.taskIds)
-        .concat(project.backlogTaskIds)
-      );
-
-    const notFound = allIds.find(id => !(data.task.ids.includes(id)));
-
-    if (notFound) {
-      console.error('Inconsistent Task State: Missing task id ' + notFound);
-    }
-    return !notFound;
-  }
-
-  private _isEntityStatesConsistent(data: AppDataComplete) {
-    const entityStates = [
-      data.task,
-      data.taskArchive,
-      data.tag,
-      data.project,
-      data.note,
-      data.bookmark,
-    ];
-    const brokenItem = entityStates.find(entityState => !isEntityStateConsist(entityState));
-    return !brokenItem;
   }
 
   private async _loadAllFromDatabaseToStore(): Promise<any> {
