@@ -9,16 +9,16 @@ import {
   map,
   mapTo,
   share,
+  startWith,
   switchMap,
-  tap,
-  throttleTime
+  tap, throttleTime
 } from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
 import {SyncService} from '../../imex/sync/sync.service';
 import {ImexMetaService} from '../../imex/imex-meta/imex-meta.service';
-import {BehaviorSubject, EMPTY, from, fromEvent, merge, Observable} from 'rxjs';
+import {BehaviorSubject, EMPTY, from, fromEvent, merge, Observable, timer} from 'rxjs';
 import {AllowedDBKeys} from '../../core/persistence/ls-keys.const';
 import {isOnline$} from '../../util/is-online';
 
@@ -28,6 +28,7 @@ export const appConfig = new AppConfig(['store_write', 'publish_data']);
 // TODO improve
 const COMPLETE_KEY = 'SP_CPL';
 const BS_AUDIT_TIME = 5000;
+const TRIGGER_FOCUS_AGAIN_TIMEOUT_DURATION = BS_AUDIT_TIME + 3000;
 
 @Injectable({
   providedIn: 'root'
@@ -36,13 +37,17 @@ export class BlockstackService {
   isSyncEnabled$ = new BehaviorSubject(true);
   us: UserSession = new UserSession({appConfig});
 
-  private _checkRemoteUpdateTriggers$ = this.isSyncEnabled$.pipe(
+  private _checkRemoteUpdateTriggers$: Observable<string> = this.isSyncEnabled$.pipe(
     switchMap((isEnabled) => isEnabled
       ? merge(
         fromEvent(window, 'focus').pipe(
+          tap(() => console.log('focus ev')),
           switchMap((ev) => isOnline$.pipe(
             filter(isOnline => isOnline),
-            mapTo('FOCUS'),
+          )),
+          switchMap(() => timer(TRIGGER_FOCUS_AGAIN_TIMEOUT_DURATION).pipe(
+            mapTo('FOCUS DELAYED'),
+            startWith('FOCUS') // until the timer fires, you'll have this value
           ))
         ),
         isOnline$.pipe(
@@ -134,8 +139,8 @@ export class BlockstackService {
 
   private async _importRemote(data?: AppDataComplete) {
     const appComplete = data || await this._read(COMPLETE_KEY);
-    console.log('IMPORT', appComplete);
     await this._syncService.importCompleteSyncData(appComplete);
+    await this._refreshInMemory(appComplete);
   }
 
   private async _checkForUpdateAndImport({isHandleLocalIsNewer = false}: {
@@ -152,6 +157,7 @@ export class BlockstackService {
       local.lastLocalSyncModelChange, remote.lastLocalSyncModelChange);
 
     if (local.lastLocalSyncModelChange === remote.lastLocalSyncModelChange) {
+      console.log('NO UPDATE REQUIRED');
       // No update required
     } else if (local.lastLocalSyncModelChange > remote.lastLocalSyncModelChange) {
       if (isHandleLocalIsNewer && confirm('Local data is newer. Still import?')) {
@@ -173,8 +179,8 @@ export class BlockstackService {
     };
   }
 
-  private async _refreshInMemory() {
-    this._inMemoryCopy = await this._persistenceService.loadComplete();
+  private async _refreshInMemory(data?: AppDataComplete) {
+    this._inMemoryCopy = data || await this._persistenceService.loadComplete();
   }
 
   private async _write(key: string, data: AppDataComplete): Promise<any> {
