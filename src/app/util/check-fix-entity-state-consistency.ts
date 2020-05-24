@@ -1,13 +1,7 @@
 import {devError} from './dev-error';
 
 export const checkFixEntityStateConsistency = (data: any, additionalStr = ''): any => {
-  if (!data
-    || !data.entities
-    || !data.ids
-    || Object.keys(data.entities).length !== data.ids.length) {
-    console.log(data);
-    devError(`Inconsistent entity state "${additionalStr}"`);
-
+  if (!isEntityStateConsist(data, additionalStr)) {
     // fix if possible
     if (Object.keys(data.entities).length !== data.ids.length) {
       console.log({
@@ -25,13 +19,13 @@ export const checkFixEntityStateConsistency = (data: any, additionalStr = ''): a
   return data;
 };
 
-export const isEntityStateConsist = (data: any): boolean => {
+export const isEntityStateConsist = (data: any, additionalStr = ''): boolean => {
   if (!data
     || !data.entities
     || !data.ids
     || Object.keys(data.entities).length !== data.ids.length) {
     console.log(data);
-    devError(`Inconsistent entity state`);
+    devError(`Inconsistent entity state "${additionalStr}"`);
     return false;
   }
   return true;

@@ -47,14 +47,14 @@ const _isTaskIdsConsistent = (data: AppDataComplete): boolean => {
 };
 
 const _isEntityStatesConsistent = (data: AppDataComplete): boolean => {
-  const entityStates = [
-    data.task,
-    data.taskArchive,
-    data.tag,
-    data.project,
-    data.note,
-    data.bookmark,
+  const entityStateKeys = [
+    'task',
+    'taskArchive',
+    'tag',
+    'project',
+    'note',
+    'bookmark',
   ];
-  const brokenItem = entityStates.find(entityState => !isEntityStateConsist(entityState));
+  const brokenItem = entityStateKeys.find(key => !isEntityStateConsist(data[key], key));
   return !brokenItem;
 };
