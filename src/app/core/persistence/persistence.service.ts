@@ -3,7 +3,6 @@ import {
   AllowedDBKeys,
   LS_BACKUP,
   LS_BOOKMARK_STATE,
-  LS_CONTEXT,
   LS_GLOBAL_CFG,
   LS_IMPROVEMENT_STATE,
   LS_LAST_LOCAL_SYNC_MODEL_CHANGE,
@@ -23,7 +22,7 @@ import {
 import {GlobalConfigState} from '../../features/config/global-config.model';
 import {projectReducer, ProjectState} from '../../features/project/store/project.reducer';
 import {ArchiveTask, Task, TaskArchive, TaskState} from '../../features/tasks/task.model';
-import {AppBaseData, AppDataComplete, AppDataForProjects} from '../../imex/sync/sync.model';
+import {AppBaseData, AppDataComplete, AppDataForProjects, DEFAULT_APP_BASE_DATA} from '../../imex/sync/sync.model';
 import {BookmarkState} from '../../features/bookmark/store/bookmark.reducer';
 import {NoteState} from '../../features/note/store/note.reducer';
 import {Reminder} from '../../features/reminder/reminder.model';
@@ -50,7 +49,6 @@ import {Tag, TagState} from '../../features/tag/tag.model';
 import {migrateProjectState} from '../../features/project/migrate-projects-state.util';
 import {migrateTaskArchiveState, migrateTaskState} from '../../features/tasks/migrate-task-state.util';
 import {migrateGlobalConfigState} from '../../features/config/migrate-global-config.util';
-import {WorkContextState} from '../../features/work-context/work-context.model';
 import {taskReducer} from '../../features/tasks/store/task.reducer';
 import {tagReducer} from '../../features/tag/store/tag.reducer';
 import {migrateTaskRepeatCfgState} from '../../features/task-repeat-cfg/migrate-task-repeat-cfg-state.util';
@@ -71,7 +69,6 @@ export class PersistenceService {
 
   // TODO auto generate ls keys from appDataKey where possible
   globalConfig = this._cmBase<GlobalConfigState>(LS_GLOBAL_CFG, 'globalConfig', migrateGlobalConfigState);
-  // context = this._cmBase<WorkContextState>(LS_CONTEXT, 'context');
   reminders = this._cmBase<Reminder[]>(LS_REMINDER, 'reminders');
 
   project = this._cmBaseEntity<ProjectState, Project>(
@@ -317,7 +314,7 @@ export class PersistenceService {
     const promises = this._baseModels.map(async (modelCfg) => {
       const modelState = await modelCfg.loadState();
       return {
-        [modelCfg.appDataKey]: modelState,
+        [modelCfg.appDataKey]: modelState || DEFAULT_APP_BASE_DATA[modelCfg.appDataKey],
       };
     });
     const baseDataArray: Partial<AppBaseData>[] = await Promise.all(promises);

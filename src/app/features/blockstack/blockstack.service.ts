@@ -72,7 +72,8 @@ export class BlockstackService {
     filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
     concatMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
       // TODO handle side effect smarter
-      map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data}))
+      map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data})),
+      // tap(console.log)
     )),
     // NOTE: share is important here, because we're executing a side effect
     // NOTE: share replay is required to make this work with manual save trigger
@@ -140,6 +141,8 @@ export class BlockstackService {
 
   private async _initialSignInAndImportIfEnabled() {
     const isEnabled = await this.isSyncEnabled$.pipe(first()).toPromise();
+    // this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
+    // return;
     if (!isEnabled) {
       // TODO can normally be removed
       this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
