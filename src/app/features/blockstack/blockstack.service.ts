@@ -19,7 +19,6 @@ import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
 import {SyncService} from '../../imex/sync/sync.service';
-import {ImexMetaService} from '../../imex/imex-meta/imex-meta.service';
 import {BehaviorSubject, EMPTY, from, fromEvent, merge, Observable, Subject, timer} from 'rxjs';
 import {AllowedDBKeys, LS_BS_LAST_SYNC_TO_REMOTE} from '../../core/persistence/ls-keys.const';
 import {isOnline$} from '../../util/is-online';
@@ -72,7 +71,7 @@ export class BlockstackService {
 
   private _inMemoryCopy;
 
-  private _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
+  _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
     // tap(({appDataKey, isDataImport, data}) => console.log(appDataKey, isDataImport, data && data.ids)),
     filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
     concatMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(
@@ -120,7 +119,6 @@ export class BlockstackService {
   constructor(
     private _persistenceService: PersistenceService,
     private _globalSyncService: GlobalSyncService,
-    private _imexMetaService: ImexMetaService,
     private _snackService: SnackService,
     private _syncService: SyncService,
     private _globalProgressBarService: GlobalProgressBarService,
