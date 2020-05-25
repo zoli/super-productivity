@@ -3,7 +3,6 @@ import {AppConfig, UserSession} from 'blockstack';
 import {
   auditTime,
   concatMap,
-  debounceTime,
   filter,
   first,
   map,
@@ -27,6 +26,7 @@ import {isOnline$} from '../../util/is-online';
 import {SyncProvider} from '../../core/global-sync/sync-provider';
 import {SnackService} from '../../core/snack/snack.service';
 import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
+import {GlobalProgressBarService} from '../../core-ui/global-progress-bar/global-progress-bar.service';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -100,9 +100,6 @@ export class BlockstackService {
     // ),
     this._allDataSaveTrigger$
   ).pipe(
-    // to always catch updates belonging together being fired at the same time
-    // TODO race condition alert!!! we need to refactor how the persistence service works...
-    debounceTime(99),
     auditTime(BS_AUDIT_TIME),
     switchMap(async (all) => {
       // TODO do conflict resolution here
@@ -126,6 +123,7 @@ export class BlockstackService {
     private _imexMetaService: ImexMetaService,
     private _snackService: SnackService,
     private _syncService: SyncService,
+    private _globalProgressBarService: GlobalProgressBarService,
   ) {
     // SAVE TRIGGER
     this._allDataWrite$.subscribe();
@@ -186,7 +184,8 @@ export class BlockstackService {
   private async _checkForUpdateAndSyncInitial(params: {
     isManualHandleConflicts?: boolean
   } = {}) {
-    this._snackService.open({msg: 'BS Snycing'});
+    // TODO i18n
+    this._snackService.open({msg: 'Loading data from Blockstack...'});
     return await this._checkForUpdateAndSync(params)
       .then(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack))
       .catch(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack));
@@ -249,7 +248,12 @@ export class BlockstackService {
       return false;
     }
     const options = {encrypt: false};
-    return this.us.putFile(key, JSON.stringify(data), options).catch(console.log).then(console.log);
+
+    this._globalProgressBarService.countUp();
+    return this.us.putFile(key, JSON.stringify(data), options)
+      .catch(() => this._globalProgressBarService.countDown())
+      .then(() => this._globalProgressBarService.countDown())
+      ;
   }
 
   private async _read(key: string): Promise<any> {
@@ -257,7 +261,12 @@ export class BlockstackService {
       return false;
     }
     const options = {decrypt: false};
-    const data = await this.us.getFile(key, options);
+
+    this._globalProgressBarService.countUp();
+    const data = await this.us.getFile(key, options)
+      .catch(() => this._globalProgressBarService.countDown());
+    this._globalProgressBarService.countDown();
+
     if (data) {
       return JSON.parse(data.toString());
     }
