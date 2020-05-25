@@ -1,6 +1,7 @@
 import {AppDataComplete} from './sync.model';
 import {MODEL_VERSION_KEY} from '../../app.constants';
 import {isEntityStateConsist} from '../../util/check-fix-entity-state-consistency';
+import {devError} from '../../util/dev-error';
 
 // TODO unit test this
 export const isValidAppData = (data: AppDataComplete): boolean => {
@@ -24,6 +25,7 @@ export const isValidAppData = (data: AppDataComplete): boolean => {
     : typeof data === 'object'
     ;
 };
+
 const _isTaskIdsConsistent = (data: AppDataComplete): boolean => {
   let allIds = [];
 
@@ -41,20 +43,35 @@ const _isTaskIdsConsistent = (data: AppDataComplete): boolean => {
   const notFound = allIds.find(id => !(data.task.ids.includes(id)));
 
   if (notFound) {
-    console.error('Inconsistent Task State: Missing task id ' + notFound);
+    devError('Inconsistent Task State: Missing task id ' + notFound);
   }
   return !notFound;
 };
 
 const _isEntityStatesConsistent = (data: AppDataComplete): boolean => {
-  const entityStateKeys = [
+  const baseStateKeys = [
     'task',
     'taskArchive',
     'tag',
     'project',
+  ];
+  const projectStateKeys = [
     'note',
     'bookmark',
+    'metric',
+    'improvement',
+    'obstruction',
   ];
-  const brokenItem = entityStateKeys.find(key => !isEntityStateConsist(data[key], key));
+
+  const brokenItem =
+    baseStateKeys.find(key => !isEntityStateConsist(data[key], key))
+    || projectStateKeys.find(projectModelKey => {
+      const dataForProjects = data[projectModelKey];
+      return Object.keys(dataForProjects).find(projectId =>
+        // also allow undefined for project models
+        data[projectId] !== undefined
+        || !isEntityStateConsist(data[projectId], `${projectModelKey} pId:${projectId}`)
+      );
+    });
   return !brokenItem;
 };

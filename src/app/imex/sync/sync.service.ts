@@ -10,8 +10,6 @@ import {T} from '../../t.const';
 import {TaskService} from '../../features/tasks/task.service';
 import {MigrationService} from '../../core/migration/migration.service';
 import {DataInitService} from '../../core/data-init/data-init.service';
-import {MODEL_VERSION_KEY} from '../../app.constants';
-import {isEntityStateConsist} from '../../util/check-fix-entity-state-consistency';
 import {isValidAppData} from './is-valid-app-data.util';
 
 // TODO some of this can be done in a background script
