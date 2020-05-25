@@ -9,6 +9,8 @@ import {
   map,
   mapTo,
   shareReplay,
+  skip,
+  skipWhile,
   startWith,
   switchMap,
   tap,
@@ -24,6 +26,7 @@ import {AllowedDBKeys, LS_BS_LAST_SYNC_TO_REMOTE} from '../../core/persistence/l
 import {isOnline$} from '../../util/is-online';
 import {SyncProvider} from '../../core/global-sync/sync-provider';
 import {SnackService} from '../../core/snack/snack.service';
+import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -52,6 +55,8 @@ export class BlockstackService {
       ))
     ),
     isOnline$.pipe(
+      // skip initial online which always fires on page load
+      skip(1),
       filter(isOnline => isOnline),
       mapTo('IS_ONLINE'),
     ),
@@ -75,6 +80,14 @@ export class BlockstackService {
       map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data})),
       // tap(console.log)
     )),
+    tap(complete => {
+      const isValid = isValidAppData(complete);
+      if (!isValid) {
+        alert('INVALID');
+        console.log('isValidAppData(complete)', isValid, complete);
+      }
+    }),
+    skipWhile(complete => !isValidAppData(complete, true)),
     // NOTE: share is important here, because we're executing a side effect
     // NOTE: share replay is required to make this work with manual save trigger
     shareReplay(1),

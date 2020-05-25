@@ -4,7 +4,7 @@ import {isEntityStateConsistent} from '../../util/check-fix-entity-state-consist
 import {devError} from '../../util/dev-error';
 
 // TODO unit test this
-export const isValidAppData = (data: AppDataComplete): boolean => {
+export const isValidAppData = (data: AppDataComplete, isSkipInconsistentTaskStateError = false): boolean => {
   // TODO remove this later on
   const isCapableModelVersion = data.project && data.project[MODEL_VERSION_KEY] && data.project[MODEL_VERSION_KEY] >= 5;
 
@@ -23,13 +23,13 @@ export const isValidAppData = (data: AppDataComplete): boolean => {
     && typeof data.project === 'object'
     && Array.isArray(data.reminders)
     && _isEntityStatesConsistent(data)
-    && _isTaskIdsConsistent(data)
+    && _isTaskIdsConsistent(data, isSkipInconsistentTaskStateError)
 
     : typeof data === 'object'
     ;
 };
 
-const _isTaskIdsConsistent = (data: AppDataComplete): boolean => {
+const _isTaskIdsConsistent = (data: AppDataComplete, isSkipInconsistentTaskStateError = false): boolean => {
   let allIds = [];
 
   (data.tag.ids as string[])
@@ -45,7 +45,7 @@ const _isTaskIdsConsistent = (data: AppDataComplete): boolean => {
 
   const notFound = allIds.find(id => !(data.task.ids.includes(id)));
 
-  if (notFound) {
+  if (notFound && !isSkipInconsistentTaskStateError) {
     devError('Inconsistent Task State: Missing task id ' + notFound);
   }
   return !notFound;
