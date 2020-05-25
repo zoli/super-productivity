@@ -8,7 +8,8 @@ export const isValidAppData = (data: AppDataComplete, isSkipInconsistentTaskStat
   // TODO remove this later on
   const isCapableModelVersion = data.project && data.project[MODEL_VERSION_KEY] && data.project[MODEL_VERSION_KEY] >= 5;
 
-  return (isCapableModelVersion)
+  // console.time('time isValidAppData');
+  const isValid = (isCapableModelVersion)
 
     ? (typeof data === 'object')
     && typeof data.note === 'object'
@@ -26,7 +27,10 @@ export const isValidAppData = (data: AppDataComplete, isSkipInconsistentTaskStat
     && _isTaskIdsConsistent(data, isSkipInconsistentTaskStateError)
 
     : typeof data === 'object'
-    ;
+  ;
+  // console.timeEnd('time isValidAppData');
+
+  return isValid;
 };
 
 const _isTaskIdsConsistent = (data: AppDataComplete, isSkipInconsistentTaskStateError = false): boolean => {
@@ -46,7 +50,15 @@ const _isTaskIdsConsistent = (data: AppDataComplete, isSkipInconsistentTaskState
   const notFound = allIds.find(id => !(data.task.ids.includes(id)));
 
   if (notFound && !isSkipInconsistentTaskStateError) {
-    devError('Inconsistent Task State: Missing task id ' + notFound);
+    const tag = (data.tag.ids as string[])
+      .map(id => data.tag.entities[id])
+      .find(tagI => tagI.taskIds.includes(notFound));
+
+    const project = (data.project.ids as string[])
+      .map(id => data.project.entities[id])
+      .find(projectI => projectI.taskIds.includes(notFound) || projectI.backlogTaskIds.includes(notFound));
+
+    devError('Inconsistent Task State: Missing task id ' + notFound + ' for Project/Tag ' + (tag || project).title);
   }
   return !notFound;
 };

@@ -80,14 +80,7 @@ export class BlockstackService {
       map(complete => this._extendAppDataComplete({complete, appDataKey, projectId, data})),
       // tap(console.log)
     )),
-    tap(complete => {
-      const isValid = isValidAppData(complete);
-      if (!isValid) {
-        alert('INVALID');
-        console.log('isValidAppData(complete)', isValid, complete);
-      }
-    }),
-    skipWhile(complete => !isValidAppData(complete, true)),
+    skipWhile(complete => !isValidAppData(complete)),
     // NOTE: share is important here, because we're executing a side effect
     // NOTE: share replay is required to make this work with manual save trigger
     shareReplay(1),
