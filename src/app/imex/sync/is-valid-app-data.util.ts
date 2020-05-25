@@ -1,6 +1,6 @@
 import {AppDataComplete} from './sync.model';
 import {MODEL_VERSION_KEY} from '../../app.constants';
-import {isEntityStateConsist} from '../../util/check-fix-entity-state-consistency';
+import {isEntityStateConsistent} from '../../util/check-fix-entity-state-consistency';
 import {devError} from '../../util/dev-error';
 
 // TODO unit test this
@@ -13,6 +13,9 @@ export const isValidAppData = (data: AppDataComplete): boolean => {
     ? (typeof data === 'object')
     && typeof data.note === 'object'
     && typeof data.bookmark === 'object'
+    && typeof data.improvement === 'object'
+    && typeof data.obstruction === 'object'
+    && typeof data.metric === 'object'
     && typeof data.task === 'object'
     && typeof data.tag === 'object'
     && typeof data.globalConfig === 'object'
@@ -64,14 +67,17 @@ const _isEntityStatesConsistent = (data: AppDataComplete): boolean => {
   ];
 
   const brokenItem =
-    baseStateKeys.find(key => !isEntityStateConsist(data[key], key))
-    || projectStateKeys.find(projectModelKey => {
+    baseStateKeys.find(key => !isEntityStateConsistent(data[key], key))
+    ||
+    projectStateKeys.find(projectModelKey => {
       const dataForProjects = data[projectModelKey];
       return Object.keys(dataForProjects).find(projectId =>
         // also allow undefined for project models
-        data[projectId] !== undefined
-        || !isEntityStateConsist(data[projectId], `${projectModelKey} pId:${projectId}`)
+        (data[projectId] !== undefined)
+        &&
+        (!isEntityStateConsistent(data[projectId], `${projectModelKey} pId:${projectId}`))
       );
     });
+
   return !brokenItem;
 };
