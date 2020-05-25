@@ -42,6 +42,8 @@ export class BlockstackService {
   isSyncEnabled$ = new BehaviorSubject(true);
   us: UserSession = new UserSession({appConfig});
 
+  private _inMemoryCopy;
+
   private _checkRemoteUpdateTriggers$: Observable<string> = merge(
     fromEvent(window, 'focus').pipe(
       tap(() => console.log('focus ev')),
@@ -69,9 +71,8 @@ export class BlockstackService {
     tap((ev) => console.log('__TRIGGER SYNC__', ev))
   );
 
-  private _inMemoryCopy;
 
-  _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
+  private _allDataSaveTrigger$: Observable<AppDataComplete> = this._persistenceService.onSave$.pipe(
     // tap(({appDataKey, isDataImport, data}) => console.log(appDataKey, isDataImport, data && data.ids)),
     filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
     concatMap(({appDataKey, data, isDataImport, projectId}) => from(this._getAppDataCompleteWithLastSyncModelChange()).pipe(

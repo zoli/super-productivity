@@ -9,6 +9,8 @@ import {SyncService} from '../../imex/sync/sync.service';
 import {GlobalProgressBarService} from '../../core-ui/global-progress-bar/global-progress-bar.service';
 import {Subject} from 'rxjs';
 import {AllowedDBKeys} from '../../core/persistence/ls-keys.const';
+import {hot} from 'jasmine-marbles';
+import {createEmptyEntity} from '../../util/create-empty-entity';
 
 describe('BlockstackService', () => {
   let onSave$: Subject<{ appDataKey: AllowedDBKeys, data: any, isDataImport: boolean, projectId?: string }>;
@@ -61,4 +63,26 @@ describe('BlockstackService', () => {
   //   onSave$.next({appDataKey: 'tag', data: createEmptyEntity(), isDataImport: false});
   //   expect(service._allDataSaveTrigger$).toBeObservable(expected);
   // });
+
+  it('should trigger a model write for valid data', () => {
+
+  });
+
+  it('should not trigger a model write for valid data', () => {
+  });
+
+  it('should trigger a model write on focus', () => {
+  });
+
+  it('should try to import data initially', () => {
+  });
+
+  it('should handle conflicts', () => {
+  });
+
+  it('AAA', () => {
+  });
+
+  it('AAA', () => {
+  });
 });
