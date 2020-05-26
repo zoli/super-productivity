@@ -131,17 +131,12 @@ export class BlockstackService {
     // SAVE TRIGGER
     this._allDataWrite$.subscribe();
 
-    // INITIAL LOAD
+    // INITIAL LOAD AND SIGN IN
     this._initialSignInAndImportIfEnabled();
 
     // SYNC
     this._checkRemoteUpdate$.subscribe(() => this._checkForUpdateAndSync());
 
-    // SIGN IN STATUS
-    this.isSignedIn$.next(this.us.isUserSignedIn());
-    this.us.handlePendingSignIn().then(() => {
-      this.isSignedIn$.next(true);
-    });
   }
 
   signIn() {
@@ -150,6 +145,10 @@ export class BlockstackService {
 
   signOut() {
     this.us.signUserOut(window.location.origin);
+    // NOTE: if we don't next time we reload we will be logged in again
+    this._globalConfigService.updateSection('blockstackSync', {
+      isEnabled: false,
+    });
     this.isSignedIn$.next(false);
   }
 
@@ -158,7 +157,6 @@ export class BlockstackService {
       if (await this._globalConfigService.isBlockstackEnabled$.pipe(first()).toPromise()) {
         await this._checkForUpdateAndSyncInitial();
       } else {
-        // TODO can normally be removed
         this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
       }
     } else {
@@ -201,7 +199,7 @@ export class BlockstackService {
     isManualHandleConflicts?: boolean
   } = {}) {
     // TODO i18n
-    this._snackService.open({msg: T.F.BLOCKSTACK.S.LOAD, ico: 'file_download'});
+    this._snackService.open({msg: T.F.BLOCKSTACK.S.LOAD, ico: 'file_download', isSpinner: true});
     return await this._checkForUpdateAndSync(params)
       .then(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack))
       .catch(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack));

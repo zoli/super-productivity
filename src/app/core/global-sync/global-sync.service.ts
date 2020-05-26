@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {Store} from '@ngrx/store';
-import {BehaviorSubject, combineLatest, Observable, of, ReplaySubject} from 'rxjs';
+import {combineLatest, Observable, of, ReplaySubject} from 'rxjs';
 import {concatMap, distinctUntilChanged, filter, map, shareReplay, startWith, switchMap, take} from 'rxjs/operators';
 import {GlobalConfigService} from '../../features/config/global-config.service';
 import {SyncProvider} from './sync-provider';
@@ -12,16 +12,12 @@ import {DataInitService} from '../data-init/data-init.service';
   providedIn: 'root',
 })
 export class GlobalSyncService {
-
-  // TODO add to cfg
-  isBlockstackInitialSyncActive$ = new BehaviorSubject(true);
-
   private _isInitialSyncEnabled$: Observable<boolean> = this._dataInitService.isAllDataLoadedInitially$.pipe(
     switchMap(() => combineLatest([
         this._globalConfigService.googleDriveSyncCfg$.pipe(
           map(cfg => cfg && cfg.isEnabled && cfg.isLoadRemoteDataOnStartup && cfg.isAutoLogin),
         ),
-        this.isBlockstackInitialSyncActive$,
+        this._globalConfigService.isBlockstackEnabled$,
       ]).pipe(
       map(all => all.includes(true)),
       )
