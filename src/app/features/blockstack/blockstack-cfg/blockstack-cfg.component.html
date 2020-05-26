@@ -2,7 +2,7 @@
                   (ngModelChange)="toggleEnabled($event)"
                   [ngModel]="(globalConfigService.isBlockstackEnabled$|async)"
                   style="margin-bottom: 16px;">
-  {{T.F.GOOGLE.SYNC_CFG.ENABLE|translate}}
+  {{T.F.BLOCKSTACK.FORM.L_IS_ENABLED|translate}}
 </mat-slide-toggle>
 
 <div class="btns">
@@ -11,7 +11,7 @@
           color="primary"
           (click)="signIn()">
     <mat-icon>exit_to_app</mat-icon>
-    Sign In
+    {{T.F.BLOCKSTACK.FORM.L_SIGN_IN|translate}}
   </button>
 
   <button *ngIf="(blockstackService.isSignedIn$|async)"
@@ -19,7 +19,7 @@
           color="primary"
           (click)="signOut()">
     <mat-icon>clear</mat-icon>
-    Sign Out
+    {{T.F.BLOCKSTACK.FORM.L_SIGN_OUT|translate}}
   </button>
 
   <a mat-stroked-button
@@ -27,7 +27,7 @@
      target="_blank"
      href="https://blockstack.org/">
     <mat-icon>open_in_new</mat-icon>
-    Learn more
+    {{T.F.BLOCKSTACK.FORM.L_LEARN_MORE|translate}}
   </a>
 
   <a *ngIf="(blockstackService.isSignedIn$|async)"
@@ -36,6 +36,6 @@
      target="_blank"
      href="https://browser.blockstack.org/account">
     <mat-icon>open_in_new</mat-icon>
-    Account Settings
+    {{T.F.BLOCKSTACK.FORM.L_ACCOUNT|translate}}
   </a>
 </div>

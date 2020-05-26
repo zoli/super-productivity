@@ -27,6 +27,7 @@ import {SnackService} from '../../core/snack/snack.service';
 import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
 import {GlobalProgressBarService} from '../../core-ui/global-progress-bar/global-progress-bar.service';
 import {GlobalConfigService} from '../config/global-config.service';
+import {T} from '../../t.const';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -172,7 +173,7 @@ export class BlockstackService {
     }
     if (this.us.isUserSignedIn()) {
       this.isSignedIn$.next(true);
-      this._snackService.open({msg: 'Signed in into Blockstack'});
+      this._snackService.open({msg: T.F.BLOCKSTACK.S.SIGNED_IN, type: 'SUCCESS'});
       return true;
     } else {
       this.isSignedIn$.next(false);
@@ -187,8 +188,6 @@ export class BlockstackService {
   }
 
   private async _updateRemote(appComplete: AppDataComplete) {
-    console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxx SAVE');
-
     if (!appComplete) {
       throw new Error('No data provided');
     }
@@ -202,7 +201,7 @@ export class BlockstackService {
     isManualHandleConflicts?: boolean
   } = {}) {
     // TODO i18n
-    this._snackService.open({msg: 'Loading data from Blockstack...'});
+    this._snackService.open({msg: T.F.BLOCKSTACK.S.LOAD, ico: 'file_download'});
     return await this._checkForUpdateAndSync(params)
       .then(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack))
       .catch(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack));

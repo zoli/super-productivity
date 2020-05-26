@@ -40,6 +40,20 @@
         }
       }
     },
+    "BLOCKSTACK": {
+      "FORM": {
+        "TITLE": "Sync via Blockstack",
+        "L_ACCOUNT": "Account",
+        "L_IS_ENABLED": "Enable auto sync via blockstack",
+        "L_LEARN_MORE": "Learn More",
+        "L_SIGN_IN": "Sign In",
+        "L_SIGN_OUT": "Sign Out"
+      },
+      "S": {
+        "LOAD": "Loading data from Blockstack",
+        "SIGNED_IN": "Signed into Blockstack"
+      }
+    },
     "BOOKMARK": {
       "BAR": {
         "ADD": "Add Bookmark",
@@ -804,7 +818,7 @@
     },
     "GOOGLE_DRIVE_SYNC": {
       "HELP": "Here you can configure your app to automatically sync to and from a single google drive file. All data will be saved unencrypted, so make sure you don't accidentally share this file with someone.",
-      "TITLE": "Sync via Google Drive"
+      "TITLE": "Sync via Google Drive (legacy)"
     },
     "IDLE": {
       "HELP": "<div><p>When idle time handling is enabled a dialog will open after a specified amount of time to check if and on which task you want to track your time, when you have been idle.</p></div>",
