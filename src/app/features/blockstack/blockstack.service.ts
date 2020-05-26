@@ -42,7 +42,7 @@ export class BlockstackService {
   isSyncEnabled$ = new BehaviorSubject(true);
   us: UserSession = new UserSession({appConfig});
 
-  private _inMemoryCopy;
+  private _inMemoryCopy: AppDataComplete;
 
   private _checkRemoteUpdateTriggers$: Observable<string> = merge(
     fromEvent(window, 'focus').pipe(
@@ -171,6 +171,8 @@ export class BlockstackService {
   }
 
   private async _updateRemote(appComplete: AppDataComplete) {
+    console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxx SAVE');
+
     if (!appComplete) {
       throw new Error('No data provided');
     }

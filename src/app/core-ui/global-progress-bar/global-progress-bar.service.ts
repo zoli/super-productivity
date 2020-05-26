@@ -17,8 +17,6 @@ export class GlobalProgressBarService {
   );
 
   constructor() {
-    this.nrOfRequests.subscribe((v) => console.log('nrOfRequests', v));
-    this.isShowGlobalProgressBar$.subscribe((v) => console.log('isShowGlobalProgressBar$', v));
   }
 
   countUp() {
