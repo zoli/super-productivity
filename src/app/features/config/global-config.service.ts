@@ -17,6 +17,7 @@ import {
   selectEvaluationConfig,
   selectGoogleDriveSyncConfig,
   selectIdleConfig,
+  selectIsBlockstackEnabled,
   selectMiscConfig,
   selectTakeABreakConfig
 } from './store/global-config.reducer';
@@ -36,6 +37,11 @@ export class GlobalConfigService {
 
   googleDriveSyncCfg$: Observable<GoogleDriveSyncConfig> = this._store.pipe(
     select(selectGoogleDriveSyncConfig),
+    shareReplay(1),
+  );
+
+  isBlockstackEnabled$: Observable<boolean> = this._store.pipe(
+    select(selectIsBlockstackEnabled),
     shareReplay(1),
   );
 

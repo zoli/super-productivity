@@ -18,6 +18,8 @@ export const selectConfigFeatureState = createFeatureSelector<GlobalConfigState>
 export const selectMiscConfig = createSelector(selectConfigFeatureState, (cfg): MiscConfig => cfg.misc);
 export const selectEvaluationConfig = createSelector(selectConfigFeatureState, (cfg): EvaluationConfig => cfg.evaluation);
 export const selectGoogleDriveSyncConfig = createSelector(selectConfigFeatureState, (cfg): GoogleDriveSyncConfig => cfg.googleDriveSync);
+export const selectIsBlockstackEnabled = createSelector(selectConfigFeatureState, (cfg): boolean => cfg.blockstackSync
+  && cfg.blockstackSync.isEnabled);
 export const selectIdleConfig = createSelector(selectConfigFeatureState, (cfg): IdleConfig => cfg.idle);
 export const selectTakeABreakConfig = createSelector(selectConfigFeatureState, (cfg): TakeABreakConfig => cfg.takeABreak);
 

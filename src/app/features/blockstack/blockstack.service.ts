@@ -26,6 +26,7 @@ import {SyncProvider} from '../../core/global-sync/sync-provider';
 import {SnackService} from '../../core/snack/snack.service';
 import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
 import {GlobalProgressBarService} from '../../core-ui/global-progress-bar/global-progress-bar.service';
+import {GlobalConfigService} from '../config/global-config.service';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -41,6 +42,7 @@ const TRIGGER_FOCUS_AGAIN_TIMEOUT_DURATION = BS_AUDIT_TIME + 3000;
 export class BlockstackService {
   isSyncEnabled$ = new BehaviorSubject(true);
   us: UserSession = new UserSession({appConfig});
+  isSignedIn$ = new BehaviorSubject<boolean>(false);
 
   private _inMemoryCopy: AppDataComplete;
 
@@ -120,6 +122,7 @@ export class BlockstackService {
   constructor(
     private _persistenceService: PersistenceService,
     private _globalSyncService: GlobalSyncService,
+    private _globalConfigService: GlobalConfigService,
     private _snackService: SnackService,
     private _syncService: SyncService,
     private _globalProgressBarService: GlobalProgressBarService,
@@ -132,6 +135,12 @@ export class BlockstackService {
 
     // SYNC
     this._checkRemoteUpdate$.subscribe(() => this._checkForUpdateAndSync());
+
+    // SIGN IN STATUS
+    this.isSignedIn$.next(this.us.isUserSignedIn());
+    this.us.handlePendingSignIn().then(() => {
+      this.isSignedIn$.next(true);
+    });
   }
 
   signIn() {
@@ -140,27 +149,34 @@ export class BlockstackService {
 
   signOut() {
     this.us.signUserOut(window.location.origin);
+    this.isSignedIn$.next(false);
   }
 
   private async _initialSignInAndImportIfEnabled() {
-    const isEnabled = await this.isSyncEnabled$.pipe(first()).toPromise();
-    // this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
-    // return;
-    if (!isEnabled) {
-      // TODO can normally be removed
-      this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
-      return;
-    }
-
-    if (this.us.isSignInPending()) {
-      this.us.handlePendingSignIn().then((userData) => {
-        // window.location = window.location.origin;
-        return this._checkForUpdateAndSyncInitial();
-      });
-    } else if (!this.us.isUserSignedIn()) {
-      this.signIn();
+    if (await this._checkSetSignedIn()) {
+      if (await this._globalConfigService.isBlockstackEnabled$.pipe(first()).toPromise()) {
+        await this._checkForUpdateAndSyncInitial();
+      } else {
+        // TODO can normally be removed
+        this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
+      }
     } else {
-      await this._checkForUpdateAndSyncInitial();
+      this.signIn();
+      this.isSignedIn$.next(false);
+    }
+  }
+
+  private async _checkSetSignedIn(): Promise<boolean> {
+    if (this.us.isSignInPending()) {
+      await this.us.handlePendingSignIn();
+    }
+    if (this.us.isUserSignedIn()) {
+      this.isSignedIn$.next(true);
+      this._snackService.open({msg: 'Signed in into Blockstack'});
+      return true;
+    } else {
+      this.isSignedIn$.next(false);
+      return false;
     }
   }
 
