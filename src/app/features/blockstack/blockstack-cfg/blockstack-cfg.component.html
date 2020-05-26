@@ -1,2 +1,7 @@
+<mat-slide-toggle (ngModelChange)="toggleEnabled($event)"
+                  [ngModel]="cfg.isEnabled"
+                  name="isEnabled">
+  {{T.F.GOOGLE.SYNC_CFG.ENABLE|translate}}
+</mat-slide-toggle>
 
 <button (click)="signIn()">SignIn</button>

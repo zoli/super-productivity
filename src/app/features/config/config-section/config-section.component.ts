@@ -23,6 +23,7 @@ import {TranslateService} from '@ngx-translate/core';
 import {WorkContextService} from '../../work-context/work-context.service';
 import {TagCfgFormKey} from '../../tag/tag.model';
 import {SimpleCounterCfgComponent} from '../../simple-counter/simple-counter-cfg/simple-counter-cfg.component';
+import {BlockstackCfgComponent} from '../../blockstack/blockstack-cfg/blockstack-cfg.component';
 
 @Component({
   selector: 'config-section',
@@ -116,6 +117,10 @@ export class ConfigSectionComponent implements OnInit, OnDestroy {
 
       case 'SIMPLE_COUNTER_CFG':
         componentToRender = SimpleCounterCfgComponent;
+        break;
+
+      case 'BLOCKSTACK_SYNC':
+        componentToRender = BlockstackCfgComponent;
         break;
     }
 

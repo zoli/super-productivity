@@ -84,6 +84,9 @@ export const DEFAULT_GLOBAL_CONFIG: GlobalConfigState = {
     collapseSubTasks: null,
     togglePlay: 'y',
   },
+  blockstackSync:{
+    isEnabled: false,
+  },
   googleDriveSync: {
     isEnabled: false,
     isAutoLogin: false,
