@@ -8,6 +8,11 @@
   z-index: 9999;
   pointer-events: none;
   display: block;
+  box-shadow: $whiteframe-shadow-2dp;
+
+  .mat-progress-bar {
+    height: 3px;
+  }
 }
 
 .badge {
@@ -22,10 +27,10 @@
   line-height: 1;
   border-radius: $card-border-radius;
 
-  @include lightTheme(){
+  @include lightTheme() {
     background: $light-theme-bg-darker;
   }
-  @include darkTheme{
+  @include darkTheme {
     background: $light-theme-bg-darker;
     color: $dark-theme-text-color-less-intense;
   }
