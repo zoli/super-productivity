@@ -1,11 +1,11 @@
 import {Injectable} from '@angular/core';
 import {AppConfig, UserSession} from 'blockstack';
-import {auditTime, filter, first, mapTo, skip, startWith, switchMap, tap} from 'rxjs/operators';
+import {auditTime, filter, first, mapTo, skip, startWith, switchMap, take, tap} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
 import {SyncService} from '../../imex/sync/sync.service';
-import {BehaviorSubject, EMPTY, fromEvent, merge, Observable, Subject, timer} from 'rxjs';
+import {BehaviorSubject, EMPTY, fromEvent, merge, Observable, timer} from 'rxjs';
 import {LS_BS_LAST_SYNC_TO_REMOTE} from '../../core/persistence/ls-keys.const';
 import {isOnline$} from '../../util/is-online';
 import {SyncProvider} from '../../core/global-sync/sync-provider';
@@ -21,7 +21,7 @@ export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
 // TODO improve
 const COMPLETE_KEY = 'SP_CPL';
-const BS_AUDIT_TIME = 20000;
+const BS_AUDIT_TIME = 10000;
 const TRIGGER_FOCUS_AGAIN_TIMEOUT_DURATION = BS_AUDIT_TIME + 3000;
 
 @Injectable({
@@ -39,7 +39,6 @@ export class BlockstackService {
   // ------------
   private _checkRemoteUpdateTriggers$: Observable<string> = merge(
     fromEvent(window, 'focus').pipe(
-      tap(() => console.log('focus ev')),
       switchMap((ev) => isOnline$.pipe(
         filter(isOnline => isOnline),
       )),
@@ -72,26 +71,10 @@ export class BlockstackService {
     filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
   );
 
-  private _manualSaveToRemoteTrigger$ = new Subject<AppDataComplete>();
-
-  private _writeAppDataToBlockstack$ = merge(
-    this._manualSaveToRemoteTrigger$,
-    this._saveToRemoteTrigger$
-  ).pipe(
+  private _writeAppDataToBlockstack$ = this._saveToRemoteTrigger$.pipe(
+    // TODO handle initial creation
     auditTime(BS_AUDIT_TIME),
-    switchMap(() => this._persistenceService.inMemoryComplete$.pipe(first())),
-    switchMap(async (all) => {
-      // TODO handle initial creation
-      try {
-        const remoteData = await this._read(COMPLETE_KEY);
-        console.log('BS SAVE!! local/remote', all.lastLocalSyncModelChange, remoteData.lastLocalSyncModelChange);
-        console.log(all, remoteData);
-      } catch (e) {
-        console.error(e);
-      }
-      await this._updateRemote(all);
-    }),
-    // retry(2),
+    switchMap(() => this._checkForRemoteUpdateAndSync({isSaveToRemote: true})),
   );
 
 
@@ -111,6 +94,9 @@ export class BlockstackService {
 
     // SYNC
     this._checkRemoteUpdate$.subscribe(() => this._checkForRemoteUpdateAndSync());
+
+    // TO RESET
+    // this._persistenceService.inMemoryComplete$.pipe(take(1)).subscribe(data => this._updateRemote(data));
   }
 
   signIn() {
@@ -153,11 +139,14 @@ export class BlockstackService {
     }
   }
 
-  private async _importRemote(data?: AppDataComplete) {
-    const appComplete = data || await this._read(COMPLETE_KEY);
+  private async _importRemote(appComplete: AppDataComplete) {
     try {
+      console.log(appComplete.lastLocalSyncModelChange);
+
       await this._syncService.importCompleteSyncData(appComplete);
+      console.log('IMPORT', appComplete.lastLocalSyncModelChange);
       this._setLasSync(appComplete.lastLocalSyncModelChange);
+      // this._persistenceService.updateLastLocalSyncModelChange(appComplete.lastLocalSyncModelChange);
     } catch (e) {
       this._snackService.open({type: 'ERROR', msg: T.F.BLOCKSTACK.S.ERROR_READ});
       console.error(e);
@@ -176,28 +165,25 @@ export class BlockstackService {
 
     try {
       await this._write(COMPLETE_KEY, appComplete);
+      console.log('WRITE', appComplete.lastLocalSyncModelChange);
       this._setLasSync(appComplete.lastLocalSyncModelChange);
+      // this._persistenceService.updateLastLocalSyncModelChange(appComplete.lastLocalSyncModelChange);
     } catch (e) {
       this._snackService.open({type: 'ERROR', msg: T.F.BLOCKSTACK.S.ERROR_WRITE});
       console.error(e);
     }
   }
 
-  private async _checkForUpdateAndSyncInitial(params: {
-    isManualHandleConflicts?: boolean
-  } = {}) {
-    // TODO i18n
+  private async _checkForUpdateAndSyncInitial() {
     this._snackService.open({msg: T.F.BLOCKSTACK.S.LOAD, ico: 'file_download', isSpinner: true});
-    return await this._checkForRemoteUpdateAndSync(params)
+    return await this._checkForRemoteUpdateAndSync()
       .then(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack))
       .catch(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack));
   }
 
-  private async _checkForRemoteUpdateAndSync({isManualHandleConflicts = false}: {
-    isManualHandleConflicts?: boolean
-  } = {}) {
+  private async _checkForRemoteUpdateAndSync({isSaveToRemote = false}: { isSaveToRemote?: boolean } = {}) {
     const remote = await this._read(COMPLETE_KEY);
-    const local = await this._persistenceService.loadComplete();
+    const local = await this._persistenceService.inMemoryComplete$.pipe(take(1)).toPromise();
     const lastSync = this._getLasSync();
 
     if (!remote || !local) {
@@ -223,9 +209,8 @@ export class BlockstackService {
       }
 
       case UpdateCheckResult.RemoteUpdateRequired: {
-        console.log('BS: Remote Update Required => Manual trigger');
-        this._manualSaveToRemoteTrigger$.next(local);
-        break;
+        console.log('BS: Remote Update Required => Update directly');
+        return await this._updateRemote(local);
       }
 
       case UpdateCheckResult.DataDiverged: {
@@ -237,6 +222,10 @@ export class BlockstackService {
         }
         break;
       }
+
+      case UpdateCheckResult.LastSyncNotUpToDate: {
+        this._setLasSync(local.lastLocalSyncModelChange);
+      }
     }
   }
 
@@ -244,7 +233,7 @@ export class BlockstackService {
     if (!this.us.isUserSignedIn()) {
       return false;
     }
-    const options = {encrypt: false};
+    const options = {encrypt: true};
 
     this._globalProgressBarService.countUp();
     return this.us.putFile(key, JSON.stringify(data), options)
@@ -255,7 +244,7 @@ export class BlockstackService {
     if (!this.us.isUserSignedIn()) {
       return false;
     }
-    const options = {decrypt: false};
+    const options = {decrypt: true};
 
     this._globalProgressBarService.countUp();
     const data = await this.us.getFile(key, options)

@@ -56,9 +56,8 @@ import {environment} from '../../../environments/environment';
 import {checkFixEntityStateConsistency} from '../../util/check-fix-entity-state-consistency';
 import {SimpleCounter, SimpleCounterState} from '../../features/simple-counter/simple-counter.model';
 import {simpleCounterReducer} from '../../features/simple-counter/store/simple-counter.reducer';
-import {concat, from, Observable, Subject} from 'rxjs';
-import {first, shareReplay, skipWhile, switchMap} from 'rxjs/operators';
-import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
+import {from, merge, Observable, Subject} from 'rxjs';
+import {shareReplay, switchMap} from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
@@ -135,13 +134,14 @@ export class PersistenceService {
 
   onAfterSave$: Subject<{ appDataKey: AllowedDBKeys, data: any, isDataImport: boolean, projectId?: string }> = new Subject();
 
-  inMemoryComplete$: Observable<AppDataComplete> = concat(
-    from(this.loadComplete()).pipe(first()),
+  inMemoryComplete$: Observable<AppDataComplete> = merge(
+    from(this.loadComplete()),
     this.onAfterSave$.pipe(
-      // TODO make faster
       switchMap(() => this.loadComplete()),
-      skipWhile(complete => !isValidAppData(complete)),
+      // TODO maybe not necessary
+      // skipWhile(complete => !isValidAppData(complete)),
     ),
+  ).pipe(
     shareReplay(1),
   );
 
@@ -247,7 +247,7 @@ export class PersistenceService {
   // -----------------------
   updateLastLocalSyncModelChange(date: number = Date.now()) {
     if (!environment || !environment.production) {
-      // console.log('Save Last Local Sync Model Change', date);
+      console.log('Save Last Local Sync Model Change', date);
     }
     localStorage.setItem(LS_LAST_LOCAL_SYNC_MODEL_CHANGE, date.toString());
   }

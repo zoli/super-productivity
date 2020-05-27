@@ -86,6 +86,34 @@ describe('PersistenceService', () => {
         service.onAfterSave$.next('' as any);
       }, 1);
     });
+
+    // it('should refresh onAfterSave$', () => {
+    //   testScheduler.run(({expectObservable}) => {
+    //     const FAKE_VAL_A: any = 'AAAAAAAAAA';
+    //     const a$ = of(FAKE_VAL_A);
+    //     const FAKE_VAL_B: any = 'BBBBBBBBBB';
+    //     const b$ = of(FAKE_VAL_B);
+    //     let j = 0;
+    //     spyOn(PersistenceService.prototype, 'loadComplete').and.callFake(() => {
+    //       if (j === 0) {
+    //         j++;
+    //         return a$ as any;
+    //       }
+    //       return b$ as any;
+    //     });
+    //
+    //     const service: PersistenceService = TestBed.get(PersistenceService);
+    //     service.onAfterSave$.next('B' as any);
+    //     setTimeout(() => {
+    //       service.onAfterSave$.next('B' as any);
+    //     });
+    //
+    //     setTimeout(() => {
+    //       service.onAfterSave$.next('B' as any);
+    //     }, 5);
+    //     expectObservable(service.inMemoryComplete$).toBe('a', {a: FAKE_VAL_A});
+    //   });
+    // });
   });
 
   // it('AAA', () => {

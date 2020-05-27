@@ -31,6 +31,11 @@ describe('checkForUpdate', () => {
     expect(r).toBe(UpdateCheckResult.RemoteNotUpToDateDespiteSync);
   });
 
+  it('l = r > s -> update last sync', () => {
+    const r = checkForUpdate({local: 4, lastSync: 0, remote: 4});
+    expect(r).toBe(UpdateCheckResult.LastSyncNotUpToDate);
+  });
+
 
   it('l < s -> error', () => {
     expect(() => {
