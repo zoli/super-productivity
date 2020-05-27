@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {AppConfig, UserSession} from 'blockstack';
-import {auditTime, filter, first, mapTo, skip, startWith, switchMap, tap, throttleTime} from 'rxjs/operators';
+import {auditTime, filter, first, mapTo, skip, startWith, switchMap, tap} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
@@ -21,7 +21,7 @@ export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
 // TODO improve
 const COMPLETE_KEY = 'SP_CPL';
-const BS_AUDIT_TIME = 10000;
+const BS_AUDIT_TIME = 20000;
 const TRIGGER_FOCUS_AGAIN_TIMEOUT_DURATION = BS_AUDIT_TIME + 3000;
 
 @Injectable({
@@ -60,10 +60,8 @@ export class BlockstackService {
     switchMap((isEnabled) => isEnabled
       ? this._checkRemoteUpdateTriggers$
       : EMPTY),
-    throttleTime(5000),
     tap((ev) => console.log('__TRIGGER SYNC__', ev))
   );
-
 
   // SAVE TO REMOTE
   // --------------
@@ -161,7 +159,8 @@ export class BlockstackService {
       await this._syncService.importCompleteSyncData(appComplete);
       this._setLasSync(appComplete.lastLocalSyncModelChange);
     } catch (e) {
-      throw new Error(e);
+      this._snackService.open({type: 'ERROR', msg: T.F.BLOCKSTACK.S.ERROR_READ});
+      console.error(e);
     }
   }
 
@@ -179,7 +178,8 @@ export class BlockstackService {
       await this._write(COMPLETE_KEY, appComplete);
       this._setLasSync(appComplete.lastLocalSyncModelChange);
     } catch (e) {
-      throw new Error(e);
+      this._snackService.open({type: 'ERROR', msg: T.F.BLOCKSTACK.S.ERROR_WRITE});
+      console.error(e);
     }
   }
 
@@ -265,28 +265,6 @@ export class BlockstackService {
       return JSON.parse(data.toString());
     }
   }
-
-  // private _extendAppDataComplete({complete, appDataKey, projectId, data}: {
-  //   complete: AppDataComplete,
-  //   appDataKey: AllowedDBKeys,
-  //   projectId?: string,
-  //   data: any
-  // }): AppDataComplete {
-  //   // console.log(appDataKey, data && data.ids && data.ids.length);
-  //   return {
-  //     ...complete,
-  //     ...(
-  //       projectId
-  //         ? {
-  //           [appDataKey]: {
-  //             ...(complete[appDataKey]),
-  //             [projectId]: data
-  //           }
-  //         }
-  //         : {[appDataKey]: data}
-  //     )
-  //   };
-  // }
 
   private _getLasSync(): number {
     const la = localStorage.getItem(LS_BS_LAST_SYNC_TO_REMOTE);

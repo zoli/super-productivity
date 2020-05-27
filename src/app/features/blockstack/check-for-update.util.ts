@@ -27,7 +27,6 @@ export const checkForUpdate = (params: { remote: number, local: number, lastSync
       alert('Remote not up to date despite previous sync');
       return UpdateCheckResult.RemoteNotUpToDateDespiteSync;
     }
-
   } else if (local < remote) {
     if (lastSync !== local) {
       return UpdateCheckResult.DataDiverged;

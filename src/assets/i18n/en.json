@@ -51,7 +51,9 @@
       },
       "S": {
         "LOAD": "Loading data from Blockstack",
-        "SIGNED_IN": "Signed into Blockstack"
+        "SIGNED_IN": "Signed into Blockstack",
+        "ERROR_READ": "Blockstack: Error while reading data",
+        "ERROR_WRITE": "Blockstack: Error while writing data"
       }
     },
     "BOOKMARK": {

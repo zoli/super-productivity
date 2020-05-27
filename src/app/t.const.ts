@@ -51,7 +51,9 @@ export const T = {
       },
       'S': {
         'LOAD': 'F.BLOCKSTACK.S.LOAD',
-        'SIGNED_IN': 'F.BLOCKSTACK.S.SIGNED_IN'
+        'SIGNED_IN': 'F.BLOCKSTACK.S.SIGNED_IN',
+        'ERROR_READ': 'F.BLOCKSTACK.S.ERROR_READ',
+        'ERROR_WRITE': 'F.BLOCKSTACK.S.ERROR_WRITE'
       }
     },
     'BOOKMARK': {
