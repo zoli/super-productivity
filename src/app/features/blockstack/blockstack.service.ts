@@ -34,6 +34,9 @@ export class BlockstackService {
   private _isEnabled$: Observable<boolean> = this._globalConfigService.isBlockstackEnabled$;
   // private _isEnabled$: Observable<boolean> = of(false);
 
+
+  // UPDATE LOCAL
+  // ------------
   private _checkRemoteUpdateTriggers$: Observable<string> = merge(
     fromEvent(window, 'focus').pipe(
       tap(() => console.log('focus ev')),
@@ -61,29 +64,24 @@ export class BlockstackService {
     tap((ev) => console.log('__TRIGGER SYNC__', ev))
   );
 
-  private _saveToRemoteTrigger$: Observable<AppDataComplete> = this._isEnabled$.pipe(
+
+  // SAVE TO REMOTE
+  // --------------
+  private _saveToRemoteTrigger$: Observable<unknown> = this._isEnabled$.pipe(
     switchMap((isEnabled) => isEnabled
       ? this._persistenceService.onAfterSave$
       : EMPTY),
     filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
-    switchMap(() => this._persistenceService.inMemoryComplete$),
   );
 
-  private _manualSaveTrigger$ = new Subject<AppDataComplete>();
+  private _manualSaveToRemoteTrigger$ = new Subject<AppDataComplete>();
+
   private _writeAppDataToBlockstack$ = merge(
-    // TODO make this work somehow
-    // this._manualSaveTrigger$.pipe(
-    //   tap((data) => console.log('_manualSaveTrigger$', data)),
-    //   switchMap((data) => merge(
-    //     from(this._refreshInMemory()).pipe(mapTo(data)),
-    //     this._allDataSaveTrigger$
-    //   )),
-    //   take(2),
-    //   tap((data) => console.log('_manualSaveTrigger$ => _allDataSaveTrigger$', data)),
-    // ),
+    this._manualSaveToRemoteTrigger$,
     this._saveToRemoteTrigger$
   ).pipe(
     auditTime(BS_AUDIT_TIME),
+    switchMap(() => this._persistenceService.inMemoryComplete$.pipe(first())),
     switchMap(async (all) => {
       // TODO handle initial creation
       try {
@@ -159,8 +157,12 @@ export class BlockstackService {
 
   private async _importRemote(data?: AppDataComplete) {
     const appComplete = data || await this._read(COMPLETE_KEY);
-    await this._syncService.importCompleteSyncData(appComplete);
-    this._setLasSync(appComplete.lastLocalSyncModelChange);
+    try {
+      await this._syncService.importCompleteSyncData(appComplete);
+      this._setLasSync(appComplete.lastLocalSyncModelChange);
+    } catch (e) {
+      throw new Error(e);
+    }
   }
 
   private async _updateRemote(appComplete: AppDataComplete) {
@@ -173,8 +175,12 @@ export class BlockstackService {
       throw new Error('Refused to update with invalid  data');
     }
 
-    await this._write(COMPLETE_KEY, appComplete);
-    this._setLasSync(appComplete.lastLocalSyncModelChange);
+    try {
+      await this._write(COMPLETE_KEY, appComplete);
+      this._setLasSync(appComplete.lastLocalSyncModelChange);
+    } catch (e) {
+      throw new Error(e);
+    }
   }
 
   private async _checkForUpdateAndSyncInitial(params: {
@@ -217,8 +223,8 @@ export class BlockstackService {
       }
 
       case UpdateCheckResult.RemoteUpdateRequired: {
-        console.log('BS: Trigger Remote => nothing atm');
-        this._manualSaveTrigger$.next(local);
+        console.log('BS: Remote Update Required => Manual trigger');
+        this._manualSaveToRemoteTrigger$.next(local);
         break;
       }
 
@@ -242,9 +248,7 @@ export class BlockstackService {
 
     this._globalProgressBarService.countUp();
     return this.us.putFile(key, JSON.stringify(data), options)
-      .catch(() => this._globalProgressBarService.countDown())
-      .then(() => this._globalProgressBarService.countDown())
-      ;
+      .finally(() => this._globalProgressBarService.countDown());
   }
 
   private async _read(key: string): Promise<any> {
@@ -255,8 +259,7 @@ export class BlockstackService {
 
     this._globalProgressBarService.countUp();
     const data = await this.us.getFile(key, options)
-      .catch(() => this._globalProgressBarService.countDown());
-    this._globalProgressBarService.countDown();
+      .finally(() => this._globalProgressBarService.countDown());
 
     if (data) {
       return JSON.parse(data.toString());

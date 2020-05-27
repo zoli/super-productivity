@@ -3,6 +3,7 @@ export enum UpdateCheckResult {
   LocalUpdateRequired = 'LocalUpdateRequired',
   RemoteUpdateRequired = 'RemoteUpdateRequired',
   DataDiverged = 'DataDiverged',
+  RemoteNotUpToDateDespiteSync = 'RemoteNotUpToDateDespiteSync',
 }
 
 export const checkForUpdate = (params: { remote: number, local: number, lastSync: number }) => {
@@ -22,12 +23,14 @@ export const checkForUpdate = (params: { remote: number, local: number, lastSync
       return UpdateCheckResult.DataDiverged;
     } else if (lastSync < local) {
       return UpdateCheckResult.RemoteUpdateRequired;
+    } else if (lastSync === local) {
+      alert('Remote not up to date despite previous sync');
+      return UpdateCheckResult.RemoteNotUpToDateDespiteSync;
     }
 
   } else if (local < remote) {
     if (lastSync !== local) {
       return UpdateCheckResult.DataDiverged;
-      console.log('DATA DIVERGED: local < remote');
     } else {
       return UpdateCheckResult.LocalUpdateRequired;
     }
