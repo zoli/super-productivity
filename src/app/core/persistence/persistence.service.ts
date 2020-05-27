@@ -56,7 +56,9 @@ import {environment} from '../../../environments/environment';
 import {checkFixEntityStateConsistency} from '../../util/check-fix-entity-state-consistency';
 import {SimpleCounter, SimpleCounterState} from '../../features/simple-counter/simple-counter.model';
 import {simpleCounterReducer} from '../../features/simple-counter/store/simple-counter.reducer';
-import {Subject} from 'rxjs';
+import {concat, from, Observable, Subject} from 'rxjs';
+import {first, shareReplay, skipWhile, switchMap} from 'rxjs/operators';
+import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
 
 @Injectable({
   providedIn: 'root',
@@ -131,7 +133,17 @@ export class PersistenceService {
     'obstruction',
   );
 
-  onSave$: Subject<{ appDataKey: AllowedDBKeys, data: any, isDataImport: boolean, projectId?: string }> = new Subject();
+  onAfterSave$: Subject<{ appDataKey: AllowedDBKeys, data: any, isDataImport: boolean, projectId?: string }> = new Subject();
+
+  inMemoryComplete$: Observable<AppDataComplete> = concat(
+    from(this.loadComplete()).pipe(first()),
+    this.onAfterSave$.pipe(
+      // TODO make faster
+      switchMap(() => this.loadComplete()),
+      skipWhile(complete => !isValidAppData(complete)),
+    ),
+    shareReplay(1),
+  );
 
   private _isBlockSaving = false;
 
@@ -140,6 +152,7 @@ export class PersistenceService {
     private _databaseService: DatabaseService,
     private _compressionService: CompressionService,
   ) {
+    // this.inMemoryComplete$.subscribe((v) => console.log('inMemoryComplete$', v));
   }
 
 
@@ -233,7 +246,7 @@ export class PersistenceService {
   // -----------------------
   updateLastLocalSyncModelChange(date: number = Date.now()) {
     if (!environment || !environment.production) {
-      console.log('Save Last Local Sync Model Change', date);
+      // console.log('Save Last Local Sync Model Change', date);
     }
     localStorage.setItem(LS_LAST_LOCAL_SYNC_MODEL_CHANGE, date.toString());
   }
@@ -470,9 +483,10 @@ export class PersistenceService {
     isDataImport?: boolean,
   }): Promise<any> {
     if (!this._isBlockSaving || isDataImport === true) {
-      this.onSave$.next({appDataKey: dbKey, data, isDataImport, projectId});
       const idbKey = this._getIDBKey(dbKey, projectId);
-      return await this._databaseService.save(idbKey, data);
+      const r = await this._databaseService.save(idbKey, data);
+      this.onAfterSave$.next({appDataKey: dbKey, data, isDataImport, projectId});
+      return r;
     } else {
       console.warn('BLOCKED SAVING for ', dbKey);
       return Promise.reject('Data import currently in progress. Saving disabled');
@@ -501,5 +515,28 @@ export class PersistenceService {
     const idbKey = this._getIDBKey(dbKey, projectId);
     // TODO remove legacy stuff
     return await this._databaseService.load(idbKey) || await this._databaseService.load(legacyDBKey) || undefined;
+  }
+
+
+  private _extendAppDataComplete({complete, appDataKey, projectId, data}: {
+    complete: AppDataComplete,
+    appDataKey: AllowedDBKeys,
+    projectId?: string,
+    data: any
+  }): AppDataComplete {
+    // console.log(appDataKey, data && data.ids && data.ids.length);
+    return {
+      ...complete,
+      ...(
+        projectId
+          ? {
+            [appDataKey]: {
+              ...(complete[appDataKey]),
+              [projectId]: data
+            }
+          }
+          : {[appDataKey]: data}
+      )
+    };
   }
 }
