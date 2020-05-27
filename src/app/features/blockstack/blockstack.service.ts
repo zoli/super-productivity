@@ -28,6 +28,7 @@ import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
 import {GlobalProgressBarService} from '../../core-ui/global-progress-bar/global-progress-bar.service';
 import {GlobalConfigService} from '../config/global-config.service';
 import {T} from '../../t.const';
+import {checkForUpdate, UpdateCheckResult} from './check-for-update.util';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -219,26 +220,30 @@ export class BlockstackService {
       (local.lastLocalSyncModelChange - remote.lastLocalSyncModelChange) / 1000,
       local.lastLocalSyncModelChange, remote.lastLocalSyncModelChange);
 
-    if (local.lastLocalSyncModelChange === remote.lastLocalSyncModelChange) {
-      console.log('NO UPDATE REQUIRED');
-      // No update required
-    } else if (local.lastLocalSyncModelChange > remote.lastLocalSyncModelChange) {
-      if (lastSyncTo < local.lastLocalSyncModelChange) {
-        // alert('Update remote');
+    switch (checkForUpdate({
+      local: local.lastLocalSyncModelChange,
+      lastSyncTo,
+      remote: remote.lastLocalSyncModelChange
+    })) {
+      case UpdateCheckResult.InSync: {
+        console.log('NO UPDATE REQUIRED');
+        break;
+      }
+
+      case UpdateCheckResult.LocalUpdateRequired: {
+        return await this._importRemote(remote);
+      }
+
+      case UpdateCheckResult.RemoteUpdateRequired: {
         console.log('UPDATE REMOTE INSTEAD');
         this._manualSaveTrigger$.next(local);
-        // TODO snack
-      } else if (isManualHandleConflicts) {
-        if (lastSyncTo < remote.lastLocalSyncModelChange
-          && confirm('Data has diverged. BETTER HANDLING')) {
-          // return await this._updateRemote(local);
-        } else if (isManualHandleConflicts
-          && confirm('Local data is newer than remote. Still import?')) {
-          return await this._importRemote(remote);
-        }
+        break;
       }
-    } else if (local.lastLocalSyncModelChange < remote.lastLocalSyncModelChange) {
-      return await this._importRemote(remote);
+
+      case UpdateCheckResult.DataDiverged: {
+        alert('NO HANDLING YET');
+        break;
+      }
     }
   }
 
