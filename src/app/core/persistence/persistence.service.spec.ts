@@ -67,7 +67,7 @@ describe('PersistenceService', () => {
       let i = 0;
       service.inMemoryComplete$.subscribe((data) => {
         const l = JSON.stringify(data).length;
-        console.log(i, l, ll);
+        // console.log(i, l, ll);
         if (ll) {
           expect(l).toEqual(ll);
         }
