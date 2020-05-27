@@ -191,6 +191,11 @@ export class BlockstackService {
       throw new Error('No data provided');
     }
 
+    // TODO maybe remove later on, when we are more sure about the data
+    if (!isValidAppData(appComplete)) {
+      throw new Error('Refused to update with invalid  data');
+    }
+
     await this._write(COMPLETE_KEY, appComplete);
     await this._refreshInMemory(appComplete);
     this._setLasSyncTo(appComplete.lastLocalSyncModelChange);
