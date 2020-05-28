@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {AppConfig, UserSession} from 'blockstack';
-import {auditTime, filter, first, mapTo, skip, startWith, switchMap, take, tap} from 'rxjs/operators';
+import {auditTime, concatMap, filter, first, mapTo, skip, startWith, switchMap, take, tap} from 'rxjs/operators';
 import {PersistenceService} from '../../core/persistence/persistence.service';
 import {GlobalSyncService} from '../../core/global-sync/global-sync.service';
 import {AppDataComplete} from '../../imex/sync/sync.model';
@@ -15,6 +15,7 @@ import {GlobalProgressBarService} from '../../core-ui/global-progress-bar/global
 import {GlobalConfigService} from '../config/global-config.service';
 import {T} from '../../t.const';
 import {checkForUpdate, UpdateCheckResult} from './check-for-update.util';
+import {DataInitService} from '../../core/data-init/data-init.service';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -31,8 +32,9 @@ export class BlockstackService {
   us: UserSession = new UserSession({appConfig});
   isSignedIn$ = new BehaviorSubject<boolean>(false);
 
-  private _isEnabled$: Observable<boolean> = this._globalConfigService.isBlockstackEnabled$;
-  // private _isEnabled$: Observable<boolean> = of(false);
+  private _isEnabled$: Observable<boolean> = this._dataInitService.isAllDataLoadedInitially$.pipe(
+    concatMap(() => this._globalConfigService.isBlockstackEnabled$)
+  );
 
 
   // UPDATE LOCAL
@@ -55,45 +57,42 @@ export class BlockstackService {
     ),
   );
 
-  private _checkRemoteUpdate$: Observable<string> = this._isEnabled$.pipe(
-    switchMap((isEnabled) => isEnabled
-      ? this._checkRemoteUpdateTriggers$
-      : EMPTY),
-    tap((ev) => console.log('__TRIGGER SYNC__', ev))
-  );
 
   // SAVE TO REMOTE
   // --------------
-  private _saveToRemoteTrigger$: Observable<unknown> = this._isEnabled$.pipe(
-    switchMap((isEnabled) => isEnabled
-      ? this._persistenceService.onAfterSave$
-      : EMPTY),
+  private _saveToRemoteTrigger$: Observable<unknown> = this._persistenceService.onAfterSave$.pipe(
     filter(({appDataKey, data, isDataImport}) => !!data && !isDataImport),
   );
 
-  private _writeAppDataToBlockstack$ = this._saveToRemoteTrigger$.pipe(
+  private _sync$ = this._isEnabled$.pipe(
+    switchMap((isEnabled) => isEnabled
+      ? merge(
+        this._checkRemoteUpdateTriggers$,
+        this._saveToRemoteTrigger$,
+      )
+      : EMPTY),
+    tap((ev) => console.log('__TRIGGER SYNC__', ev)),
     // TODO handle initial creation
     auditTime(BS_AUDIT_TIME),
-    switchMap(() => this._checkForRemoteUpdateAndSync({isSaveToRemote: true})),
+    tap((ev) => console.log('__TRIGGER SYNC AFTER AUDITTIME__', ev)),
+    switchMap(() => this._checkForRemoteUpdateAndSync()),
   );
 
 
   constructor(
     private _persistenceService: PersistenceService,
+    private _dataInitService: DataInitService,
     private _globalSyncService: GlobalSyncService,
     private _globalConfigService: GlobalConfigService,
     private _snackService: SnackService,
     private _syncService: SyncService,
     private _globalProgressBarService: GlobalProgressBarService,
   ) {
-    // SAVE TRIGGER
-    this._writeAppDataToBlockstack$.subscribe();
-
     // INITIAL LOAD AND SIGN IN
     this._initialSignInAndImportIfEnabled();
 
     // SYNC
-    this._checkRemoteUpdate$.subscribe(() => this._checkForRemoteUpdateAndSync());
+    this._sync$.subscribe();
 
     // TO RESET
     // this._persistenceService.inMemoryComplete$.pipe(take(1)).subscribe(data => this._updateRemote(data));
@@ -176,12 +175,12 @@ export class BlockstackService {
 
   private async _checkForUpdateAndSyncInitial() {
     this._snackService.open({msg: T.F.BLOCKSTACK.S.LOAD, ico: 'file_download', isSpinner: true});
-    return await this._checkForRemoteUpdateAndSync()
-      .then(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack))
-      .catch(() => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack));
+    return await this._checkForRemoteUpdateAndSync().finally(
+      () => this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack)
+    );
   }
 
-  private async _checkForRemoteUpdateAndSync({isSaveToRemote = false}: { isSaveToRemote?: boolean } = {}) {
+  private async _checkForRemoteUpdateAndSync() {
     const remote = await this._read(COMPLETE_KEY);
     const local = await this._persistenceService.inMemoryComplete$.pipe(take(1)).toPromise();
     const lastSync = this._getLasSync();
