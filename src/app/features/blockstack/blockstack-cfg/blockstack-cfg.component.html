@@ -1,5 +1,4 @@
-<mat-slide-toggle *ngIf="blockstackService.isSignedIn$|async"
-                  (ngModelChange)="toggleEnabled($event)"
+<mat-slide-toggle (ngModelChange)="toggleEnabled($event)"
                   [ngModel]="(globalConfigService.isBlockstackEnabled$|async)"
                   style="margin-bottom: 16px;">
   {{T.F.BLOCKSTACK.FORM.L_IS_ENABLED|translate}}
