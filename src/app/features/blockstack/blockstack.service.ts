@@ -16,6 +16,7 @@ import {GlobalConfigService} from '../config/global-config.service';
 import {T} from '../../t.const';
 import {checkForUpdate, UpdateCheckResult} from './check-for-update.util';
 import {DataInitService} from '../../core/data-init/data-init.service';
+import {IS_ELECTRON} from '../../app.constants';
 
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
 
@@ -33,7 +34,7 @@ export class BlockstackService {
   isSignedIn$ = new BehaviorSubject<boolean>(false);
 
   private _isEnabled$: Observable<boolean> = this._dataInitService.isAllDataLoadedInitially$.pipe(
-    concatMap(() => this._globalConfigService.isBlockstackEnabled$)
+    concatMap(() => this._globalConfigService.isBlockstackEnabled$),
   );
 
 
@@ -99,7 +100,14 @@ export class BlockstackService {
   }
 
   signIn() {
-    this.us.redirectToSignIn();
+    console.log('window.location', window.location);
+    if (confirm('Redirect for sign in?')) {
+      if (IS_ELECTRON) {
+        this.us.redirectToSignIn();
+      } else {
+        this.us.redirectToSignIn();
+      }
+    }
   }
 
   signOut() {
@@ -112,15 +120,15 @@ export class BlockstackService {
   }
 
   private async _initialSignInAndImportIfEnabled() {
-    if (await this._checkSetSignedIn()) {
-      if (await this._isEnabled$.pipe(first()).toPromise()) {
+    if (await this._isEnabled$.pipe(first()).toPromise()) {
+      if (await this._checkSetSignedIn()) {
         await this._checkForUpdateAndSyncInitial();
       } else {
-        this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
+        this.signIn();
+        this.isSignedIn$.next(false);
       }
     } else {
-      this.signIn();
-      this.isSignedIn$.next(false);
+      this._globalSyncService.setInitialSyncDone(true, SyncProvider.Blockstack);
     }
   }
 
