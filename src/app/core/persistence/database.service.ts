@@ -1,14 +1,22 @@
 import { Injectable } from '@angular/core';
 import { DataBaseAdapter } from './adapters/database-adapter.interface';
 import { IndexedDbAdapter } from './adapters/indexed-db-adapter';
+import { IS_ELECTRON } from '../../app.constants';
 
 @Injectable({
   providedIn: 'root',
 })
 export class DatabaseService {
-  adapter: DataBaseAdapter = new IndexedDbAdapter();
+  adapter: DataBaseAdapter;
 
-  constructor() {
+  constructor(
+    private _indexedDbAdapter: IndexedDbAdapter,
+  ) {
+    if (IS_ELECTRON) {
+      this.adapter = this._indexedDbAdapter;
+    } else {
+      this.adapter = this._indexedDbAdapter;
+    }
   }
 
   async load(key: string): Promise<unknown> {

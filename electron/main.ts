@@ -18,6 +18,7 @@ import { backupData } from './backup';
 import { JiraCfg } from '../src/app/features/issue/providers/jira/jira.model';
 import { KeyboardConfig } from '../src/app/features/config/global-config.model';
 import lockscreen from './lockscreen';
+import { initDbAdapter } from './db-adapter';
 
 const ICONS_FOLDER = __dirname + '/assets/icons/';
 const IS_MAC = process.platform === 'darwin';
@@ -99,6 +100,7 @@ appIN.on('certificate-error', (event, webContents, url, error, certificate, call
 // -------------------
 appIN.on('ready', createMainWin);
 appIN.on('ready', createIndicator);
+appIN.on('ready', initDbAdapter);
 
 appIN.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the
