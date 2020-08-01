@@ -16,7 +16,7 @@ export const initDbAdapter = async (userDataDir: string) => {
   });
 
   answerRenderer(IPC.DB_LOAD, ({key}: { key: string }, event) => {
-    return fs.readFile(`${basePath}/${key}`);
+    return fs.readFile(`${basePath}/${key}`, 'utf8');
   });
 
   answerRenderer(IPC.DB_REMOVE, (newSettings, event) => {
