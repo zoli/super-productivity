@@ -100,7 +100,7 @@ appIN.on('certificate-error', (event, webContents, url, error, certificate, call
 // -------------------
 appIN.on('ready', createMainWin);
 appIN.on('ready', createIndicator);
-appIN.on('ready', initDbAdapter);
+appIN.on('ready', () => initDbAdapter(app.getPath('userData')));
 
 appIN.on('activate', () => {
   // On OS X it's common to re-create a window in the app when the

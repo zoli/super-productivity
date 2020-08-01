@@ -4,6 +4,20 @@ import { Injectable } from '@angular/core';
 import { ipcRenderer, remote, shell, webFrame } from 'electron';
 import { IS_ELECTRON } from '../../app.constants';
 
+// TODO make available for both
+export const getSendChannel = channel => `%better-ipc-send-channel-${channel}`;
+const getUniqueId = () => `${Date.now()}-${Math.random()}`;
+
+// const getRendererSendChannel = (windowId, channel) => `%better-ipc-send-channel-${windowId}-${channel}`;
+const getResponseChannels = channel => {
+  const id = getUniqueId();
+  return {
+    sendChannel: getSendChannel(channel),
+    dataChannel: `%better-ipc-response-data-channel-${channel}-${id}`,
+    errorChannel: `%better-ipc-response-error-channel-${channel}-${id}`
+  };
+};
+
 @Injectable({providedIn: 'root'})
 export class ElectronService {
   ipcRenderer?: typeof ipcRenderer;
@@ -53,5 +67,39 @@ export class ElectronService {
 
   public get process(): any {
     return this.remote ? this.remote.process : null;
+  }
+
+
+  public callMain(channel: string, data: unknown) {
+    return new Promise((resolve, reject) => {
+      const {sendChannel, dataChannel, errorChannel} = getResponseChannels(channel);
+
+      const cleanup = () => {
+        (this.ipcRenderer as typeof ipcRenderer).off(dataChannel, onData);
+        (this.ipcRenderer as typeof ipcRenderer).off(errorChannel, onError);
+      };
+
+      const onData = (event, result) => {
+        cleanup();
+        resolve(result);
+      };
+
+      const onError = (event, error) => {
+        cleanup();
+        // reject(deserializeError(error));
+        reject(error);
+      };
+
+      (this.ipcRenderer as typeof ipcRenderer).once(dataChannel, onData);
+      (this.ipcRenderer as typeof ipcRenderer).once(errorChannel, onError);
+
+      const completeData = {
+        dataChannel,
+        errorChannel,
+        userData: data
+      };
+
+      (this.ipcRenderer as typeof ipcRenderer).send(sendChannel, completeData);
+    });
   }
 }

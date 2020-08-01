@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { DataBaseAdapter } from './adapters/database-adapter.interface';
 import { IndexedDbAdapter } from './adapters/indexed-db-adapter';
 import { IS_ELECTRON } from '../../app.constants';
+import { ElectronFileDbAdapter } from './adapters/electron-file-db-adapter';
 
 @Injectable({
   providedIn: 'root',
@@ -11,9 +12,11 @@ export class DatabaseService {
 
   constructor(
     private _indexedDbAdapter: IndexedDbAdapter,
+    private _electronFileDbAdapter: ElectronFileDbAdapter,
   ) {
     if (IS_ELECTRON) {
-      this.adapter = this._indexedDbAdapter;
+      // TODO migrate for version
+      this.adapter = this._electronFileDbAdapter;
     } else {
       this.adapter = this._indexedDbAdapter;
     }

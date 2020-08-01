@@ -1,23 +1,31 @@
-import promiseIpc from 'electron-promise-ipc';
-import { promises as fs } from 'fs';
+import { existsSync, mkdirSync, promises as fs } from 'fs';
 import { IPC } from './ipc-events.const';
-import { app } from 'electron';
+import { answerRenderer } from './better-ipc';
 
-export const initDbAdapter = () => {
-  const path = app.getPath('userData');
-  console.log(promiseIpc);
+export const initDbAdapter = async (userDataDir: string) => {
+  const basePath = `${userDataDir}/db`;
+  if (!existsSync(basePath)) {
+    mkdirSync(basePath);
+  }
 
-  promiseIpc.on(IPC.DB_SAVE, (newSettings, event) => {
-    console.log(newSettings);
-    return fs.writeFile(path, newSettings);
+  console.log(basePath);
+
+  answerRenderer(IPC.DB_SAVE, ({key, data}: { key: string; data: string }, event) => {
+    console.log(key, data);
+    return fs.writeFile(`${basePath}/${key}`, data);
   });
-  // promiseIpc.on(IPC.DB_LOAD, (newSettings, event) => {
-  //   return fs.writeFile(path, newSettings);
-  // });
-  // promiseIpc.on(IPC.DB_SAVE, (newSettings, event) => {
-  //   return fs.writeFile(path, newSettings);
-  // });
-  // promiseIpc.on(IPC.DB_SAVE, (newSettings, event) => {
-  //   return fs.writeFile(path, newSettings);
-  // });
+
+  answerRenderer(IPC.DB_LOAD, ({key}: { key: string }, event) => {
+    return fs.readFile(`${basePath}/${key}`);
+  });
+
+  answerRenderer(IPC.DB_REMOVE, (newSettings, event) => {
+    // console.log(newSettings, event);
+    // return fs.writeFile(basePath, newSettings);
+  });
+
+  answerRenderer(IPC.DB_CLEAR, (params, event) => {
+    // TODO delete all files in dir
+    // return fs.writeFile(basePath);
+  });
 };
