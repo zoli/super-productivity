@@ -341,6 +341,5 @@ export class DropboxSyncService {
 
   private _c(str: string): boolean {
     return confirm(this._translateService.instant(str));
-  };
-
+  }
 }
