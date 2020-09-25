@@ -95,15 +95,16 @@ export const createWindow = ({
   //       protocol: 'file:',
   //       slashes: true,
   //     });
-  const url = (IS_DEV)
-    ? 'http://localhost:4200'
-    : format({
+  const url =
+    // (IS_DEV)
+    // ? 'http://localhost:4200'
+    // :
+    format({
       pathname: normalize(join(__dirname, '../dist/index.html')),
       protocol: 'file:',
       slashes: true,
     });
   console.log(url);
-
 
   mainWin.loadURL(url);
   // mainWin.loadURL('app://./index.html');

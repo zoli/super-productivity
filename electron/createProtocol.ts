@@ -1,8 +1,8 @@
-import {protocol} from 'electron';
+import { protocol } from 'electron';
 import * as path from 'path';
-import {join, normalize} from 'path';
-import {readFile} from 'fs';
-import {URL} from 'url';
+import { join, normalize } from 'path';
+import { readFile } from 'fs';
+import { URL } from 'url';
 
 const BASE = normalize(join(__dirname, '../dist/'));
 
@@ -35,10 +35,5 @@ export function createProtocol(scheme) {
         respond({mimeType, data});
       });
     },
-    error => {
-      if (error) {
-        console.error(`Failed to register ${scheme} protocol`, error);
-      }
-    }
   );
 }
