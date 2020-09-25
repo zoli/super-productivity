@@ -1,7 +1,7 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
-import {Store} from '@ngrx/store';
-import {GlobalConfigActionTypes, UpdateGlobalConfigSection} from '../../config/store/global-config.actions';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
+import { Store } from '@ngrx/store';
+import { GlobalConfigActionTypes, UpdateGlobalConfigSection } from '../../config/store/global-config.actions';
 import {
   catchError,
   concatMap,
@@ -14,11 +14,10 @@ import {
   tap,
   withLatestFrom
 } from 'rxjs/operators';
-import {combineLatest, EMPTY, from, Observable, of, throwError, zip} from 'rxjs';
-import {GoogleDriveSyncService} from '../google-drive-sync.service';
-import {GoogleApiService} from '../google-api.service';
-import {GlobalConfigService} from '../../config/global-config.service';
-import {SnackService} from '../../../core/snack/snack.service';
+import { combineLatest, EMPTY, from, Observable, of, throwError, zip } from 'rxjs';
+import { GoogleApiService } from '../google-api.service';
+import { GlobalConfigService } from '../../config/global-config.service';
+import { SnackService } from '../../../core/snack/snack.service';
 import {
   ChangeSyncFileName,
   CreateSyncFile,
@@ -33,34 +32,33 @@ import {
   SaveToGoogleDriveFlow,
   SaveToGoogleDriveSuccess
 } from './google-drive-sync.actions';
-import {DialogConfirmComponent} from '../../../ui/dialog-confirm/dialog-confirm.component';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {GoogleDriveSyncConfig} from '../../config/global-config.model';
-import {DataImportService} from '../../../imex/sync/data-import.service';
-import {DEFAULT_SYNC_FILE_NAME} from '../google.const';
-import {DialogConfirmDriveSyncSaveComponent} from '../dialog-confirm-drive-sync-save/dialog-confirm-drive-sync-save.component';
+import { DialogConfirmComponent } from '../../../ui/dialog-confirm/dialog-confirm.component';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { GoogleDriveSyncConfig } from '../../config/global-config.model';
+import { DataImportService } from '../../../imex/sync/data-import.service';
+import { DEFAULT_SYNC_FILE_NAME } from '../google.const';
+import { DialogConfirmDriveSyncSaveComponent } from '../dialog-confirm-drive-sync-save/dialog-confirm-drive-sync-save.component';
 import * as moment from 'moment';
-import {DialogConfirmDriveSyncLoadComponent} from '../dialog-confirm-drive-sync-load/dialog-confirm-drive-sync-load.component';
-import {AppDataComplete} from '../../../imex/sync/sync.model';
-import {selectIsGoogleDriveSaveInProgress} from './google-drive-sync.reducer';
-import {CompressionService} from '../../../core/compression/compression.service';
-import {TranslateService} from '@ngx-translate/core';
-import {T} from '../../../t.const';
-import {SyncService} from '../../../imex/sync/sync.service';
-import {SyncProvider} from '../../../imex/sync/sync-provider';
-import {HANDLED_ERROR_PROP_STR} from '../../../app.constants';
-import {DataInitService} from '../../../core/data-init/data-init.service';
-import {getGoogleLocalLastSync, saveGoogleLocalLastSync} from '../google-session';
-import {loadAllData} from '../../../root-store/meta/load-all-data.action';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
+import { DialogConfirmDriveSyncLoadComponent } from '../dialog-confirm-drive-sync-load/dialog-confirm-drive-sync-load.component';
+import { AppDataComplete } from '../../../imex/sync/sync.model';
+import { selectIsGoogleDriveSaveInProgress } from './google-drive-sync.reducer';
+import { CompressionService } from '../../../core/compression/compression.service';
+import { T } from '../../../t.const';
+import { SyncService } from '../../../imex/sync/sync.service';
+import { SyncProvider } from '../../../imex/sync/sync-provider';
+import { HANDLED_ERROR_PROP_STR } from '../../../app.constants';
+import { DataInitService } from '../../../core/data-init/data-init.service';
+import { getGoogleLocalLastSync, saveGoogleLocalLastSync } from '../google-session';
+import { loadAllData } from '../../../root-store/meta/load-all-data.action';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
 
 @Injectable()
 export class GoogleDriveSyncEffects {
-  config$ = this._configService.cfg$.pipe(map(cfg => cfg.googleDriveSync));
-  isEnabled$ = this.config$.pipe(map(cfg => cfg.isEnabled), distinctUntilChanged());
-  isAutoSyncToRemote$ = this.config$.pipe(map(cfg => cfg.isAutoSyncToRemote), distinctUntilChanged());
-  syncInterval$ = this.config$.pipe(map(cfg => cfg.syncInterval), distinctUntilChanged());
-  isInitialSyncDone = false;
+  config$: Observable<GoogleDriveSyncConfig> = this._configService.cfg$.pipe(map(cfg => cfg.googleDriveSync));
+  isEnabled$: Observable<boolean> = this.config$.pipe(map(cfg => cfg.isEnabled), distinctUntilChanged());
+  isAutoSyncToRemote$: Observable<boolean> = this.config$.pipe(map(cfg => cfg.isAutoSyncToRemote), distinctUntilChanged());
+  syncInterval$: Observable<number> = this.config$.pipe(map(cfg => cfg.syncInterval), distinctUntilChanged());
+  isInitialSyncDone: boolean = false;
 
   @Effect() triggerSync$: any = this._actions$.pipe(
     ofType(
@@ -210,12 +208,16 @@ export class GoogleDriveSyncEffects {
         return this._googleApiService.getFileInfo$(cfg._backupDocId).pipe(
           catchError(err => this._handleErrorForSave$(err)),
           concatMap((res: any): Observable<any> => {
-
-            const lastLocalSyncModelChange: number = this._persistenceService.getLastLocalSyncModelChange();
+            // if we don't have any local changes (unlikely) we assume its the lowest possible value
+            const lastLocalSyncModelChange: number = this._persistenceService.getLastLocalSyncModelChange() || 0;
             const lastModifiedRemote: string = res.modifiedDate;
             const lastSync = getGoogleLocalLastSync();
 
-            if (this._isEqual(lastLocalSyncModelChange, lastModifiedRemote)) {
+            if (lastSync === null) {
+              // never synced so ask what to do
+              this._openConfirmSaveDialog(lastModifiedRemote);
+              return of(new SaveToGoogleDriveCancel());
+            } else if (this._isEqual(lastLocalSyncModelChange, lastModifiedRemote)) {
               if (!action.payload || !action.payload.isSkipSnack) {
                 this._snackService.open({
                   type: 'SUCCESS',
@@ -319,7 +321,8 @@ export class GoogleDriveSyncEffects {
                   );
                 }),
                 concatMap(([loadResponse, appData]: [any, AppDataComplete]): any => {
-                  const lastLocalSyncModelChange = this._persistenceService.getLastLocalSyncModelChange();
+                  // if we don't have any local changes (unlikely) we assume its the lowest possible value
+                  const lastLocalSyncModelChange = this._persistenceService.getLastLocalSyncModelChange() || 0;
 
                   const lastLocalSyncModelChangeRemote = appData.lastLocalSyncModelChange
                     // NOTE: needed to support previous property name
@@ -387,17 +390,15 @@ export class GoogleDriveSyncEffects {
     tap((modifiedDate) => saveGoogleLocalLastSync(modifiedDate as string)),
   );
 
-  private _config: GoogleDriveSyncConfig;
+  private _config?: GoogleDriveSyncConfig;
 
   constructor(
     private _actions$: Actions,
     private _store$: Store<any>,
-    private _googleDriveSyncService: GoogleDriveSyncService,
     private _googleApiService: GoogleApiService,
     private _configService: GlobalConfigService,
     private _syncService: SyncService,
     private _snackService: SnackService,
-    private _translateService: TranslateService,
     private _compressionService: CompressionService,
     private _matDialog: MatDialog,
     private _dataInitService: DataInitService,
@@ -409,24 +410,27 @@ export class GoogleDriveSyncEffects {
     });
   }
 
-  private _handleErrorForSave$(err): Observable<any> {
+  private _handleErrorForSave$(err: any): Observable<any> {
     return of(new SaveToGoogleDriveCancel());
   }
 
-  private _handleErrorForLoad$(err): Observable<any> {
+  private _handleErrorForLoad$(err: any): Observable<any> {
     this._setInitialSyncDone();
     return of(new LoadFromGoogleDriveCancel());
   }
 
   private _checkIfRemoteUpdate$(): Observable<boolean> {
     const lastSync = getGoogleLocalLastSync();
+    if (!this._config) {
+      throw new Error('No cfg');
+    }
 
     return this._googleApiService.getFileInfo$(this._config._backupDocId)
       .pipe(
         tap(res => console.log(this._formatDate(res.modifiedDate))),
-        tap(res => console.log(this._formatDate(lastSync))),
-        tap(res => console.log(this._isNewerThan(res.modifiedDate, lastSync), res.modifiedDate, lastSync)),
-        map((res: any) => this._isNewerThan(res.modifiedDate, lastSync)),
+        tap(res => console.log(lastSync && this._formatDate(lastSync))),
+        tap(res => console.log(this._isNewerThan(res.modifiedDate, lastSync || 0), res.modifiedDate, lastSync)),
+        map((res: any) => this._isNewerThan(res.modifiedDate, lastSync || 0)),
       );
   }
 
@@ -436,14 +440,19 @@ export class GoogleDriveSyncEffects {
       return modal.componentInstance.constructor.name === DialogConfirmDriveSyncSaveComponent.name;
     })) {
       const lastLocalSyncModelChange = this._persistenceService.getLastLocalSyncModelChange();
+      const googleLocalLastSync = getGoogleLocalLastSync();
       this._matDialog.open(DialogConfirmDriveSyncSaveComponent, {
         restoreFocus: true,
         data: {
           loadFromRemote: () => this._store$.dispatch(new LoadFromGoogleDrive()),
           saveToRemote: () => this._store$.dispatch(new SaveToGoogleDrive()),
           remoteModified: this._formatDate(remoteModified),
-          lastLocalSyncModelChange: this._formatDate(lastLocalSyncModelChange),
-          lastSync: this._formatDate(getGoogleLocalLastSync()),
+          lastLocalSyncModelChange: !!lastLocalSyncModelChange
+            ? this._formatDate(lastLocalSyncModelChange)
+            : '–',
+          lastSync: googleLocalLastSync
+            ? this._formatDate(googleLocalLastSync)
+            : '–',
         }
       });
     }
@@ -454,7 +463,8 @@ export class GoogleDriveSyncEffects {
     if (!this._matDialog.openDialogs.length || !this._matDialog.openDialogs.find((modal: MatDialogRef<any>) => {
       return modal.componentInstance.constructor.name === DialogConfirmDriveSyncLoadComponent.name;
     })) {
-      const lastLocalSyncModelChange: number = this._persistenceService.getLastLocalSyncModelChange();
+      const lastLocalSyncModelChange = this._persistenceService.getLastLocalSyncModelChange();
+      const googleLocalLastSync = getGoogleLocalLastSync();
       this._matDialog.open(DialogConfirmDriveSyncLoadComponent, {
         restoreFocus: true,
         data: {
@@ -464,8 +474,12 @@ export class GoogleDriveSyncEffects {
             this._store$.dispatch(new SaveToGoogleDrive());
           },
           remoteModified: this._formatDate(remoteModified),
-          lastLocalSyncModelChange: this._formatDate(lastLocalSyncModelChange),
-          lastSync: this._formatDate(getGoogleLocalLastSync()),
+          lastLocalSyncModelChange: !!lastLocalSyncModelChange
+            ? this._formatDate(lastLocalSyncModelChange)
+            : '–',
+          lastSync: googleLocalLastSync
+            ? this._formatDate(googleLocalLastSync)
+            : '–',
         }
       }).afterClosed().subscribe((isCanceled) => {
         if (isCanceled) {
@@ -475,7 +489,7 @@ export class GoogleDriveSyncEffects {
     }
   }
 
-  private _showAsyncToast(showWhile$: Observable<any> = EMPTY, msg) {
+  private _showAsyncToast(showWhile$: Observable<any> = EMPTY, msg: string) {
     this._snackService.open({
       type: 'CUSTOM',
       ico: 'file_upload',
@@ -485,8 +499,7 @@ export class GoogleDriveSyncEffects {
     });
   }
 
-
-  private _confirmSaveNewFile$(fileName): Observable<boolean> {
+  private _confirmSaveNewFile$(fileName: string): Observable<boolean> {
     return this._matDialog.open(DialogConfirmComponent, {
       restoreFocus: true,
       data: {
@@ -496,7 +509,7 @@ export class GoogleDriveSyncEffects {
     }).afterClosed();
   }
 
-  private _confirmUsingExistingFileDialog$(fileName): Observable<boolean> {
+  private _confirmUsingExistingFileDialog$(fileName: string): Observable<boolean> {
     return this._matDialog.open(DialogConfirmComponent, {
       restoreFocus: true,
       data: {
@@ -508,13 +521,16 @@ export class GoogleDriveSyncEffects {
 
   // DATE HELPER
   private _loadFile$(): Observable<any> {
+    if (!this._config) {
+      throw new Error('No cfg');
+    }
     if (!this._config.syncFileName) {
       return throwError({[HANDLED_ERROR_PROP_STR]: 'No file name specified'});
     }
     return this._googleApiService.loadFile$(this._config._backupDocId);
   }
 
-  private async _import(loadRes): Promise<string> {
+  private async _import(loadRes: any): Promise<string> {
     const backupData: AppDataComplete = await this._decodeAppDataIfNeeded(loadRes.backup);
 
     return from(this._dataImportService.importCompleteSyncData(backupData))
@@ -523,7 +539,7 @@ export class GoogleDriveSyncEffects {
   }
 
   private async _decodeAppDataIfNeeded(backupStr: string | AppDataComplete): Promise<AppDataComplete> {
-    let backupData: AppDataComplete;
+    let backupData: AppDataComplete | undefined;
 
     // we attempt this regardless of the option, because data might be compressed anyway
     if (typeof backupStr === 'string') {
@@ -560,7 +576,7 @@ export class GoogleDriveSyncEffects {
     return (d1.getTime() > d2.getTime());
   }
 
-  private _isEqual(strDate1, strDate2): boolean {
+  private _isEqual(strDate1: string | number, strDate2: string | number): boolean {
     const d1 = new Date(strDate1);
     const d2 = new Date(strDate2);
     return (d1.getTime() === d2.getTime());

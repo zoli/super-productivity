@@ -1,15 +1,15 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
-import {SetCurrentTask, TaskActionTypes, UnsetCurrentTask, UpdateTask} from './task.actions';
-import {select, Store} from '@ngrx/store';
-import {filter, map, mergeMap, withLatestFrom} from 'rxjs/operators';
-import {selectTaskFeatureState} from './task.selectors';
-import {selectMiscConfig} from '../../config/store/global-config.reducer';
-import {TaskState} from '../task.model';
-import {EMPTY, of} from 'rxjs';
-import {MiscConfig} from '../../config/global-config.model';
-import {moveTaskToBacklogList, moveTaskToBacklogListAuto} from '../../work-context/store/work-context-meta.actions';
-import {WorkContextService} from '../../work-context/work-context.service';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
+import { SetCurrentTask, TaskActionTypes, UnsetCurrentTask, UpdateTask } from './task.actions';
+import { select, Store } from '@ngrx/store';
+import { filter, map, mergeMap, withLatestFrom } from 'rxjs/operators';
+import { selectTaskFeatureState } from './task.selectors';
+import { selectMiscConfig } from '../../config/store/global-config.reducer';
+import { Task, TaskState } from '../task.model';
+import { EMPTY, of } from 'rxjs';
+import { MiscConfig } from '../../config/global-config.model';
+import { moveTaskToBacklogList, moveTaskToBacklogListAuto } from '../../work-context/store/work-context-meta.actions';
+import { WorkContextService } from '../../work-context/work-context.service';
 
 @Injectable()
 export class TaskInternalEffects {
@@ -23,19 +23,22 @@ export class TaskInternalEffects {
       this._store$.pipe(select(selectTaskFeatureState))
     ),
     filter(([action, miscCfg, state]: [UpdateTask, MiscConfig, TaskState]) =>
-      miscCfg && miscCfg.isAutMarkParentAsDone &&
-      action.payload.task.changes.isDone &&
+      !!miscCfg && miscCfg.isAutMarkParentAsDone && !!action.payload.task.changes.isDone &&
+      // @ts-ignore
       !!(state.entities[action.payload.task.id].parentId)
     ),
     filter(([action, miscCfg, state]) => {
       const task = state.entities[action.payload.task.id];
-      const parent = state.entities[task.parentId];
-      const undoneSubTasks = parent.subTaskIds.filter(id => !state.entities[id].isDone);
+      if (!task || !task.parentId) {
+        throw new Error('!task || !task.parentId');
+      }
+      const parent = state.entities[task.parentId] as Task;
+      const undoneSubTasks = parent.subTaskIds.filter(id => !(state.entities[id] as Task).isDone);
       return undoneSubTasks.length === 0;
     }),
     map(([action, miscCfg, state]) => new UpdateTask({
       task: {
-        id: state.entities[action.payload.task.id].parentId,
+        id: (state.entities[action.payload.task.id] as Task).parentId as string,
         changes: {isDone: true},
       }
     })),
@@ -80,7 +83,7 @@ export class TaskInternalEffects {
           nextId = (isDone && isCurrent)
 
             ? ((isAutoStartNextTask)
-              ? this._findNextTask(state, todaysTaskIds, oldId)
+              ? this._findNextTask(state, todaysTaskIds, oldId as string)
               : null)
 
             : 'NO_UPDATE';
@@ -100,6 +103,8 @@ export class TaskInternalEffects {
           nextId = state.currentTaskId;
           break;
         }
+        default:
+          nextId = null;
 
         // NOTE: currently no solution for this, but we're probably fine, as the current task
         // gets unset every time we go to the finish day view
@@ -125,22 +130,22 @@ export class TaskInternalEffects {
   ) {
   }
 
-  private _findNextTask(state: TaskState, todaysTaskIds: string[], oldCurrentId?): string {
-    let nextId = null;
+  private _findNextTask(state: TaskState, todaysTaskIds: string[], oldCurrentId?: string): string | null {
+    let nextId: string | null = null;
     const {entities} = state;
 
-    const filterUndoneNotCurrent = (id) => !entities[id].isDone && id !== oldCurrentId;
+    const filterUndoneNotCurrent = (id: string) => !(entities[id] as Task).isDone && id !== oldCurrentId;
     const flattenToSelectable = (arr: string[]) => arr.reduce((acc: string[], next: string) => {
-      return entities[next].subTaskIds.length > 0
-        ? acc.concat(entities[next].subTaskIds)
+      return (entities[next] as Task).subTaskIds.length > 0
+        ? acc.concat((entities[next] as Task).subTaskIds)
         : acc.concat(next);
     }, []);
 
     if (oldCurrentId) {
       const oldCurTask = entities[oldCurrentId];
       if (oldCurTask && oldCurTask.parentId) {
-        entities[oldCurTask.parentId].subTaskIds.some((id) => {
-          return (id !== oldCurrentId && entities[id].isDone === false)
+        (entities[oldCurTask.parentId] as Task).subTaskIds.some((id) => {
+          return (id !== oldCurrentId && !(entities[id] as Task).isDone)
             ? (nextId = id) && true // assign !!!
             : false;
         });
@@ -153,12 +158,15 @@ export class TaskInternalEffects {
         const selectableBefore = flattenToSelectable(mainTasksBefore);
         const selectableAfter = flattenToSelectable(mainTasksAfter);
         nextId = selectableAfter.find(filterUndoneNotCurrent)
-          || selectableBefore.reverse().find(filterUndoneNotCurrent);
-        nextId = (Array.isArray(nextId)) ? nextId[0] : nextId;
+          || selectableBefore.reverse().find(filterUndoneNotCurrent)
+          || null;
+        nextId = (Array.isArray(nextId))
+          ? nextId[0]
+          : nextId;
 
       }
     } else {
-      const lastTask = entities[state.lastCurrentTaskId];
+      const lastTask = state.lastCurrentTaskId && entities[state.lastCurrentTaskId];
       const isLastSelectable = state.lastCurrentTaskId && lastTask && !lastTask.isDone && !lastTask.subTaskIds.length;
       if (isLastSelectable) {
         nextId = state.lastCurrentTaskId;

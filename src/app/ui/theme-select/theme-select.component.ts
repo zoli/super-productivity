@@ -1,7 +1,6 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {ALL_THEMES} from '../../app.constants';
-import {T} from '../../t.const';
-
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ALL_THEMES } from '../../app.constants';
+import { T } from '../../t.const';
 
 @Component({
   selector: 'theme-select',
@@ -10,6 +9,10 @@ import {T} from '../../t.const';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ThemeSelectComponent {
-  T = T;
-  themes = ALL_THEMES;
+  T: typeof T = T;
+  themes: string[] = ALL_THEMES;
+
+  trackBy(i: number, theme: string) {
+    return i;
+  }
 }

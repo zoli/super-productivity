@@ -1,6 +1,6 @@
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
-import {TaskWithSubTasks} from '../../../../../tasks/task.model';
-import {T} from '../../../../../../t.const';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { TaskWithSubTasks } from '../../../../../tasks/task.model';
+import { T } from '../../../../../../t.const';
 
 @Component({
   selector: 'github-issue-header',
@@ -9,8 +9,8 @@ import {T} from '../../../../../../t.const';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GithubIssueHeaderComponent {
-  T = T;
-  @Input() public task: TaskWithSubTasks;
+  T: typeof T = T;
+  @Input() task?: TaskWithSubTasks;
 
   constructor() {
   }

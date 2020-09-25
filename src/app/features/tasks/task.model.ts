@@ -1,8 +1,8 @@
-import {IssueProviderKey} from '../issue/issue.model';
-import {Reminder} from '../reminder/reminder.model';
-import {EntityState} from '@ngrx/entity';
-import {TaskAttachment} from './task-attachment/task-attachment.model';
-import {MODEL_VERSION_KEY} from '../../app.constants';
+import { IssueProviderKey } from '../issue/issue.model';
+import { Reminder } from '../reminder/reminder.model';
+import { EntityState } from '@ngrx/entity';
+import { TaskAttachment } from './task-attachment/task-attachment.model';
+import { MODEL_VERSION_KEY } from '../../app.constants';
 
 export enum ShowSubTasksMode {
   HideAll = 0,
@@ -30,17 +30,17 @@ export type TimeSpentOnDay = Readonly<TimeSpentOnDayCopy>;
 
 export interface IssueFieldsForTask {
   // NOTE: keep in mind that the issueId is not unique (especially for github)
-  issueId: string;
-  issueType: IssueProviderKey;
-  issueWasUpdated: boolean;
-  issueLastUpdated: number;
-  issueAttachmentNr: number;
-  issuePoints: number;
+  issueId: string | null;
+  issueType: IssueProviderKey | null;
+  issueWasUpdated: boolean | null;
+  issueLastUpdated: number | null;
+  issueAttachmentNr: number | null;
+  issuePoints: number | null;
 }
 
 export interface TaskCopy extends IssueFieldsForTask {
   id: string;
-  projectId: string;
+  projectId: string | null;
   title: string;
 
   subTaskIds: string[];
@@ -50,13 +50,13 @@ export interface TaskCopy extends IssueFieldsForTask {
 
   created: number;
   isDone: boolean;
-  doneOn: number;
+  doneOn: number | null;
 
   notes: string;
 
-  parentId: string;
-  reminderId: string;
-  repeatCfgId: string;
+  parentId: string | null;
+  reminderId: string | null;
+  repeatCfgId: string | null;
   tagIds: string[];
 
   // attachments
@@ -79,6 +79,7 @@ export type Task = Readonly<TaskCopy>;
 
 export interface TaskWithReminderData extends Task {
   readonly reminderData: Reminder;
+  readonly parentData?: Task;
 }
 
 export interface TaskWithSubTasks extends Task {
@@ -86,7 +87,7 @@ export interface TaskWithSubTasks extends Task {
 }
 
 export const DEFAULT_TASK: Task = {
-  id: null,
+  id: '',
   projectId: null,
   subTaskIds: [],
   timeSpentOnDay: {},
@@ -114,7 +115,6 @@ export const DEFAULT_TASK: Task = {
   issueWasUpdated: null,
 };
 
-export const SHORT_SYNTAX_REG_EX = / t?(([0-9]+(m|h|d)+)? *\/ *)?([0-9]+(m|h|d)+) *$/i;
 
 export interface TaskState extends EntityState<Task> {
   // overwrite entity model to avoid problems with typing
@@ -123,7 +123,7 @@ export interface TaskState extends EntityState<Task> {
   // additional entities state properties
   currentTaskId: string | null;
   selectedTaskId: string | null;
-  taskAdditionalInfoTargetPanel: TaskAdditionalInfoTargetPanel;
+  taskAdditionalInfoTargetPanel: TaskAdditionalInfoTargetPanel | null;
   lastCurrentTaskId: string | null;
   isDataLoaded: boolean;
 
@@ -131,5 +131,5 @@ export interface TaskState extends EntityState<Task> {
 }
 
 export interface WorklogTask extends Task {
-  dateStr?: string;
+  dateStr: string;
 }

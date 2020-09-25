@@ -1,6 +1,5 @@
-import {ProjectState} from '../../features/project/store/project.reducer';
+import { ProjectState } from '../../features/project/store/project.reducer';
 import {
-  LS_BACKUP,
   LS_BOOKMARK_STATE,
   LS_GLOBAL_CFG,
   LS_IMPROVEMENT_STATE,
@@ -8,7 +7,6 @@ import {
   LS_METRIC_STATE,
   LS_NOTE_STATE,
   LS_OBSTRUCTION_STATE,
-  LS_PROJECT_ARCHIVE,
   LS_PROJECT_META_LIST,
   LS_PROJECT_PREFIX,
   LS_REMINDER,
@@ -17,16 +15,16 @@ import {
   LS_TASK_REPEAT_CFG_STATE,
   LS_TASK_STATE
 } from '../persistence/ls-keys.const';
-import {migrateProjectState} from '../../features/project/migrate-projects-state.util';
-import {GlobalConfigState} from '../../features/config/global-config.model';
-import {migrateGlobalConfigState} from '../../features/config/migrate-global-config.util';
-import {Task, TaskArchive, TaskState, TaskWithSubTasks} from 'src/app/features/tasks/task.model';
-import {Reminder} from '../../features/reminder/reminder.model';
-import {taskReducer} from '../../features/tasks/store/task.reducer';
-import {TaskRepeatCfg, TaskRepeatCfgState} from '../../features/task-repeat-cfg/task-repeat-cfg.model';
-import {taskRepeatCfgReducer} from '../../features/task-repeat-cfg/store/task-repeat-cfg.reducer';
-import {EntityState} from '@ngrx/entity';
-import {TaskAttachment} from '../../features/tasks/task-attachment/task-attachment.model';
+import { migrateProjectState } from '../../features/project/migrate-projects-state.util';
+import { GlobalConfigState } from '../../features/config/global-config.model';
+import { migrateGlobalConfigState } from '../../features/config/migrate-global-config.util';
+import { Task, TaskArchive, TaskState, TaskWithSubTasks } from 'src/app/features/tasks/task.model';
+import { Reminder } from '../../features/reminder/reminder.model';
+import { taskReducer } from '../../features/tasks/store/task.reducer';
+import { TaskRepeatCfg, TaskRepeatCfgState } from '../../features/task-repeat-cfg/task-repeat-cfg.model';
+import { taskRepeatCfgReducer } from '../../features/task-repeat-cfg/store/task-repeat-cfg.reducer';
+import { EntityState } from '@ngrx/entity';
+import { TaskAttachment } from '../../features/tasks/task-attachment/task-attachment.model';
 import {
   LegacyAppBaseData,
   LegacyAppDataComplete,
@@ -34,20 +32,17 @@ import {
   LegacyPersistenceBaseModel,
   LegacyPersistenceForProjectModel
 } from './legacy-models';
-import {BookmarkState} from '../../features/bookmark/store/bookmark.reducer';
-import {Bookmark} from '../../features/bookmark/bookmark.model';
-import {NoteState} from '../../features/note/store/note.reducer';
-import {Note} from '../../features/note/note.model';
-import {Metric, MetricState} from '../../features/metric/metric.model';
-import {Improvement, ImprovementState} from '../../features/metric/improvement/improvement.model';
-import {Obstruction, ObstructionState} from '../../features/metric/obstruction/obstruction.model';
-import {SnackService} from '../snack/snack.service';
-import {DatabaseService} from '../persistence/database.service';
-import {CompressionService} from '../compression/compression.service';
-import {ExportedProject, ProjectArchive, ProjectArchivedRelatedData} from '../../features/project/project-archive.model';
-import {DEFAULT_PROJECT_ID} from '../../features/project/project.const';
-import {Action} from '@ngrx/store';
-import {Injectable} from '@angular/core';
+import { BookmarkState } from '../../features/bookmark/store/bookmark.reducer';
+import { Bookmark } from '../../features/bookmark/bookmark.model';
+import { NoteState } from '../../features/note/store/note.reducer';
+import { Note } from '../../features/note/note.model';
+import { Metric, MetricState } from '../../features/metric/metric.model';
+import { Improvement, ImprovementState } from '../../features/metric/improvement/improvement.model';
+import { Obstruction, ObstructionState } from '../../features/metric/obstruction/obstruction.model';
+import { DatabaseService } from '../persistence/database.service';
+import { DEFAULT_PROJECT_ID } from '../../features/project/project.const';
+import { Action } from '@ngrx/store';
+import { Injectable } from '@angular/core';
 
 @Injectable({
   providedIn: 'root',
@@ -55,66 +50,64 @@ import {Injectable} from '@angular/core';
 export class LegacyPersistenceService {
 
   // handled as private but needs to be assigned before the creations
-  _baseModels = [];
-  _projectModels = [];
+  _baseModels: any [] = [];
+  _projectModels: any [] = [];
 
   // TODO auto generate ls keys from appDataKey where possible
-  project = this._cmBase<ProjectState>(LS_PROJECT_META_LIST, 'project', migrateProjectState);
-  globalConfig = this._cmBase<GlobalConfigState>(LS_GLOBAL_CFG, 'globalConfig', migrateGlobalConfigState);
-  reminders = this._cmBase<Reminder[]>(LS_REMINDER, 'reminders');
-  task = this._cmProject<TaskState, Task>(
+  project: any = this._cmBase<ProjectState>(LS_PROJECT_META_LIST, 'project', migrateProjectState);
+  globalConfig: any = this._cmBase<GlobalConfigState>(LS_GLOBAL_CFG, 'globalConfig', migrateGlobalConfigState);
+  reminders: any = this._cmBase<Reminder[]>(LS_REMINDER, 'reminders');
+  task: any = this._cmProject<TaskState, Task>(
     LS_TASK_STATE,
     'task',
     taskReducer,
   );
-  taskRepeatCfg = this._cmProject<TaskRepeatCfgState, TaskRepeatCfg>(
+  taskRepeatCfg: any = this._cmProject<TaskRepeatCfgState, TaskRepeatCfg>(
     LS_TASK_REPEAT_CFG_STATE,
     'taskRepeatCfg',
-    taskRepeatCfgReducer,
+    taskRepeatCfgReducer as any,
   );
-  taskArchive = this._cmProject<TaskArchive, TaskWithSubTasks>(
+  taskArchive: any = this._cmProject<TaskArchive, TaskWithSubTasks>(
     LS_TASK_ARCHIVE,
     'taskArchive',
     // NOTE: this might be problematic, as we don't really have reducer logic for the archive
     // TODO add a working reducer for task archive
-    taskReducer,
+    taskReducer as any,
   );
-  taskAttachment = this._cmProject<EntityState<TaskAttachment>, TaskAttachment>(
+  taskAttachment: any = this._cmProject<EntityState<TaskAttachment>, TaskAttachment>(
     LS_TASK_ATTACHMENT_STATE,
     'taskAttachment',
     (state) => state
   );
-  bookmark = this._cmProject<BookmarkState, Bookmark>(
+  bookmark: any = this._cmProject<BookmarkState, Bookmark>(
     LS_BOOKMARK_STATE,
     'bookmark',
     (state) => state,
   );
-  note = this._cmProject<NoteState, Note>(
+  note: any = this._cmProject<NoteState, Note>(
     LS_NOTE_STATE,
     'note',
     (state) => state,
   );
-  metric = this._cmProject<MetricState, Metric>(
+  metric: any = this._cmProject<MetricState, Metric>(
     LS_METRIC_STATE,
     'metric',
     (state) => state,
   );
-  improvement = this._cmProject<ImprovementState, Improvement>(
+  improvement: any = this._cmProject<ImprovementState, Improvement>(
     LS_IMPROVEMENT_STATE,
     'improvement',
     (state) => state,
   );
-  obstruction = this._cmProject<ObstructionState, Obstruction>(
+  obstruction: any = this._cmProject<ObstructionState, Obstruction>(
     LS_OBSTRUCTION_STATE,
     'obstruction',
     (state) => state,
   );
-  private _isBlockSaving = false;
+  private _isBlockSaving: boolean = false;
 
   constructor(
-    private _snackService: SnackService,
     private _databaseService: DatabaseService,
-    private _compressionService: CompressionService,
   ) {
     // this.loadComplete().then(d => console.log('XXXXXXXXX', d, JSON.stringify(d).length));
     // this.loadAllRelatedModelDataForProject('DEFAULT').then(d => console.log(d));
@@ -207,11 +200,10 @@ export class LegacyPersistenceService {
     // NOTE: we need to parse because new Date('1570549698000') is "Invalid Date"
     const laParsed = Number.isNaN(Number(la))
       ? la
-      : +la;
+      : +(la as any);
     // NOTE: to account for legacy string dates
-    return new Date(laParsed).getTime();
+    return new Date(laParsed as any).getTime();
   }
-
 
   // NOTE: not including backup
   async loadCompleteLegacy(): Promise<LegacyAppDataComplete> {
@@ -224,7 +216,6 @@ export class LegacyPersistenceService {
       ...(await this._loadLegacyAppBaseData()),
     };
   }
-
 
   async _loadLegacyAppBaseData(): Promise<LegacyAppBaseData> {
     const promises = this._baseModels.map(async (modelCfg) => {
@@ -248,7 +239,7 @@ export class LegacyPersistenceService {
     const model = {
       appDataKey,
       load: () => this._loadFromDb(lsKey).then(migrateFn),
-      save: (data, isForce) => this._saveToDb(lsKey, data, isForce),
+      save: (data: any, isForce: any) => this._saveToDb(lsKey, data, isForce),
     };
 
     this._baseModels.push(model);
@@ -264,17 +255,12 @@ export class LegacyPersistenceService {
   ): LegacyPersistenceForProjectModel<S, M> {
     const model = {
       appDataKey,
-      load: (projectId): Promise<S> => this._loadFromDb(this._makeProjectKey(projectId, lsKey)).then(v => migrateFn(v, projectId)),
-      save: (projectId, data, isForce) => this._saveToDb(this._makeProjectKey(projectId, lsKey), data, isForce),
+      load: (projectId: any): Promise<S> => this._loadFromDb(this._makeProjectKey(projectId, lsKey)).then(v => migrateFn(v, projectId)),
+      save: (projectId: any, data: any, isForce: any) => this._saveToDb(this._makeProjectKey(projectId, lsKey), data, isForce),
     };
 
     this._projectModels.push(model);
     return model;
-  }
-
-  private async _getProjectIds(): Promise<string[]> {
-    const projectState = await this.project.load();
-    return projectState.ids as string[];
   }
 
   private async _loadLegacyAppDataForProjects(projectIds: string[]): Promise<LegacyAppDataForProjects> {
@@ -288,8 +274,8 @@ export class LegacyPersistenceService {
   }
 
   // tslint:disable-next-line
-  private async _loadForProjectIds(pids, getDataFn: Function): Promise<any> {
-    return await pids.reduce(async (acc, projectId) => {
+  private async _loadForProjectIds(pids: any, getDataFn: Function): Promise<any> {
+    return await pids.reduce(async (acc: any, projectId: any) => {
       const prevAcc = await acc;
       const dataForProject = await getDataFn(projectId);
       return {
@@ -299,39 +285,18 @@ export class LegacyPersistenceService {
     }, Promise.resolve({}));
   }
 
-  // tslint:disable-next-line
-  private async _saveForProjectIds(data: any, saveDataFn: Function, isForce = false) {
-    const promises = [];
-    Object.keys(data).forEach(projectId => {
-      if (data[projectId]) {
-        promises.push(saveDataFn(projectId, data[projectId], isForce));
-      }
-    });
-    return await Promise.all(promises);
-  }
-
-  private _makeProjectKey(projectId, subKey, additional?) {
+  private _makeProjectKey(projectId: string, subKey: string, additional?: string) {
     return LS_PROJECT_PREFIX + projectId + '_' + subKey + (additional ? '_' + additional : '');
   }
 
-
   // DATA STORAGE INTERFACE
   // ---------------------
-  private async _saveToDb(key: string, data: any, isForce = false): Promise<any> {
+  private async _saveToDb(key: string, data: any, isForce: boolean = false): Promise<any> {
     if (!this._isBlockSaving || isForce === true) {
       return this._databaseService.save(key, data);
     } else {
       console.warn('BLOCKED SAVING for ', key);
       return Promise.reject('Data import currently in progress. Saving disabled');
-    }
-  }
-
-  private async _removeFromDb(key: string, isForce = false): Promise<any> {
-    if (!this._isBlockSaving || isForce === true) {
-      return this._databaseService.remove(key);
-    } else {
-      console.warn('BLOCKED SAVING for ', key);
-      return Promise.reject('Data import currently in progress. Removing disabled');
     }
   }
 

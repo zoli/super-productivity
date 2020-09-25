@@ -1,11 +1,10 @@
-import {ChangeDetectionStrategy, Component, Inject, OnInit} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {TaskService} from '../../tasks/task.service';
-import {Observable} from 'rxjs';
-import {Task} from '../../tasks/task.model';
-import {GlobalConfigService} from '../../config/global-config.service';
-import {MetricService} from '../../metric/metric.service';
-import {T} from '../../../t.const';
+import { ChangeDetectionStrategy, Component, Inject, OnInit } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { TaskService } from '../../tasks/task.service';
+import { Observable } from 'rxjs';
+import { Task } from '../../tasks/task.model';
+import { GlobalConfigService } from '../../config/global-config.service';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'dialog-idle',
@@ -14,16 +13,15 @@ import {T} from '../../../t.const';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DialogIdleComponent implements OnInit {
-  T = T;
+  T: typeof T = T;
   lastCurrentTask$: Observable<Task> = this._taskService.getByIdOnce$(this.data.lastCurrentTaskId);
-  selectedTask: Task;
-  newTaskTitle: string;
-  isCreate: boolean;
+  selectedTask: Task | null = null;
+  newTaskTitle?: string;
+  isCreate?: boolean;
 
   constructor(
     public configService: GlobalConfigService,
     private _taskService: TaskService,
-    private _metricService: MetricService,
     private _matDialogRef: MatDialogRef<DialogIdleComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
   ) {
@@ -44,7 +42,7 @@ export class DialogIdleComponent implements OnInit {
       this.selectedTask = null;
     } else {
       this.selectedTask = taskOrTaskTitle as Task;
-      this.newTaskTitle = null;
+      this.newTaskTitle = undefined;
     }
   }
 
@@ -63,7 +61,7 @@ export class DialogIdleComponent implements OnInit {
     });
   }
 
-  track(isTrackAsBreak = false) {
+  track(isTrackAsBreak: boolean = false) {
     this._matDialogRef.close({
       task: this.selectedTask || this.newTaskTitle,
       isTrackAsBreak,

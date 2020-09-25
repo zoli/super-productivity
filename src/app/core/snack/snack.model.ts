@@ -1,5 +1,5 @@
-import {MatSnackBarConfig} from '@angular/material/snack-bar';
-import {Observable} from 'rxjs';
+import { MatSnackBarConfig } from '@angular/material/snack-bar';
+import { Observable } from 'rxjs';
 
 export type SnackType = 'ERROR' | 'SUCCESS' | 'CUSTOM' | 'JIRA_UNBLOCK';
 
@@ -14,9 +14,9 @@ export interface SnackParams {
   actionId?: string;
   // tslint:disable-next-line
   actionFn?: Function;
-  actionPayload?: any;
+  actionPayload?: unknown;
   config?: MatSnackBarConfig;
   isSpinner?: boolean;
-  promise?: Promise<any>;
-  showWhile$?: Observable<any>;
+  promise?: Promise<unknown>;
+  showWhile$?: Observable<unknown>;
 }

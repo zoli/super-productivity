@@ -1,6 +1,6 @@
-import {createAction, props} from '@ngrx/store';
-import {Update} from '@ngrx/entity';
-import {SimpleCounter} from '../simple-counter.model';
+import { createAction, props } from '@ngrx/store';
+import { Update } from '@ngrx/entity';
+import { SimpleCounter } from '../simple-counter.model';
 
 export const addSimpleCounter = createAction(
   '[SimpleCounter] Add SimpleCounter',
@@ -27,12 +27,10 @@ export const deleteSimpleCounters = createAction(
   props<{ ids: string[] }>(),
 );
 
-
 export const updateAllSimpleCounters = createAction(
   '[SimpleCounter] Update all SimpleCounters',
   props<{ items: SimpleCounter[] }>(),
 );
-
 
 export const setSimpleCounterCounterToday = createAction(
   '[SimpleCounter] Set SimpleCounter Counter Today',
@@ -47,6 +45,10 @@ export const increaseSimpleCounterCounterToday = createAction(
 export const toggleSimpleCounterCounter = createAction(
   '[SimpleCounter] Toggle SimpleCounter Counter',
   props<{ id: string; }>(),
+);
+
+export const turnOffAllSimpleCounterCounters = createAction(
+  '[SimpleCounter] Turn off all simple counters',
 );
 
 export const setSimpleCounterCounterOff = createAction(

@@ -1,28 +1,25 @@
-import {Injectable} from '@angular/core';
-import {DROPBOX_APP_KEY, DROPBOX_CODE_VERIFIER} from './dropbox.const';
-import {GlobalConfigService} from '../config/global-config.service';
-import {first, map, switchMap, tap} from 'rxjs/operators';
-import {DataInitService} from '../../core/data-init/data-init.service';
-import {Observable} from 'rxjs';
-import {HttpClient} from '@angular/common/http';
-import axios, {AxiosResponse, Method} from 'axios';
-import qs from 'qs';
-import {DropboxFileMetadata} from './dropbox.model';
-import {toDropboxIsoString} from './iso-date-without-ms.util.';
+import { Injectable } from '@angular/core';
+import { DROPBOX_APP_KEY, DROPBOX_CODE_VERIFIER } from './dropbox.const';
+import { GlobalConfigService } from '../config/global-config.service';
+import { first, map, switchMap, tap } from 'rxjs/operators';
+import { DataInitService } from '../../core/data-init/data-init.service';
+import { Observable } from 'rxjs';
+import axios, { AxiosResponse, Method } from 'axios';
+import { stringify } from 'query-string';
+import { DropboxFileMetadata } from './dropbox.model';
+import { toDropboxIsoString } from './iso-date-without-ms.util.';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class DropboxApiService {
-  authCode$: Observable<string> = this._globalConfigService.cfg$.pipe(map(cfg => cfg && cfg.dropboxSync && cfg.dropboxSync.authCode));
+  authCode$: Observable<string | null> = this._globalConfigService.cfg$.pipe(map(cfg => cfg && cfg.dropboxSync && cfg.dropboxSync.authCode));
 
-  private _accessToken$: Observable<string> = this._globalConfigService.cfg$.pipe(map(cfg => cfg && cfg.dropboxSync && cfg.dropboxSync.accessToken));
+  private _accessToken$: Observable<string | null> = this._globalConfigService.cfg$.pipe(map(cfg => cfg && cfg.dropboxSync && cfg.dropboxSync.accessToken));
 
-  isTokenAvailable$ = this._accessToken$.pipe(
+  isTokenAvailable$: Observable<boolean> = this._accessToken$.pipe(
     map((token) => !!token),
   );
 
-  private _isReady$ = this._dataInitService.isAllDataLoadedInitially$.pipe(
+  private _isReady$: Observable<boolean> = this._dataInitService.isAllDataLoadedInitially$.pipe(
     switchMap(() => this.isTokenAvailable$),
     tap((isTokenAvailable) => !isTokenAvailable && new Error('Dropbox API not ready')),
     first(),
@@ -31,7 +28,6 @@ export class DropboxApiService {
   constructor(
     private _globalConfigService: GlobalConfigService,
     private _dataInitService: DataInitService,
-    private  _httpClient: HttpClient,
   ) {
   }
 
@@ -45,7 +41,7 @@ export class DropboxApiService {
     }).then((res) => res.data);
   }
 
-  async download<T>({path, localRev}: { path: string; localRev?: string }): Promise<{ meta: DropboxFileMetadata, data: T }> {
+  async download<T>({path, localRev}: { path: string; localRev?: string | null }): Promise<{ meta: DropboxFileMetadata, data: T }> {
     await this._isReady$.toPromise();
 
     return this._request({
@@ -65,11 +61,10 @@ export class DropboxApiService {
     });
   }
 
-
   async upload({path, localRev, data, clientModified, isForceOverwrite = false}: {
     path: string;
     clientModified?: number;
-    localRev?: string;
+    localRev?: string | null;
     data: any;
     isForceOverwrite?: boolean;
   }): Promise<DropboxFileMetadata> {
@@ -95,7 +90,7 @@ export class DropboxApiService {
       data,
       headers: {
         'Content-Type': 'application/octet-stream',
-        'Dropbox-API-Arg': JSON.stringify({path, ...args}),
+        'Dropbox-API-Arg': JSON.stringify(args),
       },
     }).then((res) => res.data);
   }
@@ -118,11 +113,11 @@ export class DropboxApiService {
     accessToken?: string
   }): Promise<AxiosResponse> {
     await this._isReady$.toPromise();
-    accessToken = accessToken || await this._accessToken$.pipe(first()).toPromise();
+    accessToken = accessToken || await this._accessToken$.pipe(first()).toPromise() || undefined;
 
     return axios.request({
       url: params
-        ? url + qs.stringify(params)
+        ? url + stringify(params)
         : url,
       method,
       data,
@@ -141,7 +136,7 @@ export class DropboxApiService {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
-      data: qs.stringify({
+      data: stringify({
         code: authCode,
         grant_type: 'authorization_code',
         client_id: DROPBOX_APP_KEY,

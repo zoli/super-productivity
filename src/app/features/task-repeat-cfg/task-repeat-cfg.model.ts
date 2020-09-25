@@ -1,5 +1,5 @@
-import {EntityState} from '@ngrx/entity';
-import {MODEL_VERSION_KEY} from '../../app.constants';
+import { EntityState } from '@ngrx/entity';
+import { MODEL_VERSION_KEY } from '../../app.constants';
 
 export const TASK_REPEAT_WEEKDAY_MAP: (keyof TaskRepeatCfg)[] = [
   'sunday',
@@ -13,10 +13,10 @@ export const TASK_REPEAT_WEEKDAY_MAP: (keyof TaskRepeatCfg)[] = [
 
 export interface TaskRepeatCfgCopy {
   id: string;
-  projectId: string;
+  projectId: string | null;
   lastTaskCreation: number;
-  title: string;
-  defaultEstimate: number;
+  title: string | null;
+  defaultEstimate: number | undefined;
   monday: boolean;
   tuesday: boolean;
   wednesday: boolean;
@@ -35,13 +35,15 @@ export interface TaskRepeatCfgState extends EntityState<TaskRepeatCfg> {
   [MODEL_VERSION_KEY]?: number;
 }
 
-export const DEFAULT_TASK_REPEAT_CFG: TaskRepeatCfgCopy = {
-  id: undefined,
-  projectId: undefined,
+export const DEFAULT_TASK_REPEAT_CFG: Omit<TaskRepeatCfgCopy, 'id'>= {
   lastTaskCreation: Date.now(),
-  // lastTaskCreation: Date.now() - 24 * 60 * 60 * 1000,
-  title: undefined,
+  title: null,
   defaultEstimate: undefined,
+
+  // id: undefined,
+  projectId: null,
+  // lastTaskCreation: Date.now() - 24 * 60 * 60 * 1000,
+
   monday: true,
   tuesday: true,
   wednesday: true,

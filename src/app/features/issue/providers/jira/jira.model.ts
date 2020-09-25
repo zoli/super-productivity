@@ -1,10 +1,10 @@
-import {JiraOriginalTransition} from './jira-api-responses';
+import { JiraOriginalTransition } from './jira-api-responses';
 
 export type JiraTransitionOption = 'ALWAYS_ASK' | 'DO_NOT' | JiraOriginalTransition;
 
 export interface JiraTransitionConfig {
   // NOTE: keys mirror IssueLocalState type
-  // OPEN: JiraTransitionOption;
+  OPEN: JiraTransitionOption;
   IN_PROGRESS: JiraTransitionOption;
   DONE: JiraTransitionOption;
 }
@@ -12,10 +12,12 @@ export interface JiraTransitionConfig {
 export interface JiraCfg {
   isEnabled: boolean;
   _isBlockAccess: boolean;
-  host: string;
-  userName: string;
-  password?: string;
+  host: string | null;
+  userName: string | null;
+  password?: string | null;
   isAutoPollTickets: boolean;
+  isWonkyCookieMode: boolean;
+
   isAllowSelfSignedCertificate: boolean;
   searchJqlQuery: string;
 
@@ -32,12 +34,12 @@ export interface JiraCfg {
 
   isCheckToReAssignTicketOnTaskStart: boolean;
 
-  storyPointFieldId: string;
+  storyPointFieldId: string | null;
 
   isTransitionIssuesEnabled: boolean;
   transitionConfig: JiraTransitionConfig;
   availableTransitions: JiraOriginalTransition[];
-  userToAssignOnDone: string;
+  userToAssignOnDone: string | null;
 }
 
 /*

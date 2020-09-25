@@ -1,27 +1,26 @@
 /// <reference lib="webworker" />
 
-import {ReminderCopy} from './reminder.model';
+import { ReminderCopy } from './reminder.model';
+import { lazySetInterval } from '../../../../electron/lazy-set-interval';
 
-const CHECK_INTERVAL_DURATION = 1000;
-const MESSAGE_INTERVAL_DURATION = 10000;
-let currentMessageTimerVal = 0;
-let checkInterval;
+const CHECK_INTERVAL_DURATION = 10000;
+let cancelCheckInterval: (() => void) | undefined;
 
 addEventListener('message', ({data}) => {
   // console.log('REMINDER WORKER', data);
   reInitCheckInterval(data);
 });
 
-
 const reInitCheckInterval = (reminders: ReminderCopy[]) => {
-  if (checkInterval) {
-    clearInterval(checkInterval);
+  if (cancelCheckInterval) {
+    cancelCheckInterval();
+    cancelCheckInterval = undefined;
   }
   if (!reminders || !reminders.length) {
     return;
   }
 
-  checkInterval = setInterval(() => {
+  cancelCheckInterval = lazySetInterval(() => {
     const dueReminders = getDueReminders(reminders);
     if (dueReminders.length) {
       const oldest = dueReminders[0];
@@ -31,17 +30,11 @@ const reInitCheckInterval = (reminders: ReminderCopy[]) => {
         // NOTE: for notes we just send the oldest due reminder
         : [oldest];
 
-      if (currentMessageTimerVal <= 0) {
-        postMessage(remindersToSend);
-        console.log('Worker postMessage', remindersToSend);
-        currentMessageTimerVal = MESSAGE_INTERVAL_DURATION;
-      } else {
-        currentMessageTimerVal -= CHECK_INTERVAL_DURATION;
-      }
+      postMessage(remindersToSend);
+      console.log('Worker postMessage', remindersToSend);
     }
   }, CHECK_INTERVAL_DURATION);
 };
-
 
 const getDueReminders = (reminders: ReminderCopy[]): ReminderCopy[] => {
   const now = Date.now();

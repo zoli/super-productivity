@@ -1,5 +1,5 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
 import {
   AddTask,
   AddTimeSpent,
@@ -10,23 +10,22 @@ import {
   UpdateTask,
   UpdateTaskTags
 } from './task.actions';
-import {Store} from '@ngrx/store';
-import {concatMap, filter, first, map, mapTo, switchMap, tap} from 'rxjs/operators';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {Task, TaskArchive, TaskWithSubTasks} from '../task.model';
-import {ReminderService} from '../../reminder/reminder.service';
-import {Router} from '@angular/router';
-import {moveTaskInTodayList, moveTaskToTodayList} from '../../work-context/store/work-context-meta.actions';
-import {taskAdapter} from './task.adapter';
-import {flattenTasks} from './task.selectors';
-import {GlobalConfigService} from '../../config/global-config.service';
-import {TODAY_TAG} from '../../tag/tag.const';
-import {unique} from '../../../util/unique';
-import {TaskService} from '../task.service';
-import {of} from 'rxjs';
-import {createEmptyEntity} from '../../../util/create-empty-entity';
-import {ProjectService} from '../../project/project.service';
-
+import { concatMap, delay, filter, first, map, mapTo, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { Task, TaskArchive, TaskWithSubTasks } from '../task.model';
+import { ReminderService } from '../../reminder/reminder.service';
+import { moveTaskInTodayList, moveTaskToTodayList } from '../../work-context/store/work-context-meta.actions';
+import { taskAdapter } from './task.adapter';
+import { flattenTasks } from './task.selectors';
+import { GlobalConfigService } from '../../config/global-config.service';
+import { TODAY_TAG } from '../../tag/tag.const';
+import { unique } from '../../../util/unique';
+import { TaskService } from '../task.service';
+import { EMPTY, Observable, of } from 'rxjs';
+import { createEmptyEntity } from '../../../util/create-empty-entity';
+import { ProjectService } from '../../project/project.service';
+import { TagService } from '../../tag/tag.service';
+import { shortSyntax } from '../short-syntax.util';
 
 @Injectable()
 export class TaskRelatedModelEffects {
@@ -36,7 +35,6 @@ export class TaskRelatedModelEffects {
   moveToArchive$: any = this._actions$.pipe(
     ofType(TaskActionTypes.MoveToArchive),
     tap(this._moveToArchive.bind(this)),
-    tap(this._updateLastLocalSyncModelChange.bind(this)),
   );
 
   // TODO remove once reminder is changed
@@ -135,28 +133,96 @@ export class TaskRelatedModelEffects {
         task: act.payload.task,
       }))
     )),
-    filter(({defaultProjectId, task}) => defaultProjectId && !task.projectId && !task.parentId),
+    filter(({defaultProjectId, task}) => !!defaultProjectId && !task.projectId && !task.parentId),
     map(({task, defaultProjectId}) => new MoveToOtherProject({
-      task,
-      targetProjectId: defaultProjectId,
+      task: task as TaskWithSubTasks,
+      targetProjectId: defaultProjectId as string,
     })),
   );
 
+  @Effect()
+  shortSyntax$: any = this._actions$.pipe(
+    ofType(
+      TaskActionTypes.AddTask,
+      TaskActionTypes.UpdateTask,
+    ),
+    filter((action: AddTask | UpdateTask): boolean => {
+      if (action.type !== TaskActionTypes.UpdateTask) {
+        return true;
+      }
+      const changeProps = Object.keys((action as UpdateTask).payload.task.changes);
+      // we only want to execute this for task title updates
+      return (changeProps.length === 1 && changeProps[0] === 'title');
+    }),
+    // dirty fix to execute this after setDefaultProjectId$ effect
+    delay(20),
+    concatMap((action: AddTask | UpdateTask): Observable<any> => {
+      return this._taskService.getByIdOnce$(action.payload.task.id as string);
+    }),
+    withLatestFrom(
+      this._tagService.tags$,
+      this._projectService.list$,
+    ),
+    mergeMap(([task, tags, projects]) => {
+      const r = shortSyntax(task, tags, projects);
+      if (!r) {
+        return EMPTY;
+      }
+
+      const actions: any[] = [];
+      const tagIds: string[] = [...(r.taskChanges.tagIds || task.tagIds)];
+
+      actions.push(
+        new UpdateTask({
+            task: {
+              id: task.id,
+              changes: r.taskChanges,
+            }
+          }
+        )
+      );
+      if (r.projectId && r.projectId !== task.projectId) {
+        actions.push(new MoveToOtherProject({
+          task,
+          targetProjectId: r.projectId,
+        }));
+      }
+
+      if (r.newTagTitles.length) {
+        r.newTagTitles.forEach(newTagTitle => {
+          const {action, id} = this._tagService.getAddTagActionAndId({title: newTagTitle});
+          tagIds.push(id);
+          actions.push(action);
+        });
+      }
+
+      if (tagIds && tagIds.length) {
+        const isEqualTags = (JSON.stringify(tagIds) === JSON.stringify(task.tagIds));
+        if (!task.tagIds) {
+          throw new Error('Task Old TagIds need to be passed');
+        }
+        if (!isEqualTags) {
+          actions.push(new UpdateTaskTags({
+            task,
+            newTagIds: unique(tagIds),
+            oldTagIds: task.tagIds,
+          }));
+        }
+      }
+
+      return actions;
+    }),
+  );
 
   constructor(
     private _actions$: Actions,
-    private _store$: Store<any>,
     private _reminderService: ReminderService,
     private _taskService: TaskService,
+    private _tagService: TagService,
     private _projectService: ProjectService,
     private _globalConfigService: GlobalConfigService,
-    private _router: Router,
     private _persistenceService: PersistenceService
   ) {
-  }
-
-  private _updateLastLocalSyncModelChange() {
-    this._persistenceService.updateLastLocalSyncModelChange();
   }
 
   private async _removeFromArchive(action: RestoreTask) {
@@ -164,7 +230,7 @@ export class TaskRelatedModelEffects {
     const taskIds = [task.id, ...task.subTaskIds];
     const currentArchive: TaskArchive = await this._persistenceService.taskArchive.loadState() || createEmptyEntity();
     const allIds = currentArchive.ids as string[] || [];
-    const idsToRemove = [];
+    const idsToRemove: string[] = [];
 
     taskIds.forEach((taskId) => {
       if (allIds.indexOf(taskId) > -1) {
@@ -176,7 +242,7 @@ export class TaskRelatedModelEffects {
     return this._persistenceService.taskArchive.saveState({
       ...currentArchive,
       ids: allIds.filter((id) => !idsToRemove.includes(id)),
-    }, true);
+    }, {isSyncModelChange: true});
   }
 
   private async _moveToArchive(action: MoveToArchive) {
@@ -196,10 +262,13 @@ export class TaskRelatedModelEffects {
     flatTasks
       .filter(t => !!t.reminderId)
       .forEach(t => {
+        if (!t.reminderId) {
+          throw new Error('No t.reminderId');
+        }
         this._reminderService.removeReminder(t.reminderId);
       });
 
-    return this._persistenceService.taskArchive.saveState(newArchive);
+    return this._persistenceService.taskArchive.saveState(newArchive, {isSyncModelChange: true});
   }
 
   private _moveToOtherProject(action: MoveToOtherProject) {

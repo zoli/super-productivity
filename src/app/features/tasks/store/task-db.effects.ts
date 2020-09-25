@@ -1,22 +1,14 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
-import {TaskActionTypes} from './task.actions';
-import {select, Store} from '@ngrx/store';
-import {tap, withLatestFrom} from 'rxjs/operators';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {selectTaskFeatureState} from './task.selectors';
-import {NotifyService} from '../../../core/notify/notify.service';
-import {TaskService} from '../task.service';
-import {ReminderService} from '../../reminder/reminder.service';
-import {GlobalConfigService} from '../../config/global-config.service';
-import {TaskRepeatCfgActionTypes} from '../../task-repeat-cfg/store/task-repeat-cfg.actions';
-import {BannerService} from '../../../core/banner/banner.service';
-import {SnackService} from '../../../core/snack/snack.service';
-import {Router} from '@angular/router';
-import {ProjectService} from '../../project/project.service';
-import {ElectronService} from '../../../core/electron/electron.service';
-import {TaskAttachmentActionTypes} from '../task-attachment/task-attachment.actions';
-import {TaskState} from '../task.model';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
+import { TaskActionTypes } from './task.actions';
+import { select, Store } from '@ngrx/store';
+import { tap, withLatestFrom } from 'rxjs/operators';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { selectTaskFeatureState } from './task.selectors';
+import { TaskRepeatCfgActionTypes } from '../../task-repeat-cfg/store/task-repeat-cfg.actions';
+import { TaskAttachmentActionTypes } from '../task-attachment/task-attachment.actions';
+import { TaskState } from '../task.model';
+import { environment } from '../../../../environments/environment';
 
 @Injectable()
 export class TaskDbEffects {
@@ -55,8 +47,7 @@ export class TaskDbEffects {
       withLatestFrom(
         this._store$.pipe(select(selectTaskFeatureState)),
       ),
-      tap(([, taskState]) => this._saveToLs(taskState)),
-      tap(this._updateLastLocalSyncModelChange.bind(this)),
+      tap(([, taskState]) => this._saveToLs(taskState, true)),
     );
 
   @Effect({dispatch: false}) updateTaskUi$: any = this._actions$
@@ -72,25 +63,21 @@ export class TaskDbEffects {
     );
 
   constructor(private _actions$: Actions,
-              private _store$: Store<any>,
-              private _notifyService: NotifyService,
-              private _taskService: TaskService,
-              private _configService: GlobalConfigService,
-              private _bannerService: BannerService,
-              private _reminderService: ReminderService,
-              private _router: Router,
-              private _snackService: SnackService,
-              private _projectService: ProjectService,
-              private _electronService: ElectronService,
-              private _persistenceService: PersistenceService) {
+    private _store$: Store<any>,
+    private _persistenceService: PersistenceService) {
   }
 
-  private _updateLastLocalSyncModelChange() {
-    this._persistenceService.updateLastLocalSyncModelChange();
-  }
+  // @debounce(50)
+  private _saveToLs(taskState: TaskState, isSyncModelChange: boolean = false) {
+    this._persistenceService.task.saveState({
+      ...taskState,
 
-  private _saveToLs(taskState: TaskState) {
-    this._persistenceService.task.saveState(taskState);
+      // make sure those are never set to something
+      selectedTaskId: environment.production
+        ? null
+        : taskState.selectedTaskId,
+      currentTaskId: null,
+    }, {isSyncModelChange});
   }
 }
 

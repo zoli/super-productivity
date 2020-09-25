@@ -1,26 +1,22 @@
-import {Injectable, NgZone} from '@angular/core';
-import {Store} from '@ngrx/store';
-import {SnackParams} from './snack.model';
-import {Observable, Subject} from 'rxjs';
-import {takeUntil} from 'rxjs/operators';
-import {DEFAULT_SNACK_CFG} from './snack.const';
-import {SnackCustomComponent} from './snack-custom/snack-custom.component';
-import {TranslateService} from '@ngx-translate/core';
-import {MatSnackBar, MatSnackBarRef, SimpleSnackBar} from '@angular/material/snack-bar';
-import {Actions, ofType} from '@ngrx/effects';
-import {setActiveWorkContext} from '../../features/work-context/store/work-context.actions';
-import * as debounceFn from 'debounce-fn';
+import { Injectable, NgZone } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { SnackParams } from './snack.model';
+import { Observable, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+import { DEFAULT_SNACK_CFG } from './snack.const';
+import { SnackCustomComponent } from './snack-custom/snack-custom.component';
+import { TranslateService } from '@ngx-translate/core';
+import { MatSnackBar, MatSnackBarRef, SimpleSnackBar } from '@angular/material/snack-bar';
+import { Actions, ofType } from '@ngrx/effects';
+import { setActiveWorkContext } from '../../features/work-context/store/work-context.actions';
+import { debounce } from 'helpful-decorators';
 
 @Injectable({
   providedIn: 'root',
 })
 export class SnackService {
-  private _ref: MatSnackBarRef<SnackCustomComponent | SimpleSnackBar>;
-  private _onWorkContextChange$: Observable<any> = this._actions$.pipe(ofType(setActiveWorkContext));
-
-  private readonly _debouncedOpenSnack
-    : (params: SnackParams) => void
-    = debounceFn(this._openSnack.bind(this), {wait: 100});
+  private _ref?: MatSnackBarRef<SnackCustomComponent | SimpleSnackBar>;
+  private _onWorkContextChange$: Observable<unknown> = this._actions$.pipe(ofType(setActiveWorkContext));
 
   constructor(
     private _store$: Store<any>,
@@ -38,7 +34,7 @@ export class SnackService {
     if (typeof params === 'string') {
       params = {msg: params};
     }
-    this._debouncedOpenSnack(params);
+    this._openSnack(params);
   }
 
   close() {
@@ -47,7 +43,7 @@ export class SnackService {
     }
   }
 
-
+  @debounce(100)
   private _openSnack(params: SnackParams) {
     const _destroy$: Subject<boolean> = new Subject<boolean>();
     const destroySubs = () => {
@@ -75,12 +71,13 @@ export class SnackService {
         ...params,
         msg: (isSkipTranslate)
           ? msg
-          : (typeof msg === 'string') && this._translateService.instant(msg, translateParams),
+          : (typeof (msg as unknown) === 'string') && this._translateService.instant(msg, translateParams),
       },
     };
 
     if (showWhile$ || promise || isSpinner) {
-      cfg.panelClass = 'polling-snack';
+      // TODO check if still needed
+      (cfg as any).panelClass = 'polling-snack';
     }
 
     switch (type) {
@@ -96,7 +93,7 @@ export class SnackService {
       }
     }
 
-    if (actionStr && actionId) {
+    if (actionStr && actionId && this._ref) {
       this._ref.onAction()
         .pipe(takeUntil(_destroy$))
         .subscribe(() => {

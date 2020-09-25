@@ -1,15 +1,15 @@
-import {SimpleCounter, SimpleCounterType} from './simple-counter.model';
-import {loadAllData} from '../../root-store/meta/load-all-data.action';
-import {PomodoroActionTypes} from '../pomodoro/store/pomodoro.actions';
-import {TaskActionTypes} from '../tasks/store/task.actions';
+import { SimpleCounter, SimpleCounterType } from './simple-counter.model';
+import { loadAllData } from '../../root-store/meta/load-all-data.action';
+import { PomodoroActionTypes } from '../pomodoro/store/pomodoro.actions';
+import { TaskActionTypes } from '../tasks/store/task.actions';
 
 export const EMPTY_SIMPLE_COUNTER: SimpleCounter = {
-  id: undefined,
+  id: '',
 
   // basic cfg
-  title: undefined,
+  title: '',
   isEnabled: false,
-  icon: undefined,
+  icon: null,
   iconOn: undefined,
   type: SimpleCounterType.ClickCounter,
 

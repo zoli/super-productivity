@@ -11,13 +11,13 @@ import {
   Output,
   ViewChild
 } from '@angular/core';
-import {fadeAnimation} from '../../animations/fade.ani';
-import {DomSanitizer, SafeStyle} from '@angular/platform-browser';
-import {Observable, ReplaySubject, Subscription} from 'rxjs';
-import {distinctUntilChanged, filter, map, share, switchMap} from 'rxjs/operators';
-import {observeWidth} from '../../../util/resize-observer-obs';
-import {MainContainerClass} from '../../../app.constants';
-
+import { fadeAnimation } from '../../animations/fade.ani';
+import { DomSanitizer, SafeStyle } from '@angular/platform-browser';
+import { Observable, ReplaySubject, Subscription } from 'rxjs';
+import { distinctUntilChanged, map, share, switchMap } from 'rxjs/operators';
+import { observeWidth } from '../../../util/resize-observer-obs';
+import { MainContainerClass } from '../../../app.constants';
+import { IS_TOUCH_ONLY } from '../../../util/is-touch';
 
 const SMALL_CONTAINER_WIDTH = 620;
 const VERY_SMALL_CONTAINER_WIDTH = 450;
@@ -30,11 +30,10 @@ const VERY_SMALL_CONTAINER_WIDTH = 450;
   animations: [fadeAnimation]
 })
 export class BetterDrawerContainerComponent implements OnInit, AfterContentInit, OnDestroy {
-  @Input() sideWidth: number;
-  @Output() wasClosed = new EventEmitter<void>();
-  contentEl$ = new ReplaySubject<HTMLElement>(1);
+  @Input() sideWidth: number = 0;
+  @Output() wasClosed: EventEmitter<void> = new EventEmitter<void>();
+  contentEl$: ReplaySubject<HTMLElement> = new ReplaySubject<HTMLElement>(1);
   containerWidth$: Observable<number> = this.contentEl$.pipe(
-    filter(el => !!el),
     switchMap((el) => observeWidth(el)),
     distinctUntilChanged(),
     share(),
@@ -47,8 +46,8 @@ export class BetterDrawerContainerComponent implements OnInit, AfterContentInit,
     map(v => v < VERY_SMALL_CONTAINER_WIDTH),
     distinctUntilChanged(),
   );
-  sideStyle: SafeStyle;
-  private _subs = new Subscription();
+  sideStyle: SafeStyle = '';
+  private _subs: Subscription = new Subscription();
 
   constructor(
     private _elementRef: ElementRef,
@@ -65,19 +64,17 @@ export class BetterDrawerContainerComponent implements OnInit, AfterContentInit,
   }
 
   @ViewChild('contentElRef', {read: ElementRef}) set setContentElRef(ref: ElementRef) {
-    if (ref) {
-      this.contentEl$.next(ref.nativeElement);
-    }
+    this.contentEl$.next(ref.nativeElement);
   }
 
-  private _isOpen: boolean;
+  private _isOpen: boolean = false;
 
   @Input() set isOpen(v: boolean) {
     this._isOpen = v;
     this._updateStyle();
   }
 
-  private _isOver: boolean;
+  private _isOver: boolean = false;
 
   @Input() set isOver(v: boolean) {
     this._isOver = v;
@@ -107,24 +104,27 @@ export class BetterDrawerContainerComponent implements OnInit, AfterContentInit,
   }
 
   close() {
+    // FORCE blur because otherwise task notes won't save
+    if (IS_TOUCH_ONLY) {
+      document.querySelectorAll('input,textarea').forEach((element) => {
+        if (element === document.activeElement) {
+          return (element as HTMLElement).blur();
+        }
+      });
+    }
     this.wasClosed.emit();
   }
 
   private _updateStyle() {
+    const widthStyle = ` width: ${this.sideWidth}%;`;
     const style = (this.isOverGet)
       ? (this.isOpenGet)
-        ? 'right: 0;'
-        : `right: -100%;`
-      // NOTE: this would break appearance for tablets
-      // ? 'right: -100%; transform: translateX(-100%);'
-      // : `right: -100%; transform: translateX(0);`
+        ? 'transform: translateX(0);'
+        : 'transform: translateX(100%);'
       : (this.isOpenGet)
-        ? 'margin-right: 0;'
-        : `margin-right: ${-1 * this.sideWidth}%;`
+        ? `margin-right: 0; ${widthStyle}`
+        : `margin-right: ${-1 * this.sideWidth}%; ${widthStyle}`
     ;
-    const widthStyle = ` width: ${this.sideWidth}%;`;
-    this.sideStyle = this._domSanitizer.bypassSecurityTrustStyle(style + widthStyle);
-    // TODO tmp fix, because the line above doesn't seem to work any more
-    this.sideStyle = style + widthStyle;
+    this.sideStyle = this._domSanitizer.bypassSecurityTrustStyle(style);
   }
 }

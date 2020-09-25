@@ -1,9 +1,11 @@
-import {ChangeDetectionStrategy, Component, ElementRef, ViewChild} from '@angular/core';
-import {DataImportService} from '../sync/data-import.service';
-import {SnackService} from '../../core/snack/snack.service';
-import {AppDataComplete} from '../sync/sync.model';
-import {download} from '../../util/download';
-import {T} from '../../t.const';
+import { ChangeDetectionStrategy, Component, ElementRef, ViewChild } from '@angular/core';
+import { DataImportService } from '../sync/data-import.service';
+import { SnackService } from '../../core/snack/snack.service';
+import { AppDataComplete } from '../sync/sync.model';
+import { download } from '../../util/download';
+import { T } from '../../t.const';
+import { TODAY_TAG } from '../../features/tag/tag.const';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'file-imex',
@@ -12,12 +14,13 @@ import {T} from '../../t.const';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class FileImexComponent {
-  @ViewChild('fileInput', {static: true}) fileInputRef: ElementRef;
-  T = T;
+  @ViewChild('fileInput', {static: true}) fileInputRef?: ElementRef;
+  T: typeof T = T;
 
   constructor(
     private _dataImportService: DataImportService,
     private _snackService: SnackService,
+    private _router: Router,
   ) {
   }
 
@@ -28,10 +31,10 @@ export class FileImexComponent {
     reader.onload = async () => {
       const textData = reader.result;
       console.log(textData);
-      let data: AppDataComplete;
+      let data: AppDataComplete | undefined;
       let oldData;
       try {
-        data = oldData = JSON.parse(textData.toString());
+        data = oldData = JSON.parse((textData as any).toString());
       } catch (e) {
         this._snackService.open({type: 'ERROR', msg: T.FILE_IMEX.S_ERR_INVALID_DATA});
       }
@@ -39,7 +42,12 @@ export class FileImexComponent {
       if (oldData.config && Array.isArray(oldData.tasks)) {
         alert('V1 Data. Migration not imported any more.');
       } else {
-        await this._dataImportService.importCompleteSyncData(data);
+        await this._router.navigate([`tag/${TODAY_TAG.id}/tasks`]);
+        await this._dataImportService.importCompleteSyncData(data as AppDataComplete);
+      }
+
+      if (!this.fileInputRef) {
+        throw new Error();
       }
 
       // clear input

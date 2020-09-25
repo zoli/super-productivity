@@ -1,7 +1,6 @@
 // tslint:disable:max-line-length
-import {ConfigFormSection, MiscConfig} from '../global-config.model';
-import {T} from '../../../t.const';
-
+import { ConfigFormSection, MiscConfig } from '../global-config.model';
+import { T } from '../../../t.const';
 
 export const MISC_SETTINGS_FORM_CFG: ConfigFormSection<MiscConfig> = {
   title: T.GCF.MISC.TITLE,
@@ -48,6 +47,13 @@ export const MISC_SETTINGS_FORM_CFG: ConfigFormSection<MiscConfig> = {
       type: 'checkbox',
       templateOptions: {
         label: T.GCF.MISC.IS_TURN_OFF_MARKDOWN,
+      },
+    },
+    {
+      key: 'isDisableInitialDialog',
+      type: 'checkbox',
+      templateOptions: {
+        label: T.GCF.MISC.IS_DISABLE_INITIAL_DIALOG,
       },
     },
     {

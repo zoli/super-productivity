@@ -1,22 +1,21 @@
-import {ErrorHandler, Injectable} from '@angular/core';
-import {isObject} from '../../util/is-object';
-import {getJiraResponseErrorTxt} from '../../util/get-jira-response-error-text';
-import {IS_ELECTRON} from '../../app.constants';
-import {BannerService} from '../banner/banner.service';
-import {ElectronService} from '../electron/electron.service';
-import {createErrorAlert, getSimpleMeta, isHandledError, logAdvancedStacktrace} from './global-error-handler.util';
-
+import { ErrorHandler, Injectable } from '@angular/core';
+import { isObject } from '../../util/is-object';
+import { getErrorTxt } from '../../util/get-error-text';
+import { IS_ELECTRON } from '../../app.constants';
+import { ElectronService } from '../electron/electron.service';
+import { createErrorAlert, isHandledError, logAdvancedStacktrace } from './global-error-handler.util';
+import { remote } from 'electron';
+import { saveBeforeLastErrorActionLog } from '../../util/action-logger';
 
 @Injectable()
 export class GlobalErrorHandler implements ErrorHandler {
   private _electronLogger: any;
 
   constructor(
-    private _bannerService: BannerService,
     private _electronService: ElectronService,
   ) {
     if (IS_ELECTRON) {
-      this._electronLogger = this._electronService.remote.require('electron-log');
+      this._electronLogger = (this._electronService.remote as typeof remote).require('electron-log');
     }
   }
 
@@ -30,6 +29,7 @@ export class GlobalErrorHandler implements ErrorHandler {
     // if not our custom error handler we have a critical error on our hands
     if (!isHandledError(err)) {
       const errorStr = this._getErrorStr(err) || errStr;
+      saveBeforeLastErrorActionLog();
 
       // NOTE: dom exceptions will break all rendering that's why
       if (err.constructor && err.constructor === DOMException) {
@@ -37,7 +37,6 @@ export class GlobalErrorHandler implements ErrorHandler {
       } else {
         createErrorAlert(this._electronService, errorStr, simpleStack, err);
       }
-      console.log(getSimpleMeta());
     }
 
     if (IS_ELECTRON) {
@@ -45,7 +44,7 @@ export class GlobalErrorHandler implements ErrorHandler {
     }
 
     const additionalLog = IS_ELECTRON
-      ? (stack) => this._electronLogger.error('Frontend Error Stack:', stack)
+      ? (stack: unknown) => this._electronLogger.error('Frontend Error Stack:', stack)
       : () => null;
 
     logAdvancedStacktrace(err, additionalLog).then();
@@ -56,11 +55,14 @@ export class GlobalErrorHandler implements ErrorHandler {
     }
   }
 
-  private _getErrorStr(err: any): string {
+  private _getErrorStr(err: unknown): string {
     if (isObject(err)) {
-      return getJiraResponseErrorTxt(err);
+      const str = getErrorTxt(err);
+      return (typeof str === 'string')
+        ? str
+        : 'Unable to parse error string. Please see console error';
     } else {
-      return err.toString();
+      return (err as any).toString();
     }
   }
 }

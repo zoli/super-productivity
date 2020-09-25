@@ -1,23 +1,23 @@
-import {Injectable} from '@angular/core';
-import {GOOGLE_DEFAULT_FIELDS_FOR_DRIVE, GOOGLE_DISCOVERY_DOCS, GOOGLE_SCOPES, GOOGLE_SETTINGS} from './google.const';
+import { Injectable } from '@angular/core';
+import { GOOGLE_DEFAULT_FIELDS_FOR_DRIVE, GOOGLE_DISCOVERY_DOCS, GOOGLE_SCOPES, GOOGLE_SETTINGS } from './google.const';
 import * as moment from 'moment';
-import {HANDLED_ERROR_PROP_STR, IS_ELECTRON} from '../../app.constants';
-import {MultiPartBuilder} from './util/multi-part-builder';
-import {HttpClient, HttpHeaders, HttpParams, HttpRequest} from '@angular/common/http';
-import {SnackService} from '../../core/snack/snack.service';
-import {SnackType} from '../../core/snack/snack.model';
-import {GlobalConfigService} from '../config/global-config.service';
-import {catchError, concatMap, filter, map, shareReplay, switchMap, take} from 'rxjs/operators';
-import {BehaviorSubject, EMPTY, from, merge, Observable, of, throwError, timer} from 'rxjs';
-import {IPC} from '../../../../electron/ipc-events.const';
-import {BannerService} from '../../core/banner/banner.service';
-import {BannerId} from '../../core/banner/banner.model';
-import {T} from '../../t.const';
-import {ElectronService} from '../../core/electron/electron.service';
-import {isOnline} from '../../util/is-online';
-import {IS_ANDROID_WEB_VIEW} from '../../util/is-android-web-view';
-import {androidInterface} from '../../core/android/android-interface';
-import {getGoogleSession, GoogleSession, updateGoogleSession} from './google-session';
+import { HANDLED_ERROR_PROP_STR, IS_ELECTRON } from '../../app.constants';
+import { MultiPartBuilder } from './util/multi-part-builder';
+import { HttpClient, HttpHeaders, HttpParams, HttpRequest } from '@angular/common/http';
+import { SnackService } from '../../core/snack/snack.service';
+import { SnackType } from '../../core/snack/snack.model';
+import { catchError, concatMap, filter, map, shareReplay, switchMap, take } from 'rxjs/operators';
+import { BehaviorSubject, EMPTY, from, merge, Observable, of, throwError, timer } from 'rxjs';
+import { IPC } from '../../../../electron/ipc-events.const';
+import { BannerService } from '../../core/banner/banner.service';
+import { BannerId } from '../../core/banner/banner.model';
+import { T } from '../../t.const';
+import { ElectronService } from '../../core/electron/electron.service';
+import { isOnline } from '../../util/is-online';
+import { IS_ANDROID_WEB_VIEW } from '../../util/is-android-web-view';
+import { androidInterface } from '../../core/android/android-interface';
+import { getGoogleSession, GoogleSession, updateGoogleSession } from './google-session';
+import { ipcRenderer } from 'electron';
 
 const EXPIRES_SAFETY_MARGIN = 5 * 60 * 1000;
 
@@ -25,8 +25,8 @@ const EXPIRES_SAFETY_MARGIN = 5 * 60 * 1000;
   providedIn: 'root',
 })
 export class GoogleApiService {
-  public isLoggedIn: boolean;
-  private _session$ = new BehaviorSubject<GoogleSession>(getGoogleSession());
+  public isLoggedIn: boolean = false;
+  private _session$: BehaviorSubject<GoogleSession> = new BehaviorSubject(getGoogleSession());
   private _onTokenExpire$: Observable<number> = this._session$.pipe(
     switchMap((session) => {
       if (!session.accessToken) {
@@ -55,13 +55,12 @@ export class GoogleApiService {
     shareReplay(1),
   );
 
-  private _isScriptLoaded = false;
-  private _isGapiInitialized = false;
+  private _isScriptLoaded: boolean = false;
+  private _isGapiInitialized: boolean = false;
   private _gapi: any;
 
   constructor(
     private readonly _http: HttpClient,
-    private readonly _configService: GlobalConfigService,
     private readonly _electronService: ElectronService,
     private readonly _snackService: SnackService,
     private readonly _bannerService: BannerService,
@@ -73,7 +72,7 @@ export class GoogleApiService {
     return getGoogleSession();
   }
 
-  login(isSkipSuccessMsg = false): Promise<any> {
+  login(isSkipSuccessMsg: boolean = false): Promise<any> {
     const showSuccessMsg = () => {
       if (!(isSkipSuccessMsg)) {
         this._snackIt('SUCCESS', T.F.GOOGLE.S_API.SUCCESS_LOGIN);
@@ -86,9 +85,9 @@ export class GoogleApiService {
         return new Promise((resolve) => resolve(true));
       }
 
-      this._electronService.ipcRenderer.send(IPC.TRIGGER_GOOGLE_AUTH, session.refreshToken);
+      (this._electronService.ipcRenderer as typeof ipcRenderer).send(IPC.TRIGGER_GOOGLE_AUTH, session.refreshToken);
       return new Promise((resolve, reject) => {
-        this._electronService.ipcRenderer.on(IPC.GOOGLE_AUTH_TOKEN, (ev, data: any) => {
+        (this._electronService.ipcRenderer as typeof ipcRenderer).on(IPC.GOOGLE_AUTH_TOKEN, (ev, data: any) => {
           this._updateSession({
             accessToken: data.access_token,
             expiresAt: data.expiry_date,
@@ -97,7 +96,7 @@ export class GoogleApiService {
           showSuccessMsg();
           resolve(data);
         });
-        this._electronService.ipcRenderer.on(IPC.GOOGLE_AUTH_TOKEN_ERROR, (err, hmm) => {
+        (this._electronService.ipcRenderer as typeof ipcRenderer).on(IPC.GOOGLE_AUTH_TOKEN_ERROR, (err, hmm) => {
           reject(err);
         });
       });
@@ -122,7 +121,7 @@ export class GoogleApiService {
           //       refreshToken: res.code
           //     });
           //   });
-          const successHandler = (res) => {
+          const successHandler = (res: any) => {
             this._saveToken(res);
             showSuccessMsg();
           };
@@ -164,10 +163,10 @@ export class GoogleApiService {
     }
   }
 
-  getFileInfo$(fileId): Observable<any> {
+  getFileInfo$(fileId: string | null): Observable<any> {
     if (!fileId) {
       this._snackIt('ERROR', T.F.GOOGLE.S_API.ERR_NO_FILE_ID);
-      throwError({[HANDLED_ERROR_PROP_STR]: 'No file id given'});
+      return throwError({[HANDLED_ERROR_PROP_STR]: 'No file id given'});
     }
 
     return this._mapHttp$({
@@ -181,7 +180,7 @@ export class GoogleApiService {
     });
   }
 
-  findFile$(fileName): Observable<any> {
+  findFile$(fileName: string): Observable<any> {
     if (!fileName) {
       this._snackIt('ERROR', T.F.GOOGLE.S_API.ERR_NO_FILE_NAME);
       return throwError({[HANDLED_ERROR_PROP_STR]: 'No file name given'});
@@ -199,10 +198,10 @@ export class GoogleApiService {
   }
 
   // NOTE: file will always be returned as text (makes sense)
-  loadFile$(fileId): Observable<any> {
+  loadFile$(fileId: string | null): Observable<any> {
     if (!fileId) {
       this._snackIt('ERROR', T.F.GOOGLE.S_API.ERR_NO_FILE_ID);
-      throwError({[HANDLED_ERROR_PROP_STR]: 'No file id given'});
+      return throwError({[HANDLED_ERROR_PROP_STR]: 'No file id given'});
     }
 
     return this.getFileInfo$(fileId).pipe(
@@ -247,7 +246,7 @@ export class GoogleApiService {
       metadata.mimeType = 'application/json';
     }
 
-    const multipart = new MultiPartBuilder()
+    const multipart: any = (new (MultiPartBuilder as any)())
       .append('application/json', JSON.stringify(metadata))
       .append(metadata.mimeType, content)
       .finish();
@@ -285,7 +284,6 @@ export class GoogleApiService {
     });
   }
 
-
   private _initClientLibraryIfNotDone() {
     const getUser = () => {
       const GoogleAuth = this._gapi.auth2.getAuthInstance();
@@ -308,7 +306,7 @@ export class GoogleApiService {
     return new Promise((resolve, reject) => {
       return this._loadJs().then(() => {
         // tslint:disable-next-line
-        this._gapi = window['gapi'];
+        this._gapi = (window as any)['gapi'];
         this._gapi.load('client:auth2', () => {
           this.initClient()
             .then(() => {
@@ -331,15 +329,21 @@ export class GoogleApiService {
       expires_at?: string | number;
     }
   }) {
-    const accessToken = res.accessToken || res.access_token || res.Zi.access_token;
-    const expiresAt = +(res.expiresAt || res.expires_at || res.Zi.expires_at);
+    const r: any = res;
+    const accessToken = r.accessToken || r.access_token || r.Zi?.access_token;
+    const expiresAt = +(r.expiresAt || r.expires_at || r.Zi?.expires_at);
+
+    if (!accessToken) {
+      console.log(res);
+      throw new Error('No access token in response');
+    }
 
     if (accessToken !== this._session.accessToken || expiresAt !== this._session.expiresAt) {
       this._updateSession({accessToken, expiresAt});
     }
   }
 
-  private _handleUnAuthenticated(err) {
+  private _handleUnAuthenticated(err: any) {
     this.logout();
     this._bannerService.open({
       msg: T.F.GOOGLE.BANNER.AUTH_FAIL,
@@ -353,7 +357,7 @@ export class GoogleApiService {
     console.error(err);
   }
 
-  private _handleError(err) {
+  private _handleError(err: any) {
     let errStr = '';
 
     if (typeof err === 'string') {
@@ -374,7 +378,7 @@ export class GoogleApiService {
     }
   }
 
-  private _snackIt(type: SnackType, msg: string, translateParams = null) {
+  private _snackIt(type: SnackType, msg: string, translateParams: any = null) {
     this._snackService.open({
       msg,
       type,
@@ -450,7 +454,6 @@ export class GoogleApiService {
       );
   }
 
-
   private _loadJs(): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this._isScriptLoaded) {
@@ -465,9 +468,8 @@ export class GoogleApiService {
         resolve();
       };
 
-      const errorFunction = (e) => {
+      const errorFunction = (e: unknown) => {
         console.log('ERROR FB');
-
         reject(e);
       };
 
@@ -488,7 +490,7 @@ export class GoogleApiService {
 
   }
 
-  private _isTokenExpired(session): boolean {
+  private _isTokenExpired(session: any): boolean {
     const expiresAt = session && session.expiresAt || 0;
     const expiresIn = expiresAt - (moment().valueOf() + EXPIRES_SAFETY_MARGIN);
     return expiresIn <= 0;

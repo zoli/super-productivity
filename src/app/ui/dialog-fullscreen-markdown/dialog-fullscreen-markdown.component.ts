@@ -1,8 +1,8 @@
-import {ChangeDetectionStrategy, Component, Inject, OnDestroy} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {T} from '../../t.const';
-import {Subscription} from 'rxjs';
-import {ESCAPE} from '@angular/cdk/keycodes';
+import { ChangeDetectionStrategy, Component, Inject, OnDestroy } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { T } from '../../t.const';
+import { Subscription } from 'rxjs';
+import { ESCAPE } from '@angular/cdk/keycodes';
 
 @Component({
   selector: 'dialog-fullscreen-markdown',
@@ -11,9 +11,9 @@ import {ESCAPE} from '@angular/cdk/keycodes';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DialogFullscreenMarkdownComponent implements OnDestroy {
-  T = T;
+  T: typeof T = T;
 
-  private _subs = new Subscription();
+  private _subs: Subscription = new Subscription();
 
   constructor(
     private _matDialogRef: MatDialogRef<DialogFullscreenMarkdownComponent>,
@@ -22,7 +22,7 @@ export class DialogFullscreenMarkdownComponent implements OnDestroy {
     // we want to save as default
     _matDialogRef.disableClose = true;
     this._subs.add(_matDialogRef.keydownEvents().subscribe(e => {
-      if (e.keyCode === ESCAPE) {
+      if ((e as any).keyCode === ESCAPE) {
         e.preventDefault();
         this.close();
       }
@@ -33,7 +33,7 @@ export class DialogFullscreenMarkdownComponent implements OnDestroy {
     this._subs.unsubscribe();
   }
 
-  close(isSkipSave = false) {
+  close(isSkipSave: boolean = false) {
     this._matDialogRef.close(isSkipSave || this.data.content);
   }
 }

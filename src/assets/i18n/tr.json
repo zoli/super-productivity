@@ -14,10 +14,7 @@
     "UPDATE_WEB_APP": "Yeni sürüm mevcut. Yeni Sürüm Yükle?"
   },
   "BL": {
-    "FROM_OTHER_PROJECTS": "Diğer Projelerden",
-    "NO_TASKS": "İş günlüğünüzde şu anda görev yok",
-    "SCHEDULED": "tarifeli",
-    "TITLE": "birikim"
+    "NO_TASKS": "İş günlüğünüzde şu anda görev yok"
   },
   "DATETIME_INPUT": {
     "IN": " {{time}}içinde",
@@ -80,6 +77,13 @@
       }
     },
     "DROPBOX": {
+      "C": {
+        "EMPTY_SYNC": "Boş bir veri nesnesini senkronize etmeye çalışıyorsunuz. Bu, (neredeyse) bakir bir uygulamanın ilk senkronizasyonunuz mu?",
+        "FORCE_IMPORT": "Yine de uzak veriler içe aktarılsın mı?",
+        "FORCE_UPLOAD": "Yine de yerel veriler yüklensin mi?",
+        "FORCE_UPLOAD_AFTER_ERROR": "Yerel verilerinizi yüklerken bir hata oluştu. Güncellemeyi zorlamaya mı çalışıyorsunuz?",
+        "TRY_LOAD_REMOTE_AGAIN": "Verileri bir kez daha uzaktan kumandadan yeniden yüklemeyi mi deneyin?"
+      },
       "D_CONFLICT": {
         "LAST_CHANGE": "son değişiklik:",
         "LAST_SYNC": "son senkronizasyon:",
@@ -122,7 +126,7 @@
         "TOKEN": "Erişim Simgesi"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Burada Süper Verimliliği, günlük planlama görünümünde görev oluşturma panelinde belirli bir depo için açık GithHub sorunlarını listeleyecek şekilde yapılandırabilirsiniz. Öneriler olarak listelenecekler ve konuyla ilgili daha fazla bilgi sunacaklar.</p> <p>Ek olarak, tüm açık sorunları otomatik olarak görev biriktirme listesine ekleyebilir ve senkronize edebilirsiniz.</p>",
+        "HELP": "<p>Burada Süper Verimliliği, günlük planlama görünümünde görev oluşturma panelinde belirli bir depo için açık GitHub sorunlarını listeleyecek şekilde yapılandırabilirsiniz. Öneriler olarak listelenecekler ve konuyla ilgili daha fazla bilgi sunacaklar.</p> <p>Ek olarak, tüm açık sorunları otomatik olarak görev biriktirme listesine ekleyebilir ve senkronize edebilirsiniz.</p>",
         "TITLE": "Github"
       },
       "ISSUE_CONTENT": {
@@ -160,11 +164,11 @@
         "IS_AUTO_ADD_TO_BACKLOG": "Çözülmeyen sorunları otomatik olarak Gitlab'dan backlog'a ekle",
         "IS_AUTO_POLL": "İçe aktarılan git sorunlarını değişiklikler için otomatik olarak yokla",
         "IS_SEARCH_ISSUES_FROM_GITLAB": "Yeni görevler eklerken git'in önerilerini öneri olarak göster",
-        "PROJECT": "İzlemek istediğiniz git deposu için \"username / repositoryName\"",
+        "PROJECT": "Tam yol veya kullanıcı adı / projesi",
         "TOKEN": "Erişim Simgesi"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Burada Süper Verimliliği, günlük planlama görünümünde görev oluşturma panelinde belirli bir depo için açık Gitlab sorunlarını listeleyecek şekilde yapılandırabilirsiniz. Öneriler olarak listelenecekler ve konuyla ilgili daha fazla bilgi sunacaklar.</p> <p>Ek olarak, tüm açık sorunları otomatik olarak görev biriktirme listesine ekleyebilir ve senkronize edebilirsiniz.</p>",
+        "HELP": "<p> Burada SuperProductivity'yi günlük planlama görünümünde görev oluşturma panelinde belirli bir proje için açık Gitlab (çevrimiçi sürümü veya kendi kendine barındırılan bir örnek) sorunlarını listeleyecek şekilde yapılandırabilirsiniz. Bunlar öneri olarak listelenecek ve sorunla ilgili bir bağlantı ve bununla ilgili daha fazla bilgi sağlayacaktır. </p> <p> Buna ek olarak, tüm açık sorunları otomatik olarak görev birikiminize ekleyebilir ve senkronize edebilirsiniz. </p>",
         "TITLE": "Gitlab"
       },
       "ISSUE_CONTENT": {
@@ -315,7 +319,8 @@
         "ALLOW_SELF_SIGNED": "Kendinden imzalı sertifikaya izin ver",
         "HOST": "Ev sahibi (örneğin: http://my-host.de:1234)",
         "PASSWORD": "Jeton / Şifre",
-        "USER_NAME": "Email / Kullanıcı Adı"
+        "USER_NAME": "Email / Kullanıcı Adı",
+        "WONKY_COOKIE_MODE": "Wonky Cookie Yedek Kimlik Doğrulaması (yalnızca masaüstü uygulaması)"
       },
       "FORM_SECTION": {
         "ADV_CFG": "Gelişmiş Yapılandırma",
@@ -609,8 +614,12 @@
         "TIME": "zaman"
       },
       "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "Mevcut \"{{taskTitle}}\" görevini ekle",
+        "ADD_ISSUE_TASK": " {{issueType}}kaynaklı{{issueNr}} numaralı sorunu ekleyin",
         "ADD_TASK": "Görev ekle",
         "ADD_TASK_TO_BACKLOG": "İş gününe görev ekle",
+        "CREATE_TASK": "Yeni görev oluştur",
+        "EXAMPLE": "Örnek: \"Bazı görev başlığı + projeAdı # bazı etiket # bazı diğer etiket 10a / 3sa\"",
         "START": "Başlamak için bir kez daha enter tuşuna basın"
       },
       "B": {
@@ -831,12 +840,14 @@
     "SAVE": "Kayıt etmek",
     "TITLE": "Başlık",
     "UNDO": "Geri alma",
-    "UPDATE": "Güncelleştirme"
+    "UPDATE": "Güncelleştirme",
+    "WITHOUT_PROJECT": "Proje Olmadan"
   },
   "GCF": {
     "AUTO_BACKUPS": {
       "HELP": "Bir şeyler ters gittiğinde, hazır olması için tüm verileri otomatik olarak uygulama klasörünüze kaydedin.",
       "LABEL_IS_ENABLED": "Otomatik yedeklemeyi etkinleştir",
+      "LOCATION_INFO": "Yedekler şuraya kaydedilir:",
       "TITLE": "Otomatik Yedeklemeler"
     },
     "EVALUATION": {
@@ -926,6 +937,7 @@
       "IS_AUTO_START_NEXT_TASK": "Akımı tamam olarak işaretlerken bir sonraki görevi izlemeye başla",
       "IS_CONFIRM_BEFORE_EXIT": "Uygulamadan çıkmadan önce onayla",
       "IS_DARK_MODE": "Karanlık modu",
+      "IS_DISABLE_INITIAL_DIALOG": "İlk bilgi iletişim kutusunu devre dışı bırak (önemli güncellemeleri kaçırabilirsiniz!)",
       "IS_HIDE_NAV": "Ana başlık yönlendirilene kadar gezinmeyi gizle (yalnızca masaüstü)",
       "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Zaman hesaplamasının ne zaman aşıldığını bildir",
       "IS_TURN_OFF_MARKDOWN": "Notlar için etiketleme ayrıştırmayı kapatın",
@@ -945,6 +957,13 @@
       "LONGER_BREAK_DURATION": "Uzun molaların süresi",
       "TITLE": "Pomodoro Zamanlayıcı"
     },
+    "SOUND": {
+      "DONE_SOUND": "Görev tamamlandı sesi",
+      "IS_INCREASE_DONE_PITCH": "Yapılan her görev için perdeyi artırın",
+      "IS_PLAY_DONE_SOUND": "Görev tamamlandı olarak işaretlendiğinde ses çal",
+      "TITLE": "Ses",
+      "VOLUME": "hacim"
+    },
     "TAKE_A_BREAK": {
       "HELP": "<div> <p>Mola vermeden belirli bir süre çalıştığınızda tekrar eden bir hatırlatıcı yapılandırmanıza izin verir.</p> <p>Görüntülenen mesajı değiştirebilirsiniz. ${duration} , ara vermeden harcadığınız zamanla değiştirilecektir.</p> </div>",
       "IS_ENABLED": "Ara ver hatırlatma yapmayı etkinleştir",
@@ -960,7 +979,9 @@
     "COPY_TO_CLIPPBOARD": "Panoya kopyalandı",
     "ERR_COMPRESSION": "Sıkıştırma arayüzü için hata",
     "PERSISTENCE_DISALLOWED": "Veri kalıcı olarak sürdürülmeyecek. Bunun veri kaybına neden olabileceğini unutmayın!",
-    "RUNNING_X": "\"{{str}}\" çalıştırılıyor."
+    "RUNNING_X": "\"{{str}}\" çalıştırılıyor.",
+    "SHORTCUT_WARN_OPEN_BOOKMARKS_FROM_TAG": "{{keyCombo}} basıldı, ancak yer imlerini aç kısayolu yalnızca proje bağlamındayken kullanılabilir.",
+    "SHORTCUT_WARN_OPEN_NOTES_FROM_TAG": "{{keyCombo}} basılı, ancak açık notlar kısayolu yalnızca proje bağlamındayken kullanılabilir."
   },
   "GPB": {
     "ASSETS": "Varlıklar yükleniyor ...",
@@ -1078,7 +1099,6 @@
     }
   },
   "SCHEDULE": {
-    "ADD_TO_TODAY": "Bugüne ekle ve hatırlatıcıyı kaldır",
     "NO_SCHEDULED": "Şu anda zamanlanmış görev yok. Görev bağlamı menüsünde \"Görevi Zamanla\" seçeneğini seçerek bir görevi zamanlayabilirsiniz. Açmak için görevin sağındaki 3 küçük noktaya tıklayın.",
     "START_TASK": "Görevi şimdi başlat ve anımsatıcıyı kaldır"
   },

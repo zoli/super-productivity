@@ -17,14 +17,14 @@ import {
 })
 export class TaskAdditionalInfoItemComponent {
   @Input() type: 'input' | 'panel' = 'input';
-  @Input() expanded: boolean;
-  @Input() inputIcon: string;
+  @Input() expanded?: boolean = false;
+  @Input() inputIcon?: string;
 
-  @Output() collapseParent = new EventEmitter<void>();
-  @Output() keyPress = new EventEmitter<KeyboardEvent>();
-  @Output() editActionTriggered = new EventEmitter<void>();
+  @Output() collapseParent: EventEmitter<void> = new EventEmitter();
+  @Output() keyPress: EventEmitter<KeyboardEvent> = new EventEmitter();
+  @Output() editActionTriggered: EventEmitter<void> = new EventEmitter();
 
-  @HostBinding('tabindex') tabindex = 3;
+  @HostBinding('tabindex') readonly tabindex: number = 3;
 
   constructor(
     public elementRef: ElementRef

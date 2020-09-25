@@ -1,8 +1,7 @@
-import {ChangeDetectionStrategy, Component, ViewChild} from '@angular/core';
-import {FieldType} from '@ngx-formly/material';
-import {MatInput} from '@angular/material/input';
-import {ProjectService} from '../../project/project.service';
-import {Project} from '../../project/project.model';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { FieldType } from '@ngx-formly/material';
+import { ProjectService } from '../../project/project.service';
+import { Project } from '../../project/project.model';
 import { T } from 'src/app/t.const';
 
 @Component({
@@ -12,9 +11,9 @@ import { T } from 'src/app/t.const';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SelectProjectComponent extends FieldType {
-  @ViewChild(MatInput) formFieldControl: MatInput;
+  // @ViewChild(MatInput) formFieldControl: MatInput;
 
-  T = T;
+  T: typeof T = T;
 
   constructor(
     public projectService: ProjectService,
@@ -26,7 +25,7 @@ export class SelectProjectComponent extends FieldType {
     return this.to.type || 'text';
   }
 
-  trackByFn(i: number, item: Project) {
+  trackById(i: number, item: Project) {
     return item.id;
   }
 }

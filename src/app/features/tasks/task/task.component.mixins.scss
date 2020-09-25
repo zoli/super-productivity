@@ -56,11 +56,11 @@ $task-c-selected-bg-dark: $dark-theme-bg-slightly-lighter;
 
 @mixin isHostFocus($direct-parent-only-sel: false) {
   @if $direct-parent-only-sel {
-    :host-context(.isNoTouchDevice):focus > #{$direct-parent-only-sel} > & {
+    :host-context(.isNoTouchOnly):focus > #{$direct-parent-only-sel} > & {
       @content;
     }
   } @else {
-    :host-context(.isNoTouchDevice):focus & {
+    :host-context(.isNoTouchOnly):focus & {
       @content;
     }
   }
@@ -152,6 +152,7 @@ $task-c-selected-bg-dark: $dark-theme-bg-slightly-lighter;
     // thee magic number is 16/14 so we scale to whole pixels
     transform: scale(1.142857143);
     transition: $transition-standard;
+    outline: none;
 
     // NOTE: needed to overwrite color for current task
     color: $light-theme-text-color;

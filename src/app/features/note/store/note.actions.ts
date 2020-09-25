@@ -1,7 +1,7 @@
-import {createAction, props} from '@ngrx/store';
-import {Update} from '@ngrx/entity';
-import {Note} from '../note.model';
-import {NoteState} from './note.reducer';
+import { createAction, props } from '@ngrx/store';
+import { Update } from '@ngrx/entity';
+import { Note } from '../note.model';
+import { NoteState } from './note.reducer';
 
 export const loadNoteState = createAction(
   '[Note] Load Note State',
@@ -15,7 +15,7 @@ export const updateNoteOrder = createAction(
 
 export const addNote = createAction(
   '[Note] Add Note',
-  props<{ note: Note, isPreventFocus?: boolean, remindAt: number }>(),
+  props<{ note: Note, isPreventFocus?: boolean, remindAt: number | null }>(),
 );
 
 export const upsertNote = createAction(

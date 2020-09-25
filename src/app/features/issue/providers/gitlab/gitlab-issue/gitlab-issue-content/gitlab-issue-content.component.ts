@@ -1,9 +1,9 @@
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
-import {TaskWithSubTasks} from '../../../../../tasks/task.model';
-import {GitlabIssue} from '../gitlab-issue.model';
-import {expandAnimation} from '../../../../../../ui/animations/expand.ani';
-import {T} from '../../../../../../t.const';
-import {TaskService} from '../../../../../tasks/task.service';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { TaskWithSubTasks } from '../../../../../tasks/task.model';
+import { GitlabIssue } from '../gitlab-issue.model';
+import { expandAnimation } from '../../../../../../ui/animations/expand.ani';
+import { T } from '../../../../../../t.const';
+import { TaskService } from '../../../../../tasks/task.service';
 
 @Component({
   selector: 'gitlab-issue-content',
@@ -13,10 +13,10 @@ import {TaskService} from '../../../../../tasks/task.service';
   animations: [expandAnimation]
 })
 export class GitlabIssueContentComponent {
-  @Input() public issue: GitlabIssue;
-  @Input() public task: TaskWithSubTasks;
+  @Input() issue?: GitlabIssue;
+  @Input() task?: TaskWithSubTasks;
 
-  T = T;
+  T: typeof T = T;
 
   constructor(
     private readonly  _taskService: TaskService,
@@ -24,6 +24,10 @@ export class GitlabIssueContentComponent {
   }
 
   hideUpdates() {
-    this._taskService.markIssueUpdatesAsRead(this.task.id);
+    this._taskService.markIssueUpdatesAsRead((this.task as TaskWithSubTasks).id);
+  }
+
+  trackByIndex(i: number, p: any) {
+    return i;
   }
 }

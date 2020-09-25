@@ -1,10 +1,8 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
-import {TaskService} from '../../../features/tasks/task.service';
-import {TaskWithReminderData, TaskWithSubTasks} from '../../../features/tasks/task.model';
-import {standardListAnimation} from '../../../ui/animations/standard-list.ani';
-import {T} from '../../../t.const';
-import {Observable} from 'rxjs';
-import {ProjectService} from '../../../features/project/project.service';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { TaskService } from '../../../features/tasks/task.service';
+import { TaskWithReminderData, TaskWithSubTasks } from '../../../features/tasks/task.model';
+import { standardListAnimation } from '../../../ui/animations/standard-list.ani';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'backlog',
@@ -14,12 +12,11 @@ import {ProjectService} from '../../../features/project/project.service';
   animations: [standardListAnimation]
 })
 export class BacklogComponent {
-  @Input() backlogTasks: TaskWithSubTasks[];
+  @Input() backlogTasks: TaskWithSubTasks[] = [];
 
-  @Output() closeBacklog = new EventEmitter<any>();
+  @Output() closeBacklog: EventEmitter<any> = new EventEmitter<any>();
 
-
-  T = T;
+  T: typeof T = T;
 
   // we do it here to have the tasks in memory all the time
   // backlogTasks$: Observable<TaskWithSubTasks[]> = this._projectService.isProjectChanging$.pipe(
@@ -31,17 +28,17 @@ export class BacklogComponent {
 
   constructor(
     public taskService: TaskService,
-    private _projectService: ProjectService,
   ) {
   }
-
 
   trackByFn(i: number, task: TaskWithReminderData) {
     return task.id;
   }
 
-
   removeReminder(task: TaskWithReminderData) {
+    if (!task.reminderId) {
+      throw new Error('Task without reminder');
+    }
     this.taskService.removeReminder(task.id, task.reminderId);
   }
 

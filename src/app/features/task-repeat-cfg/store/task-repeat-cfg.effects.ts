@@ -1,25 +1,26 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
-import {concatMap, filter, flatMap, map, take, tap, withLatestFrom} from 'rxjs/operators';
-import {select, Store} from '@ngrx/store';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
+import { concatMap, filter, map, mergeMap, take, tap, withLatestFrom } from 'rxjs/operators';
+import { Action, select, Store } from '@ngrx/store';
 import {
   AddTaskRepeatCfgToTask,
   DeleteTaskRepeatCfg,
   TaskRepeatCfgActionTypes,
   UpdateTaskRepeatCfg
 } from './task-repeat-cfg.actions';
-import {selectTaskRepeatCfgFeatureState} from './task-repeat-cfg.reducer';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {Task, TaskArchive, TaskWithSubTasks} from '../../tasks/task.model';
-import {AddTask, MoveToArchive, RemoveTaskReminder, UpdateTask} from '../../tasks/store/task.actions';
-import {TaskService} from '../../tasks/task.service';
-import {TaskRepeatCfgService} from '../task-repeat-cfg.service';
-import {TASK_REPEAT_WEEKDAY_MAP, TaskRepeatCfg} from '../task-repeat-cfg.model';
-import {from} from 'rxjs';
-import {isToday} from '../../../util/is-today.util';
-import {WorkContextService} from '../../work-context/work-context.service';
-import {setActiveWorkContext} from '../../work-context/store/work-context.actions';
-import {SyncService} from '../../../imex/sync/sync.service';
+import { selectTaskRepeatCfgFeatureState } from './task-repeat-cfg.reducer';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { Task, TaskArchive, TaskWithSubTasks } from '../../tasks/task.model';
+import { AddTask, MoveToArchive, RemoveTaskReminder, UpdateTask } from '../../tasks/store/task.actions';
+import { TaskService } from '../../tasks/task.service';
+import { TaskRepeatCfgService } from '../task-repeat-cfg.service';
+import { TASK_REPEAT_WEEKDAY_MAP, TaskRepeatCfg, TaskRepeatCfgState } from '../task-repeat-cfg.model';
+import { from } from 'rxjs';
+import { isToday } from '../../../util/is-today.util';
+import { WorkContextService } from '../../work-context/work-context.service';
+import { setActiveWorkContext } from '../../work-context/store/work-context.actions';
+import { SyncService } from '../../../imex/sync/sync.service';
+import { WorkContextType } from '../../work-context/work-context.model';
 
 @Injectable()
 export class TaskRepeatCfgEffects {
@@ -57,32 +58,39 @@ export class TaskRepeatCfgEffects {
     filter((taskRepeatCfgs) => taskRepeatCfgs && !!taskRepeatCfgs.length),
 
     // existing tasks with sub tasks are loaded, because need to move them to the archive
-    flatMap(taskRepeatCfgs => from(taskRepeatCfgs).pipe(
-      flatMap((taskRepeatCfg: TaskRepeatCfg) =>
+    mergeMap(taskRepeatCfgs => from(taskRepeatCfgs).pipe(
+      mergeMap((taskRepeatCfg: TaskRepeatCfg) =>
         // NOTE: there might be multiple configs in case something went wrong
         // we want to move all of them to the archive
-        this._taskService.getTasksWithSubTasksByRepeatCfgId$(taskRepeatCfg.id).pipe(
+        this._taskService.getTasksWithSubTasksByRepeatCfgId$(taskRepeatCfg.id as string).pipe(
           take(1),
-          concatMap((tasks) => {
+          concatMap((tasks: Task[]) => {
             const isCreateNew = (tasks.filter(task => isToday(task.created)).length === 0);
             const moveToArchiveActions: (MoveToArchive | AddTask | UpdateTaskRepeatCfg)[] = isCreateNew
               ? tasks.filter(task => isToday(task.created))
                 .map(task => new MoveToArchive({tasks: [task]}))
               : [];
 
+            if (!taskRepeatCfg.id) {
+              throw new Error('No taskRepeatCfg.id');
+            }
+
             return from([
               ...moveToArchiveActions,
               ...(isCreateNew
                   ? [
                     new AddTask({
-                      task: this._taskService.createNewTaskWithDefaults(taskRepeatCfg.title, {
-                        repeatCfgId: taskRepeatCfg.id,
-                        timeEstimate: taskRepeatCfg.defaultEstimate,
-                        tagIds: taskRepeatCfg.tagIds || [],
-                        projectId: taskRepeatCfg.projectId,
+                      task: this._taskService.createNewTaskWithDefaults({
+                        title: taskRepeatCfg.title,
+                        additional: {
+                          repeatCfgId: taskRepeatCfg.id,
+                          timeEstimate: taskRepeatCfg.defaultEstimate,
+                          tagIds: taskRepeatCfg.tagIds || [],
+                          projectId: taskRepeatCfg.projectId,
+                        }
                       }),
-                      workContextType: this._workContextService.activeWorkContextType,
-                      workContextId: this._workContextService.activeWorkContextId,
+                      workContextType: this._workContextService.activeWorkContextType as WorkContextType,
+                      workContextId: this._workContextService.activeWorkContextId as string,
                       isAddToBacklog: false,
                       isAddToBottom: taskRepeatCfg.isAddToBottom || false,
                     }),
@@ -105,7 +113,6 @@ export class TaskRepeatCfgEffects {
     tap((v) => console.log('IMP Create Repeatable Tasks', v)),
   );
 
-
   @Effect() removeConfigIdFromTaskStateTasks$: any = this._actions$.pipe(
     ofType(
       TaskRepeatCfgActionTypes.DeleteTaskRepeatCfg,
@@ -116,7 +123,7 @@ export class TaskRepeatCfgEffects {
       ),
     ),
     filter(tasks => tasks && !!tasks.length),
-    flatMap((tasks: Task[]) => tasks.map(task => new UpdateTask({
+    mergeMap((tasks: Task[]) => tasks.map(task => new UpdateTask({
       task: {
         id: task.id,
         changes: {repeatCfgId: null}
@@ -139,10 +146,9 @@ export class TaskRepeatCfgEffects {
     filter((task: TaskWithSubTasks) => typeof task.reminderId === 'string'),
     map((task: TaskWithSubTasks) => new RemoveTaskReminder({
       id: task.id,
-      reminderId: task.reminderId
+      reminderId: task.reminderId as string
     })),
   );
-
 
   constructor(
     private _actions$: Actions,
@@ -155,9 +161,8 @@ export class TaskRepeatCfgEffects {
   ) {
   }
 
-  private _saveToLs([action, taskRepeatCfgState]) {
-    this._persistenceService.updateLastLocalSyncModelChange();
-    this._persistenceService.taskRepeatCfg.saveState(taskRepeatCfgState);
+  private _saveToLs([action, taskRepeatCfgState]: [Action, TaskRepeatCfgState]) {
+    this._persistenceService.taskRepeatCfg.saveState(taskRepeatCfgState, {isSyncModelChange: true});
   }
 
   private _removeRepeatCfgFromArchiveTasks(repeatConfigId: string) {
@@ -170,12 +175,13 @@ export class TaskRepeatCfgEffects {
       const newState = {...taskArchive};
       const ids = newState.ids as string[];
 
-      const tasksWithRepeatCfgId = ids.map(id => newState.entities[id])
+      const tasksWithRepeatCfgId = ids
+        .map(id => newState.entities[id] as Task)
         .filter((task: TaskWithSubTasks) => task.repeatCfgId === repeatConfigId);
 
       if (tasksWithRepeatCfgId && tasksWithRepeatCfgId.length) {
         tasksWithRepeatCfgId.forEach((task: any) => task.repeatCfgId = null);
-        this._persistenceService.taskArchive.saveState(newState);
+        this._persistenceService.taskArchive.saveState(newState, {isSyncModelChange: true});
       }
     });
   }

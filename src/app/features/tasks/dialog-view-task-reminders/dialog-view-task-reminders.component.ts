@@ -1,22 +1,18 @@
-import {ChangeDetectionStrategy, Component, Inject, OnDestroy} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialog, MatDialogRef} from '@angular/material/dialog';
-import {Reminder} from '../../reminder/reminder.model';
-import {Task, TaskWithReminderData} from '../task.model';
-import {TaskService} from '../task.service';
-import {BehaviorSubject, Observable, Subscription} from 'rxjs';
-import {ReminderService} from '../../reminder/reminder.service';
-import {first, map, switchMap} from 'rxjs/operators';
-import {ProjectService} from '../../project/project.service';
-import {Router} from '@angular/router';
-import {T} from '../../../t.const';
-import {DialogAddTaskReminderComponent} from '../dialog-add-task-reminder/dialog-add-task-reminder.component';
-import {AddTaskReminderInterface} from '../dialog-add-task-reminder/add-task-reminder-interface';
-import {WorkContextService} from '../../work-context/work-context.service';
-import {TagService} from '../../tag/tag.service';
-import {TODAY_TAG} from '../../tag/tag.const';
-import {standardListAnimation} from '../../../ui/animations/standard-list.ani';
-import {DataInitService} from '../../../core/data-init/data-init.service';
-import {unique} from '../../../util/unique';
+import { ChangeDetectionStrategy, Component, Inject, OnDestroy } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { Reminder } from '../../reminder/reminder.model';
+import { Task, TaskWithReminderData } from '../task.model';
+import { TaskService } from '../task.service';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { ReminderService } from '../../reminder/reminder.service';
+import { first, map, switchMap, takeWhile } from 'rxjs/operators';
+import { T } from '../../../t.const';
+import { DialogAddTaskReminderComponent } from '../dialog-add-task-reminder/dialog-add-task-reminder.component';
+import { AddTaskReminderInterface } from '../dialog-add-task-reminder/add-task-reminder-interface';
+import { TODAY_TAG } from '../../tag/tag.const';
+import { standardListAnimation } from '../../../ui/animations/standard-list.ani';
+import { unique } from '../../../util/unique';
+import { getTomorrow } from '../../../util/get-tomorrow';
 
 const M = 1000 * 60;
 
@@ -28,32 +24,33 @@ const M = 1000 * 60;
   animations: [standardListAnimation],
 })
 export class DialogViewTaskRemindersComponent implements OnDestroy {
-  T = T;
-  isDisableControls = false;
-  reminders$ = new BehaviorSubject<Reminder[]>(this.data.reminders);
+  T: typeof T = T;
+  isDisableControls: boolean = false;
+  reminders$: BehaviorSubject<Reminder[]> = new BehaviorSubject(this.data.reminders);
   tasks$: Observable<TaskWithReminderData[]> = this.reminders$.pipe(
     switchMap((reminders) => this._taskService.getByIdsLive$(reminders.map(r => r.relatedId)).pipe(
       first(),
       map((tasks: Task[]) => tasks
         .filter(task => !!task)
-        .map((task) => ({
+        .map((task): TaskWithReminderData => ({
           ...task,
-          reminderData: reminders.find(r => r.relatedId === task.id)
+          reminderData: reminders.find(r => r.relatedId === task.id) as Reminder
         }))
       )
     )),
   );
-  private _subs = new Subscription();
+  isMultiple$: Observable<boolean> = this.tasks$.pipe(
+    map(tasks => tasks.length > 1),
+    takeWhile(isMultiple => !isMultiple, true)
+  );
+  isMultiple: boolean = false;
+
+  private _subs: Subscription = new Subscription();
 
   constructor(
     private _matDialogRef: MatDialogRef<DialogViewTaskRemindersComponent>,
     private _taskService: TaskService,
-    private _projectService: ProjectService,
-    private _tagService: TagService,
-    private _workContextService: WorkContextService,
-    private _router: Router,
     private _matDialog: MatDialog,
-    private _dataInitService: DataInitService,
     private _reminderService: ReminderService,
     @Inject(MAT_DIALOG_DATA) public data: { reminders: Reminder[] },
   ) {
@@ -64,6 +61,7 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
     this._subs.add(this._reminderService.onRemindersActive$.subscribe(reminders => {
       this.reminders$.next(reminders);
     }));
+    this._subs.add(this.isMultiple$.subscribe(isMultiple => this.isMultiple = isMultiple));
   }
 
   ngOnDestroy(): void {
@@ -87,22 +85,29 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
       reminderId: null,
     });
     this._reminderService.removeReminder(task.reminderData.id);
-    this._removeFromList(task.reminderId);
+    this._removeFromList(task.reminderId as string);
   }
 
   snooze(task: TaskWithReminderData, snoozeInMinutes: number) {
     this._reminderService.updateReminder(task.reminderData.id, {
       remindAt: Date.now() + (snoozeInMinutes * M)
     });
-    this._removeFromList(task.reminderId);
+    this._removeFromList(task.reminderId as string);
   }
 
-  editReminder(task: TaskWithReminderData, isCloseAfter = false) {
+  snoozeUntilTomorrow(task: TaskWithReminderData) {
+    this._reminderService.updateReminder(task.reminderData.id, {
+      remindAt: getTomorrow().getTime()
+    });
+    this._removeFromList(task.reminderId as string);
+  }
+
+  editReminder(task: TaskWithReminderData, isCloseAfter: boolean = false) {
     this._subs.add(this._matDialog.open(DialogAddTaskReminderComponent, {
       restoreFocus: true,
       data: {task} as AddTaskReminderInterface
     }).afterClosed().subscribe(() => {
-      this._removeFromList(task.reminderId);
+      this._removeFromList(task.reminderId as string);
       if (isCloseAfter) {
         this._close();
       }
@@ -127,12 +132,10 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
 
   snoozeAllUntilTomorrow() {
     this.isDisableControls = true;
-    const date = new Date();
-    date.setHours(9, 0, 0, 0);
-    date.setDate(date.getDate() + 1);
+    const tomorrow = getTomorrow().getTime();
     this.reminders$.getValue().forEach((reminder) => {
       this._reminderService.updateReminder(reminder.id, {
-        remindAt: date.getTime()
+        remindAt: tomorrow
       });
     });
     this._close();
@@ -140,16 +143,20 @@ export class DialogViewTaskRemindersComponent implements OnDestroy {
 
   async addAllToToday() {
     this.isDisableControls = true;
-    const tasksToDismiss = await this.tasks$.pipe(first()).toPromise();
+    const tasksToDismiss = await this.tasks$.pipe(first()).toPromise() as TaskWithReminderData[];
     const mainTasks = tasksToDismiss.filter(t => !t.parentId);
-    const parentIds: string[] = unique(tasksToDismiss.map(t => t.parentId).filter(pid => pid));
+    const parentIds: string[] = unique<string>(
+      tasksToDismiss
+        .map(t => t.parentId as string)
+        .filter(pid => !!pid)
+    );
     const parents = await Promise.all(parentIds.map(parentId => this._taskService.getByIdOnce$(parentId).pipe(first()).toPromise()));
     const updateTagTasks = [...parents, ...mainTasks];
 
     updateTagTasks.forEach(task => {
       this._taskService.updateTags(task, [TODAY_TAG.id, ...task.tagIds], task.tagIds);
     });
-    tasksToDismiss.forEach((task) => {
+    tasksToDismiss.forEach((task: TaskWithReminderData) => {
       this.dismiss(task);
     });
 

@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
-import * as LZString from 'lz-string/libs/lz-string';
+import * as LZString from 'lz-string';
 
-function handleData(msgData) {
+function handleData(msgData: any) {
   switch (msgData.type) {
     case 'COMPRESS':
       return LZString.compress(msgData.strToHandle);
@@ -13,6 +13,8 @@ function handleData(msgData) {
     case 'DECOMPRESS_UTF16':
       // tslint:disable-next-line
       return LZString['decompressFromUTF16'](msgData.strToHandle);
+    default:
+      throw new Error('Invalid type');
   }
 }
 

@@ -1,8 +1,8 @@
-import {Injectable} from '@angular/core';
-import {Actions, createEffect, ofType} from '@ngrx/effects';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {select, Store} from '@ngrx/store';
-import {filter, first, map, switchMap, tap} from 'rxjs/operators';
+import { Injectable } from '@angular/core';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { select, Store } from '@ngrx/store';
+import { filter, first, map, switchMap, tap } from 'rxjs/operators';
 import {
   addNote,
   addNoteReminder,
@@ -12,16 +12,16 @@ import {
   updateNoteOrder,
   updateNoteReminder
 } from './note.actions';
-import {NoteState, selectNoteFeatureState} from './note.reducer';
-import {ReminderService} from '../../reminder/reminder.service';
-import {T} from '../../../t.const';
-import {SnackService} from '../../../core/snack/snack.service';
-import {WorkContextService} from '../../work-context/work-context.service';
-import {combineLatest} from 'rxjs';
+import { NoteState, selectNoteFeatureState } from './note.reducer';
+import { ReminderService } from '../../reminder/reminder.service';
+import { T } from '../../../t.const';
+import { SnackService } from '../../../core/snack/snack.service';
+import { WorkContextService } from '../../work-context/work-context.service';
+import { combineLatest, Observable } from 'rxjs';
 
 @Injectable()
 export class NoteEffects {
-  updateNote$: any = createEffect(() => this._actions$.pipe(
+  updateNote$: Observable<any> = createEffect(() => this._actions$.pipe(
     ofType(
       addNote,
       deleteNote,
@@ -33,7 +33,6 @@ export class NoteEffects {
       this._store$.pipe(select(selectNoteFeatureState)),
     ]).pipe(first())),
     tap(([projectId, state]) => this._saveToLs(projectId, state)),
-    tap(this._updateLastLocalSyncModelChange.bind(this)),
   ), {dispatch: false});
 
   deleteNote$: any = createEffect(() => this._actions$.pipe(
@@ -43,15 +42,15 @@ export class NoteEffects {
     tap((p) => this._reminderService.removeReminderByRelatedIdIfSet(p.id))
   ), {dispatch: false});
 
-  addReminderForNewNote$ = createEffect(() => this._actions$.pipe(
+  addReminderForNewNote$: any = createEffect(() => this._actions$.pipe(
     ofType(
       addNote
     ),
-    filter((p) => p.remindAt && p.remindAt > 0),
+    filter(({remindAt}) => !!remindAt && remindAt > 0),
     map((p) => addNoteReminder({
       id: p.note.id,
       title: p.note.content.substr(0, 40),
-      remindAt: p.remindAt,
+      remindAt: p.remindAt as number,
     }))
   ));
 
@@ -109,7 +108,6 @@ export class NoteEffects {
     })),
   ));
 
-
   constructor(
     private _actions$: Actions,
     private _store$: Store<any>,
@@ -120,13 +118,9 @@ export class NoteEffects {
   ) {
   }
 
-  private _updateLastLocalSyncModelChange() {
-    this._persistenceService.updateLastLocalSyncModelChange();
-  }
-
   private async _saveToLs(currentProjectId: string, noteState: NoteState) {
     if (currentProjectId) {
-      this._persistenceService.note.save(currentProjectId, noteState);
+      this._persistenceService.note.save(currentProjectId, noteState, {isSyncModelChange: true});
     } else {
       throw new Error('No current project id');
     }

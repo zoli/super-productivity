@@ -1,10 +1,9 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {FieldArrayType} from '@ngx-formly/core';
-import {T} from 'src/app/t.const';
-import {MatDialog} from '@angular/material/dialog';
-import {EMPTY_SIMPLE_COUNTER} from '../../simple-counter/simple-counter.const';
-import shortid from 'shortid';
-import {standardListAnimation} from '../../../ui/animations/standard-list.ani';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { FieldArrayType } from '@ngx-formly/core';
+import { T } from 'src/app/t.const';
+import { EMPTY_SIMPLE_COUNTER } from '../../simple-counter/simple-counter.const';
+import * as shortid from 'shortid';
+import { standardListAnimation } from '../../../ui/animations/standard-list.ani';
 
 @Component({
   selector: 'repeat-section-type',
@@ -14,9 +13,9 @@ import {standardListAnimation} from '../../../ui/animations/standard-list.ani';
   animations: [standardListAnimation],
 })
 export class RepeatSectionTypeComponent extends FieldArrayType {
-  T = T;
+  T: typeof T = T;
 
-  constructor(private _matDialog: MatDialog) {
+  constructor() {
     super();
   }
 

@@ -7,17 +7,14 @@
     },
     "B_OFFLINE": "شما از اینترنت جدا هستید. همگام سازی و درخواست داده های ارائه دهنده مشکل کار نمی کند.",
     "D_INITIAL": {
-      "TITLE": ""
+      "TITLE": "به v{{nr}}خوش آمدید "
     },
     "UPDATE_MAIN_MODEL": "سوپر بهره وری به روزرسانی اساسی را بدست آورده است! برخی از مهاجرت ها برای داده های شما مورد نیاز است. لطفا توجه داشته باشید که این داده های شما را با نسخه های قدیمی تر برنامه ناسازگار می کند.",
     "UPDATE_MAIN_MODEL_NO_UPDATE": "هیچ به روزرسانی مدل انتخاب نشده است. لطفاً توجه داشته باشید که اگر نمی خواهید به روزرسانی مدل را انجام دهید ، به آخرین نسخه پایین بروید.",
     "UPDATE_WEB_APP": "نسخه جدید موجود است، نسخه جدید بارگیری شود?"
   },
   "BL": {
-    "FROM_OTHER_PROJECTS": "از پروژه های دیگر",
-    "NO_TASKS": "کاری در بک لاگ شما وجود ندارد",
-    "SCHEDULED": "برنامه ریزی شده است",
-    "TITLE": "بک لاگ"
+    "NO_TASKS": "کاری در بک لاگ شما وجود ندارد"
   },
   "DATETIME_INPUT": {
     "IN": "در {{time}}",
@@ -80,6 +77,13 @@
       }
     },
     "DROPBOX": {
+      "C": {
+        "EMPTY_SYNC": "شما در حال تلاش برای همگام سازی یک شی empty داده خالی هستید. آیا این اولین همگام سازی شما با یک برنامه (تقریبا) بکر است؟",
+        "FORCE_IMPORT": "به هر حال داده از راه دور وارد می شود؟",
+        "FORCE_UPLOAD": "به هر حال داده های محلی بارگذاری می شوند؟",
+        "FORCE_UPLOAD_AFTER_ERROR": "هنگام بارگذاری داده های محلی شما خطایی روی داد. سعی کنید به زودی بروزرسانی کنید؟",
+        "TRY_LOAD_REMOTE_AGAIN": "سعی می کنید بار دیگر داده ها را از راه دور بارگیری کنید؟"
+      },
       "D_CONFLICT": {
         "LAST_CHANGE": "آخرین تغییر:",
         "LAST_SYNC": "آخرین همگام سازی:",
@@ -106,7 +110,7 @@
         "AUTH_ERROR": "Dropbox: نشانه دسترسی نامعتبر ارائه شده است",
         "OFFLINE": "Dropbox: همگام سازی امکان پذیر نیست ، زیرا آفلاین است",
         "SYNC_ERROR": "Dropbox: خطا هنگام همگام سازی",
-        "UNKNOWN_ERROR": ""
+        "UNKNOWN_ERROR": "Dropbox: خطای ناشناخته: {{errorStr}}"
       }
     },
     "GITHUB": {
@@ -122,7 +126,7 @@
         "TOKEN": "توکن دسترسی"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Here you can configure SuperProductivity to list open GithHub issues for a specific repository in the task creation panel in the daily planning view. They will be listed as suggestions and will provide a link to the issue as well as more information about it.</p> <p>In addition you can automatically add and sync all open issues to your task backlog.</p>",
+        "HELP": "<p>Here you can configure SuperProductivity to list open GitHub issues for a specific repository in the task creation panel in the daily planning view. They will be listed as suggestions and will provide a link to the issue as well as more information about it.</p> <p>In addition you can automatically add and sync all open issues to your task backlog.</p>",
         "TITLE": "گیت هاب"
       },
       "ISSUE_CONTENT": {
@@ -138,7 +142,7 @@
       "S": {
         "ERR_NETWORK": "گیت هاب: به علت مشکل شبکه سمت کاربر درخواست انجام نشد",
         "ERR_NOT_CONFIGURED": "گیت هاب: به درستی پیکربندی نشده است",
-        "ERR_UNKNOWN": "",
+        "ERR_UNKNOWN": "Github: خطای ناشناخته{{errorMsg}} {{statusCode}} . محدودیت نرخ Api بیش از?",
         "IMPORTED_MULTIPLE_ISSUES": "Github: Imported {{issuesLength}} new issues from git to backlog",
         "IMPORTED_SINGLE_ISSUE": "Github: Imported issue \"{{issueText}}\" from git to backlog",
         "ISSUE_DELETED_OR_CLOSED": "Github: Issue \"{{issueText}}\" seems to be deleted or closed on git",
@@ -160,11 +164,11 @@
         "IS_AUTO_ADD_TO_BACKLOG": "بطور خودکار مشکلات گزارش شده در گیت لاب را به بک لاگ اضافه کن",
         "IS_AUTO_POLL": "Automatically poll imported git issues for changes",
         "IS_SEARCH_ISSUES_FROM_GITLAB": "Show issues from git as suggestions when adding new tasks",
-        "PROJECT": "\"نام کاربری٪ 2FProjectName\" برای پروژه gitlab که می خواهید ردیابی کنید",
+        "PROJECT": "مسیر کامل یا نام کاربری / پروژه",
         "TOKEN": "توکن دسترسی"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Here you can configure SuperProductivity to list open Gitlab issues for a specific repository in the task creation panel in the daily planning view. They will be listed as suggestions and will provide a link to the issue as well as more information about it.</p> <p>In addition you can automatically add and sync all open issues to your task backlog.</p>",
+        "HELP": "<p> در اینجا می توانید SuperProductivity را تنظیم کنید تا لیست Gitlab باز (یا نسخه آنلاین آن یا یک نمونه خود میزبان) را برای یک پروژه خاص در پانل ایجاد کار در نمای برنامه ریزی روزانه تنظیم کنید. آنها به عنوان پیشنهادات ذکر شده اند و پیوندی به موضوع و همچنین اطلاعات بیشتر در مورد آن را ارائه می دهند. </p> <p> علاوه بر این می توانید به طور خودکار همه موارد باز را به بک گراند وظیفه خود اضافه کنید و همگام سازی کنید. </p>",
         "TITLE": "گیت لاب"
       },
       "ISSUE_CONTENT": {
@@ -180,7 +184,7 @@
       "S": {
         "ERR_NETWORK": "گیت لاب: به علت مشکل شبکه سمت کاربر درخواست انجام نشد",
         "ERR_NOT_CONFIGURED": "گیت لاب: به درستی پیکربندی نشده است",
-        "ERR_UNKNOWN": "",
+        "ERR_UNKNOWN": "Gitlab: خطای ناشناخته {{statusCode}} {{errorMsg}}",
         "IMPORTED_MULTIPLE_ISSUES": "Gitlab: Imported {{issuesLength}} new issues from git to backlog",
         "IMPORTED_SINGLE_ISSUE": "Gitlab: Imported issue \"{{issueText}}\" from git to backlog",
         "ISSUE_DELETED_OR_CLOSED": "Gitlab: Issue \"{{issueText}}\" seems to be deleted or closed on git",
@@ -315,7 +319,8 @@
         "ALLOW_SELF_SIGNED": "اجازه گواهی خود امضا شده",
         "HOST": "آدرس جیرای شما (مثلا: http://my-jira.ir:1234)",
         "PASSWORD": "توکن / کلمه عبور",
-        "USER_NAME": "ایمیل / نام کاربری"
+        "USER_NAME": "ایمیل / نام کاربری",
+        "WONKY_COOKIE_MODE": "تأیید هویت کوکی Wonky Cookie (فقط برنامه دسک تاپ)"
       },
       "FORM_SECTION": {
         "ADV_CFG": "تنظیمات پیشرفته",
@@ -491,7 +496,7 @@
       "P2": "If you want to know more about the science behind all here I can recommend <a target=\"_blank\" href=\"https://www.nytimes.com/2019/03/25/smarter-living/why-you-procrastinate-it-has-nothing-to-do-with-self-control.html\" target=\"_blank\">this article</a> from which are some of the exercises.",
       "P3": "Remember: Procrastination is an emotion regulation problem, not a time management problem.",
       "REFRAME": {
-        "INTRO": "Think about what might be positive about the task despite its.",
+        "INTRO": "Think about what might be positive about the task despite its flaws.",
         "TITLE": "Reframing",
         "TL1": "What might be interesting about it?",
         "TL2": "What is to gain if you complete it?",
@@ -609,8 +614,12 @@
         "TIME": "زمان"
       },
       "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "افزودن کار موجود \"{{taskTitle}}\"",
+        "ADD_ISSUE_TASK": "شماره شماره{{issueNr}} را از {{issueType}}اضافه کنید",
         "ADD_TASK": "اضافه کردن کار",
         "ADD_TASK_TO_BACKLOG": "اضافه کردن کار به بک لاگ",
+        "CREATE_TASK": "ایجاد کار جدید",
+        "EXAMPLE": "مثال: \"برخی از عنوان های کار + پروژه نام # برخی از برچسب ها # برخی دیگر از برچسب ها 10m / 3h\"",
         "START": "جهت شروع یکبار دیگر دکمه اینتر را بزنید"
       },
       "B": {
@@ -692,7 +701,7 @@
       "S": {
         "DELETED": "Deleted task \"{{title}}\"",
         "FOUND_MOVE_FROM_BACKLOG": "Moved task <strong>{{title}}</strong> from backlog to todays task list",
-        "FOUND_MOVE_FROM_OTHER_LIST": "",
+        "FOUND_MOVE_FROM_OTHER_LIST": " <strong>کار اضافه شده{{title}}</strong> از <strong>{{contextTitle}}</strong> به لیست فعلی",
         "FOUND_RESTORE_FROM_ARCHIVE": "Restored task <strong>{{title}}</strong> related to issue from archive",
         "LAST_TAG_DELETION_WARNING": "شما در حال تلاش برای حذف آخرین برچسب یک کار غیر پروژه هستید. این مجاز نیست!",
         "REMINDER_ADDED": "Scheduled task \"{{title}}\"",
@@ -831,12 +840,14 @@
     "SAVE": "ذخیره",
     "TITLE": "عنوان",
     "UNDO": "Undo",
-    "UPDATE": "بروز رسانی"
+    "UPDATE": "بروز رسانی",
+    "WITHOUT_PROJECT": "بدون پروژه"
   },
   "GCF": {
     "AUTO_BACKUPS": {
       "HELP": "Auto save all data to your app folder in order to have it ready in case something goes wrong.",
       "LABEL_IS_ENABLED": "فعال کردن پشتیبان گیری خودکار",
+      "LOCATION_INFO": "نسخه پشتیبان تهیه شده در:",
       "TITLE": "پشتیبان گیری خودکار"
     },
     "EVALUATION": {
@@ -926,6 +937,7 @@
       "IS_AUTO_START_NEXT_TASK": "هنگام علامت گذاری جریان ، به عنوان انجام کار ، ردیابی کار بعدی را شروع کنید",
       "IS_CONFIRM_BEFORE_EXIT": "Confirm before exiting the app",
       "IS_DARK_MODE": "Dark Mode",
+      "IS_DISABLE_INITIAL_DIALOG": "گفتگوی اطلاعات اولیه را غیرفعال کنید (ممکن است به روزرسانی های مهم را از دست دهید!)",
       "IS_HIDE_NAV": "Hide navigation until main header is hovered (desktop only)",
       "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Notify when time estimate was exceeded",
       "IS_TURN_OFF_MARKDOWN": "Turn off markdown parsing for notes",
@@ -945,6 +957,13 @@
       "LONGER_BREAK_DURATION": "Duration of longer breaks",
       "TITLE": "Pomodoro Timer"
     },
+    "SOUND": {
+      "DONE_SOUND": "وظیفه تمام شد صدا",
+      "IS_INCREASE_DONE_PITCH": "برای انجام هر کاری سطح صدا را افزایش دهید",
+      "IS_PLAY_DONE_SOUND": "وقتی کار به پایان رسید ، صدا را پخش کنید",
+      "TITLE": "صدا",
+      "VOLUME": "جلد"
+    },
     "TAKE_A_BREAK": {
       "HELP": "<div> <p>Allows you to configure a reoccurring reminder when you have worked for a specified amount of time without taking a break.</p> <p>You can modify the message displayed. ${duration} will be replaced with the time spent without a break.</p> </div>",
       "IS_ENABLED": "Enable take a break reminder",
@@ -960,7 +979,9 @@
     "COPY_TO_CLIPPBOARD": "در کلیپ برد کپی شد",
     "ERR_COMPRESSION": "خطایی برای رابط فشرده سازی",
     "PERSISTENCE_DISALLOWED": "Data will be not persisted permanently. Be aware that this can lead to data loss!!",
-    "RUNNING_X": "Running \"{{str}}\"."
+    "RUNNING_X": "Running \"{{str}}\".",
+    "SHORTCUT_WARN_OPEN_BOOKMARKS_FROM_TAG": "{{keyCombo}} فشرده شده است ، اما میانبر نشانک های باز فقط در متن پروژه در دسترس است.",
+    "SHORTCUT_WARN_OPEN_NOTES_FROM_TAG": "{{keyCombo}} میانبر فشرده شده است ، اما باز کردن یادداشت های باز فقط وقتی در متن پروژه باشد ، در دسترس است."
   },
   "GPB": {
     "ASSETS": "در حال بارگیری دارایی ...",
@@ -1078,7 +1099,6 @@
     }
   },
   "SCHEDULE": {
-    "ADD_TO_TODAY": "به امروز اضافه کنید و یادآوری را حذف کنید",
     "NO_SCHEDULED": "There are currently no scheduled tasks. You can schedule a task by choosing \"Schedule Task\" in the task context menu. To open it click on the 3 little dots on the right of a task.",
     "START_TASK": "Start task now and remove reminder"
   },

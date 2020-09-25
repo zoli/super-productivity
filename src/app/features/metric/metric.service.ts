@@ -1,41 +1,41 @@
-import {Injectable} from '@angular/core';
-import {select, Store} from '@ngrx/store';
-import {initialMetricState} from './store/metric.reducer';
-import {AddMetric, DeleteMetric, LoadMetricState, UpdateMetric, UpsertMetric} from './store/metric.actions';
-import {combineLatest, EMPTY, from, merge, Observable, of, timer} from 'rxjs';
-import {LineChartData, Metric, MetricState, PieChartData, SimpleMetrics} from './metric.model';
-import {PersistenceService} from '../../core/persistence/persistence.service';
-import {getWorklogStr} from '../../util/get-work-log-str';
+import { Injectable } from '@angular/core';
+import { select, Store } from '@ngrx/store';
+import { initialMetricState } from './store/metric.reducer';
+import { AddMetric, DeleteMetric, LoadMetricState, UpdateMetric, UpsertMetric } from './store/metric.actions';
+import { combineLatest, EMPTY, from, merge, Observable, of, timer } from 'rxjs';
+import { LineChartData, Metric, MetricState, PieChartData, SimpleMetrics } from './metric.model';
+import { PersistenceService } from '../../core/persistence/persistence.service';
+import { getWorklogStr } from '../../util/get-work-log-str';
 import {
-  selectAllMetrics,
   selectImprovementCountsPieChartData,
-  selectLastTrackedMetric,
   selectMetricById,
   selectMetricHasData,
   selectObstructionCountsPieChartData,
-  selectProductivityHappinessLineChartData,
-  selectProductivityHappinessLineChartDataComplete
+  selectProductivityHappinessLineChartData
 } from './store/metric.selectors';
-import {filter, map, switchMap, take} from 'rxjs/operators';
-import {TaskService} from '../tasks/task.service';
-import {WorklogService} from '../worklog/worklog.service';
-import {ProjectService} from '../project/project.service';
-import {mapSimpleMetrics} from './metric.util';
-import {DEFAULT_METRIC_FOR_DAY} from './metric.const';
-import {WorkContextService} from '../work-context/work-context.service';
-import {WorkContextType} from '../work-context/work-context.model';
-import {selectCheckedImprovementIdsForDay, selectRepeatedImprovementIds} from './improvement/store/improvement.reducer';
+import { filter, map, switchMap, take } from 'rxjs/operators';
+import { TaskService } from '../tasks/task.service';
+import { WorklogService } from '../worklog/worklog.service';
+import { ProjectService } from '../project/project.service';
+import { mapSimpleMetrics } from './metric.util';
+import { DEFAULT_METRIC_FOR_DAY } from './metric.const';
+import { WorkContextService } from '../work-context/work-context.service';
+import { WorkContextType } from '../work-context/work-context.model';
+import {
+  selectCheckedImprovementIdsForDay,
+  selectRepeatedImprovementIds
+} from './improvement/store/improvement.reducer';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MetricService {
-  metrics$: Observable<Metric[]> = this._store$.pipe(select(selectAllMetrics));
+  // metrics$: Observable<Metric[]> = this._store$.pipe(select(selectAllMetrics));
   hasData$: Observable<boolean> = this._store$.pipe(select(selectMetricHasData));
-  lastTrackedMetric$: Observable<Metric> = this._store$.pipe(select(selectLastTrackedMetric));
-  improvementCountsPieChartData$: Observable<PieChartData> = this._store$.pipe(select(selectImprovementCountsPieChartData));
-  obstructionCountsPieChartData$: Observable<PieChartData> = this._store$.pipe(select(selectObstructionCountsPieChartData));
-  productivityHappinessLineChartData$: Observable<LineChartData> = this._store$.pipe(select(selectProductivityHappinessLineChartDataComplete));
+  // lastTrackedMetric$: Observable<Metric> = this._store$.pipe(select(selectLastTrackedMetric));
+  improvementCountsPieChartData$: Observable<PieChartData | null> = this._store$.pipe(select(selectImprovementCountsPieChartData));
+  obstructionCountsPieChartData$: Observable<PieChartData | null> = this._store$.pipe(select(selectObstructionCountsPieChartData));
+  // productivityHappinessLineChartData$: Observable<LineChartData> = this._store$.pipe(select(selectProductivityHappinessLineChartDataComplete));
 
   simpleMetrics$: Observable<SimpleMetrics> = this._workContextService.activeWorkContextTypeAndId$.pipe(
     switchMap(({activeType, activeId}) => {
@@ -79,14 +79,14 @@ export class MetricService {
     this._store$.dispatch(new LoadMetricState({state}));
   }
 
-  getMetricForDay$(id: string = getWorklogStr()): Observable<Metric> {
-    if (!id) {
-      throw new Error('No valid id provided');
-    }
-    return this._store$.pipe(select(selectMetricById, {id}), take(1));
-  }
+  // getMetricForDay$(id: string = getWorklogStr()): Observable<Metric> {
+  //   if (!id) {
+  //     throw new Error('No valid id provided');
+  //   }
+  //   return this._store$.pipe(select(selectMetricById, {id}), take(1));
+  // }
 
-  getMetricForDayOrDefaultWithCheckedImprovements$(day = getWorklogStr()): Observable<Metric> {
+  getMetricForDayOrDefaultWithCheckedImprovements$(day: string = getWorklogStr()): Observable<Metric> {
     return this._workContextService.activeWorkContextIdIfProject$.pipe(
       switchMap(() => merge(
         this._projectService.isRelatedDataLoadedForCurrentProject$.pipe(
@@ -120,7 +120,6 @@ export class MetricService {
     );
   }
 
-
   addMetric(metric: Metric) {
     this._store$.dispatch(new AddMetric({
       metric: {
@@ -153,9 +152,8 @@ export class MetricService {
   }
 
   // STATISTICS
-  getProductivityHappinessChartData$(howMany = 20): Observable<LineChartData> {
+  getProductivityHappinessChartData$(howMany: number = 20): Observable<LineChartData> {
     return this._store$.pipe(select(selectProductivityHappinessLineChartData, {howMany}));
   }
-
 
 }

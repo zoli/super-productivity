@@ -1,8 +1,8 @@
-import {Injectable} from '@angular/core';
-import {Observable, of} from 'rxjs';
-import {getCacheId} from './get-cache-id';
-import {tap} from 'rxjs/operators';
-import {loadFromLs, saveToLs} from '../../../core/persistence/local-storage';
+import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { getCacheId } from './get-cache-id';
+import { tap } from 'rxjs/operators';
+import { loadFromRealLs, saveToRealLs } from '../../../core/persistence/local-storage';
 
 export interface CacheItem {
   r: any;
@@ -13,7 +13,7 @@ export interface CacheItem {
   providedIn: 'root',
 })
 export class IssueCacheService {
-  cache(url: string, requestInit: RequestInit, orgMethod: any, orgArguments: any[], minAlive = 25000): Observable<any> {
+  cache(url: string, requestInit: RequestInit, orgMethod: any, orgArguments: any[], minAlive: number = 25000): Observable<any> {
     const cacheId = getCacheId(requestInit, url);
 
     if (this._isUseCache(cacheId) && requestInit.method === 'GET') {
@@ -32,16 +32,16 @@ export class IssueCacheService {
       e: minAlive ? (Date.now() + minAlive) : null,
       r: response,
     };
-    saveToLs(cacheId, item);
+    saveToRealLs(cacheId, item);
   }
 
   private _loadResponseFromCache(cacheId: string) {
-    const cacheItem = loadFromLs(cacheId);
+    const cacheItem = loadFromRealLs(cacheId);
     return cacheItem && cacheItem.r;
   }
 
   private _loadResponseItemFromCache(cacheId: string): CacheItem {
-    return loadFromLs(cacheId);
+    return loadFromRealLs(cacheId);
   }
 
   private _isUseCache(cacheId: string) {

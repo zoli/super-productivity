@@ -1,16 +1,15 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, Output} from '@angular/core';
-import {ConfigFormSection, GlobalConfigSectionKey} from '../../config/global-config.model';
-import {ProjectCfgFormKey} from '../../project/project.model';
-import {SimpleCounterConfig} from '../simple-counter.model';
-import {FormlyFormOptions} from '@ngx-formly/core';
-import {FormGroup} from '@angular/forms';
-import {T} from 'src/app/t.const';
-import {SimpleCounterService} from '../simple-counter.service';
-import {map} from 'rxjs/operators';
-import {Observable, Subscription} from 'rxjs';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogConfirmComponent} from '../../../ui/dialog-confirm/dialog-confirm.component';
-
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { ConfigFormSection, GlobalConfigSectionKey } from '../../config/global-config.model';
+import { ProjectCfgFormKey } from '../../project/project.model';
+import { SimpleCounterConfig } from '../simple-counter.model';
+import { FormlyFormOptions } from '@ngx-formly/core';
+import { FormGroup } from '@angular/forms';
+import { T } from 'src/app/t.const';
+import { SimpleCounterService } from '../simple-counter.service';
+import { map } from 'rxjs/operators';
+import { Observable, Subscription } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogConfirmComponent } from '../../../ui/dialog-confirm/dialog-confirm.component';
 
 @Component({
   selector: 'simple-counter-cfg',
@@ -19,15 +18,13 @@ import {DialogConfirmComponent} from '../../../ui/dialog-confirm/dialog-confirm.
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SimpleCounterCfgComponent implements OnDestroy {
-  @Input() section: ConfigFormSection<SimpleCounterConfig>;
+  @Input() section?: ConfigFormSection<SimpleCounterConfig>;
+  @Input() cfg?: SimpleCounterConfig;
   @Output() save: EventEmitter<{ sectionKey: GlobalConfigSectionKey | ProjectCfgFormKey, config: any }> = new EventEmitter();
-  @Input() cfg: SimpleCounterConfig;
 
-
-  T = T;
-  form = new FormGroup({});
+  T: typeof T = T;
+  form: FormGroup = new FormGroup({});
   options: FormlyFormOptions = {};
-
 
   simpleCounterCfg$: Observable<SimpleCounterConfig> = this.simpleCounterService.simpleCountersUpdatedOnCfgChange$.pipe(
     map(items => ({
@@ -35,10 +32,10 @@ export class SimpleCounterCfgComponent implements OnDestroy {
     })),
   );
 
-  editModel: SimpleCounterConfig;
+  editModel?: SimpleCounterConfig;
 
-  private _inModelCopy: SimpleCounterConfig;
-  private _subs = new Subscription();
+  private _inModelCopy?: SimpleCounterConfig;
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public readonly simpleCounterService: SimpleCounterService,
@@ -61,11 +58,18 @@ export class SimpleCounterCfgComponent implements OnDestroy {
   }
 
   submit() {
+    if (!this._inModelCopy || !this.editModel) {
+      throw new Error('Model not ready');
+    }
+
     const oldIds = this._inModelCopy.counters.map(item => item.id);
     const newItemIds = this.editModel.counters.map(item => item.id);
 
     if (oldIds.find(id => !newItemIds.includes(id))) {
       this._confirmDeletion$().subscribe(isConfirm => {
+        if (!this._inModelCopy || !this.editModel) {
+          throw new Error('Model not ready');
+        }
         if (isConfirm) {
           this.simpleCounterService.updateAll(this.editModel.counters);
         }

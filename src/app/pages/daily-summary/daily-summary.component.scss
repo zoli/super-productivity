@@ -21,7 +21,7 @@ $summary-point-inner-margin: $s;
   margin: auto;
   max-width: $component-max-width;
 
-  @include mq(xs){
+  @include mq(xs) {
     padding: $s;
   }
 
@@ -74,6 +74,15 @@ $summary-point-inner-margin: $s;
 
   mat-checkbox {
     display: block;
+  }
+}
+
+.tabs{
+  margin-left: -2*$s;
+  margin-right: -2*$s;
+
+  @include mq(xs) {
+    margin: 0;
   }
 }
 

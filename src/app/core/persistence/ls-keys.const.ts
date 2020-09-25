@@ -1,8 +1,7 @@
-import {ProjectDataLsKey} from './persistence.model';
-import {AppDataComplete} from '../../imex/sync/sync.model';
+import { ProjectDataLsKey } from './persistence.model';
+import { AppDataComplete } from '../../imex/sync/sync.model';
 
 export type AllowedDBKeys = keyof AppDataComplete | 'SUP_COMPLETE_BACKUP';
-
 
 export const LS_PREFIX = 'SUP_';
 export const LS_PROJECT_PREFIX = LS_PREFIX + 'P_';
@@ -42,10 +41,15 @@ export const LS_DROPBOX_LOCAL_LAST_SYNC = LS_PREFIX + 'DROPBOX_LOCAL_LAST_SYNC';
 export const LS_DROPBOX_LAST_LOCAL_REVISION = LS_PREFIX + 'DROPBOX_LAST_REVISION';
 export const LS_DROPBOX_LOCAL_LAST_SYNC_CHECK = LS_PREFIX + 'DROPBOX_LOCAL_LAST_SYNC_CHECK';
 
+export const LS_ACTION_LOG = LS_PREFIX + 'ACTION_LOG';
+export const LS_ACTION_BEFORE_LAST_ERROR_LOG = LS_PREFIX + 'LAST_ERROR_ACTION_LOG';
+export const LS_CHECK_STRAY_PERSISTENCE_BACKUP = LS_PREFIX + 'CHECK_STRAY_PERSISTENCE_BACKUP';
+export const LS_NO_PERSISTENCE_NOTE = LS_PREFIX + 'NO_PERSISTENCE_NOTE';
 
 // SESSION STORAGE
 const SS_PREFIX = 'SUP_SS_';
 export const SS_NOTE_TMP = SS_PREFIX + 'NOTE_TMP_EDIT';
 export const SS_PROJECT_TMP = SS_PREFIX + 'PROJECT_TMP_EDIT';
 export const SS_WEB_APP_INSTALL = LS_PREFIX + 'WEB_APP_INSTALL';
+export const SS_JIRA_WONKY_COOKIE = LS_PREFIX + 'JIRA_WONKY_COOKIE';
 

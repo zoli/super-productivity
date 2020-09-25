@@ -1,10 +1,9 @@
 'use strict';
 
-
 /**
  * Helper for building multipart requests for uploading to Drive.
  */
-export const MultiPartBuilder = function() {
+export const MultiPartBuilder = function(this: any) {
   this.boundary = Math.random().toString(36).slice(2);
   this.mimeType = 'multipart/mixed; boundary="' + this.boundary + '"';
   this.parts = [];
@@ -14,7 +13,7 @@ export const MultiPartBuilder = function() {
 /**
  * Appends a part.
  */
-MultiPartBuilder.prototype.append = function(mimeType, content) {
+MultiPartBuilder.prototype.append = function(mimeType: string, content: any) {
   if (this.body !== null) {
     throw new Error('Builder has already been finalized.');
   }

@@ -1,5 +1,5 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output} from '@angular/core';
-import {expandAnimation} from '../animations/expand.ani';
+import { ChangeDetectionStrategy, Component, EventEmitter, HostBinding, Input, Output } from '@angular/core';
+import { expandAnimation } from '../animations/expand.ani';
 
 @Component({
   selector: 'collapsible',
@@ -9,13 +9,13 @@ import {expandAnimation} from '../animations/expand.ani';
   animations: [expandAnimation]
 })
 export class CollapsibleComponent {
-  @Input() title: string;
-  @Input() icon: string;
+  @Input() title?: string;
+  @Input() icon?: string;
 
-  @Input() isIconBefore: boolean;
+  @Input() isIconBefore: boolean = false;
 
-  @HostBinding('class.isExpanded') @Input() isExpanded: boolean;
-  @HostBinding('class.isInline') @Input() isInline: boolean;
+  @HostBinding('class.isExpanded') @Input() isExpanded: boolean = false;
+  @HostBinding('class.isInline') @Input() isInline: boolean = false;
 
   @Output() isExpandedChange: EventEmitter<boolean> = new EventEmitter();
 

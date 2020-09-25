@@ -11,15 +11,16 @@ import {
   Output,
   ViewChild
 } from '@angular/core';
-import {fadeAnimation} from '../animations/fade.ani';
-import {MarkdownComponent} from 'ngx-markdown';
-import {IS_ELECTRON} from '../../app.constants';
-import {Observable} from 'rxjs';
-import {map, startWith} from 'rxjs/operators';
-import {GlobalConfigService} from '../../features/config/global-config.service';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogFullscreenMarkdownComponent} from '../dialog-fullscreen-markdown/dialog-fullscreen-markdown.component';
-import {ElectronService} from '../../core/electron/electron.service';
+import { fadeAnimation } from '../animations/fade.ani';
+import { MarkdownComponent } from 'ngx-markdown';
+import { IS_ELECTRON } from '../../app.constants';
+import { Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
+import { GlobalConfigService } from '../../features/config/global-config.service';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogFullscreenMarkdownComponent } from '../dialog-fullscreen-markdown/dialog-fullscreen-markdown.component';
+import { ElectronService } from '../../core/electron/electron.service';
+import { shell } from 'electron';
 
 const HIDE_OVERFLOW_TIMEOUT_DURATION = 300;
 
@@ -31,26 +32,26 @@ const HIDE_OVERFLOW_TIMEOUT_DURATION = 300;
   animations: [fadeAnimation]
 })
 export class InlineMarkdownComponent implements OnInit, OnDestroy {
-  @Input() isLock = false;
-  @Input() isShowControls = false;
+  @Input() isLock: boolean = false;
+  @Input() isShowControls: boolean = false;
 
   @Output() changed: EventEmitter<string> = new EventEmitter();
   @Output() focused: EventEmitter<Event> = new EventEmitter();
   @Output() blurred: EventEmitter<Event> = new EventEmitter();
   @Output() keyboardUnToggle: EventEmitter<Event> = new EventEmitter();
-  @ViewChild('wrapperEl', {static: true}) wrapperEl: ElementRef;
-  @ViewChild('textareaEl') textareaEl: ElementRef;
-  @ViewChild('previewEl') previewEl: MarkdownComponent;
+  @ViewChild('wrapperEl', {static: true}) wrapperEl: ElementRef | undefined;
+  @ViewChild('textareaEl') textareaEl: ElementRef | undefined;
+  @ViewChild('previewEl') previewEl: MarkdownComponent | undefined;
 
-  isHideOverflow = false;
-  isShowEdit = false;
-  modelCopy: string;
+  isHideOverflow: boolean = false;
+  isShowEdit: boolean = false;
+  modelCopy: string | undefined;
 
   isTurnOffMarkdownParsing$: Observable<boolean> = this._globalConfigService.misc$.pipe(
-    map(cfg => cfg && cfg.isTurnOffMarkdown),
+    map(cfg => cfg.isTurnOffMarkdown),
     startWith(false),
   );
-  private _hideOverFlowTimeout: number;
+  private _hideOverFlowTimeout: number | undefined;
 
   constructor(
     private _electronService: ElectronService,
@@ -65,13 +66,13 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
     return this.isShowEdit;
   }
 
-  private _model: string;
+  private _model: string | undefined;
 
   get model() {
     return this._model;
   }
 
-  @Input() set model(v: string) {
+  @Input() set model(v: string | undefined) {
     this._model = v;
     this.modelCopy = v;
 
@@ -114,13 +115,16 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleShowEdit($event?) {
+  toggleShowEdit($event?: MouseEvent) {
     // check if anchor link was clicked
-    if (!$event || $event.target.tagName !== 'A') {
+    if (!$event || ($event.target as HTMLElement).tagName !== 'A') {
       this.isShowEdit = true;
       this.modelCopy = this.model || '';
 
       setTimeout(() => {
+        if (!this.textareaEl) {
+          throw new Error('Textarea not visible');
+        }
         this.textareaEl.nativeElement.value = this.modelCopy;
         this.textareaEl.nativeElement.focus();
         this.resizeTextareaToFit();
@@ -133,6 +137,9 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
       this.resizeParsedToFit();
       this.isShowEdit = false;
     }
+    if (!this.textareaEl) {
+      throw new Error('Textarea not visible');
+    }
     this.modelCopy = this.textareaEl.nativeElement.value;
 
     if (this.modelCopy !== this.model) {
@@ -141,9 +148,14 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
     }
   }
 
-
   resizeTextareaToFit() {
     this._hideOverflow();
+    if (!this.textareaEl) {
+      throw new Error('Textarea not visible');
+    }
+    if (!this.wrapperEl) {
+      throw new Error('Wrapper el not visible');
+    }
     this.textareaEl.nativeElement.style.height = 'auto';
     this.textareaEl.nativeElement.style.height = this.textareaEl.nativeElement.scrollHeight + 'px';
     this.wrapperEl.nativeElement.style.height = this.textareaEl.nativeElement.offsetHeight + 'px';
@@ -165,7 +177,6 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
     });
   }
 
-
   resizeParsedToFit() {
     this._hideOverflow();
 
@@ -176,7 +187,9 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
         }
         return;
       }
-
+      if (!this.wrapperEl) {
+        throw new Error('Wrapper el not visible');
+      }
       this.previewEl.element.nativeElement.style.height = 'auto';
       // NOTE: somehow this pixel seem to help
       this.wrapperEl.nativeElement.style.height = this.previewEl.element.nativeElement.offsetHeight + 'px';
@@ -188,8 +201,9 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
     this.focused.emit(ev);
   }
 
-
   setBlur(ev: Event) {
+    console.log('SET BLUR');
+
     this.blurred.emit(ev);
   }
 
@@ -206,14 +220,16 @@ export class InlineMarkdownComponent implements OnInit, OnDestroy {
   }
 
   private _makeLinksWorkForElectron() {
-    const shell = this._electronService.shell;
-    this.wrapperEl.nativeElement.addEventListener('click', (ev) => {
+    if (!this.wrapperEl) {
+      throw new Error('Wrapper el not visible');
+    }
+    this.wrapperEl.nativeElement.addEventListener('click', (ev: MouseEvent) => {
       const target = ev.target as HTMLElement;
       if (target.tagName && target.tagName.toLowerCase() === 'a') {
         const href = target.getAttribute('href');
-        if (href) {
+        if (href !== null) {
           ev.preventDefault();
-          shell.openExternal(href);
+          (this._electronService.shell as typeof shell).openExternal(href);
         }
       }
     });

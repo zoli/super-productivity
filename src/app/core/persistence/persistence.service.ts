@@ -1,4 +1,4 @@
-import {Injectable} from '@angular/core';
+import { Injectable } from '@angular/core';
 import {
   AllowedDBKeys,
   LS_BACKUP,
@@ -19,46 +19,53 @@ import {
   LS_TASK_REPEAT_CFG_STATE,
   LS_TASK_STATE
 } from './ls-keys.const';
-import {GlobalConfigState} from '../../features/config/global-config.model';
-import {projectReducer, ProjectState} from '../../features/project/store/project.reducer';
-import {ArchiveTask, Task, TaskArchive, TaskState} from '../../features/tasks/task.model';
-import {AppBaseData, AppDataComplete, AppDataForProjects, DEFAULT_APP_BASE_DATA} from '../../imex/sync/sync.model';
-import {BookmarkState} from '../../features/bookmark/store/bookmark.reducer';
-import {NoteState} from '../../features/note/store/note.reducer';
-import {Reminder} from '../../features/reminder/reminder.model';
-import {SnackService} from '../snack/snack.service';
-import {DatabaseService} from './database.service';
-import {DEFAULT_PROJECT_ID} from '../../features/project/project.const';
+import { GlobalConfigState } from '../../features/config/global-config.model';
+import { projectReducer, ProjectState } from '../../features/project/store/project.reducer';
+import { ArchiveTask, Task, TaskArchive, TaskState } from '../../features/tasks/task.model';
+import {
+  AppBaseData,
+  AppDataComplete,
+  AppDataCompleteOptionalSyncModelChange,
+  AppDataForProjects,
+  DEFAULT_APP_BASE_DATA
+} from '../../imex/sync/sync.model';
+import { BookmarkState } from '../../features/bookmark/store/bookmark.reducer';
+import { NoteState } from '../../features/note/store/note.reducer';
+import { Reminder } from '../../features/reminder/reminder.model';
+import { DatabaseService } from './database.service';
+import { DEFAULT_PROJECT_ID } from '../../features/project/project.const';
 import {
   ExportedProject,
   ProjectArchive,
   ProjectArchivedRelatedData
 } from '../../features/project/project-archive.model';
-import {Project} from '../../features/project/project.model';
-import {CompressionService} from '../compression/compression.service';
-import {PersistenceBaseEntityModel, PersistenceBaseModel, PersistenceForProjectModel} from './persistence.model';
-import {Metric, MetricState} from '../../features/metric/metric.model';
-import {Improvement, ImprovementState} from '../../features/metric/improvement/improvement.model';
-import {Obstruction, ObstructionState} from '../../features/metric/obstruction/obstruction.model';
-import {TaskRepeatCfg, TaskRepeatCfgState} from '../../features/task-repeat-cfg/task-repeat-cfg.model';
-import {Bookmark} from '../../features/bookmark/bookmark.model';
-import {Note} from '../../features/note/note.model';
-import {Action} from '@ngrx/store';
-import {taskRepeatCfgReducer} from '../../features/task-repeat-cfg/store/task-repeat-cfg.reducer';
-import {Tag, TagState} from '../../features/tag/tag.model';
-import {migrateProjectState} from '../../features/project/migrate-projects-state.util';
-import {migrateTaskArchiveState, migrateTaskState} from '../../features/tasks/migrate-task-state.util';
-import {migrateGlobalConfigState} from '../../features/config/migrate-global-config.util';
-import {taskReducer} from '../../features/tasks/store/task.reducer';
-import {tagReducer} from '../../features/tag/store/tag.reducer';
-import {migrateTaskRepeatCfgState} from '../../features/task-repeat-cfg/migrate-task-repeat-cfg-state.util';
-import {environment} from '../../../environments/environment';
-import {checkFixEntityStateConsistency} from '../../util/check-fix-entity-state-consistency';
-import {SimpleCounter, SimpleCounterState} from '../../features/simple-counter/simple-counter.model';
-import {simpleCounterReducer} from '../../features/simple-counter/store/simple-counter.reducer';
-import {from, merge, Observable, Subject} from 'rxjs';
-import {concatMap, shareReplay} from 'rxjs/operators';
-import {devError} from '../../util/dev-error';
+import { Project } from '../../features/project/project.model';
+import { CompressionService } from '../compression/compression.service';
+import { PersistenceBaseEntityModel, PersistenceBaseModel, PersistenceForProjectModel } from './persistence.model';
+import { Metric, MetricState } from '../../features/metric/metric.model';
+import { Improvement, ImprovementState } from '../../features/metric/improvement/improvement.model';
+import { Obstruction, ObstructionState } from '../../features/metric/obstruction/obstruction.model';
+import { TaskRepeatCfg, TaskRepeatCfgState } from '../../features/task-repeat-cfg/task-repeat-cfg.model';
+import { Bookmark } from '../../features/bookmark/bookmark.model';
+import { Note } from '../../features/note/note.model';
+import { Action, Store } from '@ngrx/store';
+import { taskRepeatCfgReducer } from '../../features/task-repeat-cfg/store/task-repeat-cfg.reducer';
+import { Tag, TagState } from '../../features/tag/tag.model';
+import { migrateProjectState } from '../../features/project/migrate-projects-state.util';
+import { migrateTaskArchiveState, migrateTaskState } from '../../features/tasks/migrate-task-state.util';
+import { migrateGlobalConfigState } from '../../features/config/migrate-global-config.util';
+import { taskReducer } from '../../features/tasks/store/task.reducer';
+import { tagReducer } from '../../features/tag/store/tag.reducer';
+import { migrateTaskRepeatCfgState } from '../../features/task-repeat-cfg/migrate-task-repeat-cfg-state.util';
+import { environment } from '../../../environments/environment';
+import { checkFixEntityStateConsistency } from '../../util/check-fix-entity-state-consistency';
+import { SimpleCounter, SimpleCounterState } from '../../features/simple-counter/simple-counter.model';
+import { simpleCounterReducer } from '../../features/simple-counter/store/simple-counter.reducer';
+import { from, merge, Observable, Subject } from 'rxjs';
+import { concatMap, shareReplay, skipWhile } from 'rxjs/operators';
+import { devError } from '../../util/dev-error';
+import { isValidAppData } from '../../imex/sync/is-valid-app-data.util';
+import { removeFromDb, saveToDb } from './persistence.actions';
 
 @Injectable({
   providedIn: 'root',
@@ -66,74 +73,74 @@ import {devError} from '../../util/dev-error';
 export class PersistenceService {
 
   // handled as private but needs to be assigned before the creations
-  _baseModels = [];
-  _projectModels = [];
+  _baseModels: PersistenceBaseModel<unknown>[] = [];
+  _projectModels: PersistenceForProjectModel<unknown, unknown>[] = [];
 
   // TODO auto generate ls keys from appDataKey where possible
-  globalConfig = this._cmBase<GlobalConfigState>(LS_GLOBAL_CFG, 'globalConfig', migrateGlobalConfigState);
-  reminders = this._cmBase<Reminder[]>(LS_REMINDER, 'reminders');
+  globalConfig: PersistenceBaseModel<GlobalConfigState> = this._cmBase<GlobalConfigState>(LS_GLOBAL_CFG, 'globalConfig', migrateGlobalConfigState);
+  reminders: PersistenceBaseModel<Reminder[]> = this._cmBase<Reminder[]>(LS_REMINDER, 'reminders');
 
-  project = this._cmBaseEntity<ProjectState, Project>(
+  project: PersistenceBaseEntityModel<ProjectState, Project> = this._cmBaseEntity<ProjectState, Project>(
     LS_PROJECT_META_LIST,
     'project',
-    projectReducer,
+    projectReducer as any,
     migrateProjectState,
   );
-  tag = this._cmBaseEntity<TagState, Tag>(
+
+  tag: PersistenceBaseEntityModel<TagState, Tag> = this._cmBaseEntity<TagState, Tag>(
     LS_TAG_STATE,
     'tag',
     tagReducer,
   );
-  simpleCounter = this._cmBaseEntity<SimpleCounterState, SimpleCounter>(
+  simpleCounter: PersistenceBaseEntityModel<SimpleCounterState, SimpleCounter> = this._cmBaseEntity<SimpleCounterState, SimpleCounter>(
     LS_SIMPLE_COUNTER_STATE,
     'simpleCounter',
     simpleCounterReducer,
   );
 
   // MAIN TASK MODELS
-  task = this._cmBaseEntity<TaskState, Task>(
+  task: PersistenceBaseEntityModel<TaskState, Task> = this._cmBaseEntity<TaskState, Task>(
     LS_TASK_STATE,
     'task',
     taskReducer,
     migrateTaskState,
   );
-  taskArchive = this._cmBaseEntity<TaskArchive, ArchiveTask>(
+  taskArchive: PersistenceBaseEntityModel<TaskArchive, ArchiveTask> = this._cmBaseEntity<TaskArchive, ArchiveTask>(
     LS_TASK_ARCHIVE,
     'taskArchive',
-    taskReducer,
+    taskReducer as any,
     migrateTaskArchiveState,
   );
-  taskRepeatCfg = this._cmBaseEntity<TaskRepeatCfgState, TaskRepeatCfg>(
+  taskRepeatCfg: PersistenceBaseEntityModel<TaskRepeatCfgState, TaskRepeatCfg> = this._cmBaseEntity<TaskRepeatCfgState, TaskRepeatCfg>(
     LS_TASK_REPEAT_CFG_STATE,
     'taskRepeatCfg',
-    taskRepeatCfgReducer,
+    taskRepeatCfgReducer as any,
     migrateTaskRepeatCfgState,
   );
 
-
   // PROJECT MODELS
-  bookmark = this._cmProject<BookmarkState, Bookmark>(
+  bookmark: PersistenceForProjectModel<BookmarkState, Bookmark> = this._cmProject<BookmarkState, Bookmark>(
     LS_BOOKMARK_STATE,
     'bookmark',
   );
-  note = this._cmProject<NoteState, Note>(
+  note: PersistenceForProjectModel<NoteState, Note> = this._cmProject<NoteState, Note>(
     LS_NOTE_STATE,
     'note',
   );
-  metric = this._cmProject<MetricState, Metric>(
+  metric: PersistenceForProjectModel<MetricState, Metric> = this._cmProject<MetricState, Metric>(
     LS_METRIC_STATE,
     'metric',
   );
-  improvement = this._cmProject<ImprovementState, Improvement>(
+  improvement: PersistenceForProjectModel<ImprovementState, Improvement> = this._cmProject<ImprovementState, Improvement>(
     LS_IMPROVEMENT_STATE,
     'improvement',
   );
-  obstruction = this._cmProject<ObstructionState, Obstruction>(
+  obstruction: PersistenceForProjectModel<ObstructionState, Obstruction> = this._cmProject<ObstructionState, Obstruction>(
     LS_OBSTRUCTION_STATE,
     'obstruction',
   );
 
-  onAfterSave$: Subject<{ appDataKey: AllowedDBKeys, data: any, isDataImport: boolean, projectId?: string }> = new Subject();
+  onAfterSave$: Subject<{ appDataKey: AllowedDBKeys, data: unknown, isDataImport: boolean, isSyncModelChange: boolean, projectId?: string }> = new Subject();
   onAfterImport$: Subject<AppDataComplete> = new Subject();
 
   inMemoryComplete$: Observable<AppDataComplete> = merge(
@@ -142,23 +149,22 @@ export class PersistenceService {
     this.onAfterSave$.pipe(
       concatMap(() => this.loadComplete()),
       // TODO maybe not necessary
-      // skipWhile(complete => !isValidAppData(complete)),
+      skipWhile(complete => !isValidAppData(complete)),
     ),
   ).pipe(
     shareReplay(1),
   );
 
-  private _inMemoryComplete: AppDataComplete;
-  private _isBlockSaving = false;
+  private _inMemoryComplete?: AppDataCompleteOptionalSyncModelChange;
+  private _isBlockSaving: boolean = false;
 
   constructor(
-    private _snackService: SnackService,
     private _databaseService: DatabaseService,
     private _compressionService: CompressionService,
+    private _store: Store<any>,
   ) {
     // this.inMemoryComplete$.subscribe((v) => console.log('inMemoryComplete$', v));
   }
-
 
   // PROJECT ARCHIVING
   // -----------------
@@ -169,11 +175,11 @@ export class PersistenceService {
     });
   }
 
-  async saveProjectArchive(data: ProjectArchive, isDataImport = false): Promise<any> {
-    return await this._saveToDb({dbKey: 'archivedProjects', data, isDataImport});
+  async saveProjectArchive(data: ProjectArchive, isDataImport: boolean = false): Promise<unknown> {
+    return await this._saveToDb({dbKey: 'archivedProjects', data, isDataImport, isSyncModelChange: false});
   }
 
-  async loadArchivedProject(projectId): Promise<ProjectArchivedRelatedData> {
+  async loadArchivedProject(projectId: string): Promise<ProjectArchivedRelatedData> {
     const archive = await this._loadFromDb({dbKey: 'project', legacyDBKey: LS_PROJECT_ARCHIVE, projectId});
     const projectDataCompressed = archive[projectId];
     const decompressed = await this._compressionService.decompress(projectDataCompressed);
@@ -182,7 +188,7 @@ export class PersistenceService {
     return parsed;
   }
 
-  async removeArchivedProject(projectId): Promise<any> {
+  async removeArchivedProject(projectId: string): Promise<void> {
     const archive = await this._loadFromDb({
       dbKey: 'archivedProjects',
       legacyDBKey: LS_PROJECT_ARCHIVE
@@ -191,7 +197,7 @@ export class PersistenceService {
     await this.saveProjectArchive(archive);
   }
 
-  async saveArchivedProject(projectId, archivedProject: ProjectArchivedRelatedData) {
+  async saveArchivedProject(projectId: string, archivedProject: ProjectArchivedRelatedData) {
     const current = await this.loadProjectArchive() || {};
     const jsonStr = JSON.stringify(archivedProject);
     const compressedData = await this._compressionService.compress(jsonStr);
@@ -204,8 +210,11 @@ export class PersistenceService {
 
   async loadCompleteProject(projectId: string): Promise<ExportedProject> {
     const allProjects = await this.project.loadState();
+    if (!allProjects.entities[projectId]) {
+      throw new Error('Project not found');
+    }
     return {
-      ...allProjects.entities[projectId],
+      ...allProjects.entities[projectId] as Project,
       relatedModels: await this.loadAllRelatedModelDataForProject(projectId),
     };
   }
@@ -222,25 +231,25 @@ export class PersistenceService {
     };
   }
 
-  async removeCompleteRelatedDataForProject(projectId: string): Promise<any> {
+  async removeCompleteRelatedDataForProject(projectId: string): Promise<void> {
     await Promise.all(this._projectModels.map((modelCfg) => {
       return modelCfg.remove(projectId);
     }));
   }
 
-  async restoreCompleteRelatedDataForProject(projectId: string, data: ProjectArchivedRelatedData): Promise<any> {
+  async restoreCompleteRelatedDataForProject(projectId: string, data: ProjectArchivedRelatedData): Promise<void> {
     await Promise.all(this._projectModels.map((modelCfg) => {
-      return modelCfg.save(projectId, data[modelCfg.appDataKey]);
+      return modelCfg.save(projectId, data[modelCfg.appDataKey], {});
     }));
   }
 
-  async archiveProject(projectId: string): Promise<any> {
+  async archiveProject(projectId: string): Promise<void> {
     const projectData = await this.loadAllRelatedModelDataForProject(projectId);
     await this.saveArchivedProject(projectId, projectData);
     await this.removeCompleteRelatedDataForProject(projectId);
   }
 
-  async unarchiveProject(projectId: string): Promise<any> {
+  async unarchiveProject(projectId: string): Promise<void> {
     const projectData = await this.loadArchivedProject(projectId);
     await this.restoreCompleteRelatedDataForProject(projectId, projectData);
     await this.removeArchivedProject(projectId);
@@ -255,12 +264,17 @@ export class PersistenceService {
     localStorage.setItem(LS_LAST_LOCAL_SYNC_MODEL_CHANGE, date.toString());
   }
 
-  getLastLocalSyncModelChange(): number {
+  getLastLocalSyncModelChange(): number | null {
     const la = localStorage.getItem(LS_LAST_LOCAL_SYNC_MODEL_CHANGE);
     // NOTE: we need to parse because new Date('1570549698000') is "Invalid Date"
     const laParsed = Number.isNaN(Number(la))
       ? la
-      : +la;
+      : +(la as string);
+
+    if (laParsed === null) {
+      return null;
+    }
+
     // NOTE: to account for legacy string dates
     return new Date(laParsed).getTime();
   }
@@ -269,9 +283,13 @@ export class PersistenceService {
     return this._loadFromDb({dbKey: LS_BACKUP, legacyDBKey: LS_BACKUP});
   }
 
-  async saveBackup(backup?: AppDataComplete): Promise<any> {
+  async saveBackup(backup?: AppDataComplete): Promise<unknown> {
     const data: AppDataComplete = backup || await this.loadComplete();
-    return this._saveToDb({dbKey: LS_BACKUP, data, isDataImport: true});
+    return this._saveToDb({dbKey: LS_BACKUP, data, isDataImport: true, isSyncModelChange: true});
+  }
+
+  async clearBackup(): Promise<unknown> {
+    return this._removeFromDb({dbKey: LS_BACKUP});
   }
 
   // NOTE: not including backup
@@ -279,7 +297,9 @@ export class PersistenceService {
     let r;
     if (!this._inMemoryComplete) {
       const projectState = await this.project.loadState();
-      const pids = projectState ? projectState.ids as string[] : [DEFAULT_PROJECT_ID];
+      const pids = projectState
+        ? projectState.ids as string[]
+        : [DEFAULT_PROJECT_ID];
       if (!pids) {
         throw new Error('Project State is broken');
       }
@@ -306,15 +326,15 @@ export class PersistenceService {
     console.log('IMPORT--->', data);
     this._isBlockSaving = true;
 
-    const forBase = Promise.all(this._baseModels.map(async (modelCfg: PersistenceBaseEntityModel<any, any>) => {
-      return await modelCfg.saveState(data[modelCfg.appDataKey], true);
+    const forBase = Promise.all(this._baseModels.map(async (modelCfg: PersistenceBaseModel<any>) => {
+      return await modelCfg.saveState(data[modelCfg.appDataKey], {isDataImport: true});
     }));
     const forProject = Promise.all(this._projectModels.map(async (modelCfg: PersistenceForProjectModel<any, any>) => {
       if (!data[modelCfg.appDataKey]) {
         devError('No data for ' + modelCfg.appDataKey + ' - ' + data[modelCfg.appDataKey]);
         return;
       }
-      return await this._saveForProjectIds(data[modelCfg.appDataKey], modelCfg.save, true);
+      return await this._saveForProjectIds(data[modelCfg.appDataKey], modelCfg, true);
     }));
 
     return await Promise.all([
@@ -363,7 +383,7 @@ export class PersistenceService {
     lsKey: string,
     appDataKey: keyof AppBaseData,
     migrateFn: (state: T) => T = (v) => v,
-    isSkipPush = false,
+    isSkipPush: boolean = false,
   ): PersistenceBaseModel<T> {
     const model = {
       appDataKey,
@@ -380,11 +400,11 @@ export class PersistenceService {
       //   }
       //   return data;
       // },
-      saveState: (data, isDataImport) => {
+      saveState: (data: any, {isDataImport = false, isSyncModelChange}: { isDataImport?: boolean, isSyncModelChange: boolean }) => {
         if (data && data.ids && data.entities) {
           data = checkFixEntityStateConsistency(data, appDataKey);
         }
-        return this._saveToDb({dbKey: appDataKey, data, isDataImport});
+        return this._saveToDb({dbKey: appDataKey, data, isDataImport, isSyncModelChange});
       },
     };
     if (!isSkipPush) {
@@ -396,7 +416,7 @@ export class PersistenceService {
   private _cmBaseEntity<S, M>(
     lsKey: string,
     appDataKey: keyof AppBaseData,
-    reducerFn: (state: S, action: Action) => S,
+    reducerFn: (state: S, action: { type: string; payload?: any }) => S,
     migrateFn: (state: S) => S = (v) => v,
   ): PersistenceBaseEntityModel<S, M> {
     const model = {
@@ -411,7 +431,7 @@ export class PersistenceService {
       execAction: async (action: Action): Promise<S> => {
         const state = await model.loadState();
         const newState = reducerFn(state, action);
-        await model.saveState(newState, false);
+        await model.saveState(newState, {isDataImport: false});
         return newState;
       },
     };
@@ -428,18 +448,19 @@ export class PersistenceService {
   ): PersistenceForProjectModel<S, M> {
     const model = {
       appDataKey,
-      load: (projectId): Promise<S> => this._loadFromDb({
+      load: (projectId: string): Promise<S> => this._loadFromDb({
         dbKey: appDataKey,
         projectId,
         legacyDBKey: this._makeProjectKey(projectId, lsKey)
       }).then(v => migrateFn(v, projectId)),
-      save: (projectId, data, isDataImport) => this._saveToDb({
+      save: (projectId: string, data: any, {isDataImport = false, isSyncModelChange}: { isDataImport?: boolean, isSyncModelChange?: boolean }) => this._saveToDb({
         dbKey: appDataKey,
         data,
         isDataImport,
-        projectId
+        projectId,
+        isSyncModelChange,
       }),
-      remove: (projectId) => this._removeFromDb({dbKey: appDataKey, projectId}),
+      remove: (projectId: string) => this._removeFromDb({dbKey: appDataKey, projectId}),
       ent: {
         getById: async (projectId: string, id: string): Promise<M> => {
           const state = await model.load(projectId) as any;
@@ -463,7 +484,7 @@ export class PersistenceService {
   }
 
   // tslint:disable-next-line
-  private async _loadForProjectIds(pids, getDataFn: Function): Promise<any> {
+  private async _loadForProjectIds(pids: string[], getDataFn: Function): Promise<any> {
     return await pids.reduce(async (acc, projectId) => {
       const prevAcc = await acc;
       const dataForProject = await getDataFn(projectId);
@@ -475,20 +496,19 @@ export class PersistenceService {
   }
 
   // tslint:disable-next-line
-  private async _saveForProjectIds(data: any, saveDataFn: Function, isDataImport = false) {
-    const promises = [];
+  private async _saveForProjectIds(data: any, projectModel: PersistenceForProjectModel<unknown, unknown>, isDataImport = false) {
+    const promises: Promise<any>[] = [];
     Object.keys(data).forEach(projectId => {
       if (data[projectId]) {
-        promises.push(saveDataFn(projectId, data[projectId], isDataImport));
+        promises.push(projectModel.save(projectId, data[projectId], {isDataImport}));
       }
     });
     return await Promise.all(promises);
   }
 
-  private _makeProjectKey(projectId, subKey, additional?) {
+  private _makeProjectKey(projectId: string, subKey: string, additional?: string) {
     return LS_PROJECT_PREFIX + projectId + '_' + subKey + (additional ? '_' + additional : '');
   }
-
 
   // DATA STORAGE INTERFACE
   // ---------------------
@@ -498,14 +518,16 @@ export class PersistenceService {
       : dbKey;
   }
 
-  private async _saveToDb({dbKey, data, isDataImport = false, projectId}: {
+  private async _saveToDb({dbKey, data, isDataImport = false, projectId, isSyncModelChange = false}: {
     dbKey: AllowedDBKeys;
     data: any;
     projectId?: string,
     isDataImport?: boolean,
+    isSyncModelChange?: boolean,
   }): Promise<any> {
     if (!this._isBlockSaving || isDataImport === true) {
       const idbKey = this._getIDBKey(dbKey, projectId);
+      this._store.dispatch(saveToDb({dbKey, data}));
       const r = await this._databaseService.save(idbKey, data);
 
       this._updateInMemory({
@@ -514,7 +536,10 @@ export class PersistenceService {
         data
       });
 
-      this.onAfterSave$.next({appDataKey: dbKey, data, isDataImport, projectId});
+      if (isSyncModelChange) {
+        this.updateLastLocalSyncModelChange();
+      }
+      this.onAfterSave$.next({appDataKey: dbKey, data, isDataImport, projectId, isSyncModelChange});
 
       return r;
     } else {
@@ -530,6 +555,7 @@ export class PersistenceService {
   }): Promise<any> {
     const idbKey = this._getIDBKey(dbKey, projectId);
     if (!this._isBlockSaving || isDataImport === true) {
+      this._store.dispatch(removeFromDb({dbKey}));
       return this._databaseService.remove(idbKey);
     } else {
       console.warn('BLOCKED SAVING for ', dbKey);
@@ -543,6 +569,8 @@ export class PersistenceService {
     projectId?: string,
   }): Promise<any> {
     const idbKey = this._getIDBKey(dbKey, projectId);
+    // NOTE: too much clutter
+    // this._store.dispatch(loadFromDb({dbKey}));
     // TODO remove legacy stuff
     return await this._databaseService.load(idbKey) || await this._databaseService.load(legacyDBKey) || undefined;
   }
@@ -552,6 +580,10 @@ export class PersistenceService {
     projectId?: string,
     data: any
   }) {
+    if (!this._inMemoryComplete) {
+      throw new Error('No in memory copy yet');
+    }
+
     this._inMemoryComplete = this._extendAppDataComplete({
       complete: this._inMemoryComplete,
       projectId,
@@ -561,11 +593,11 @@ export class PersistenceService {
   }
 
   private _extendAppDataComplete({complete, appDataKey, projectId, data}: {
-    complete: AppDataComplete,
+    complete: AppDataComplete | AppDataCompleteOptionalSyncModelChange,
     appDataKey: AllowedDBKeys,
     projectId?: string,
     data: any
-  }): AppDataComplete {
+  }): AppDataComplete | AppDataCompleteOptionalSyncModelChange {
     // console.log(appDataKey, data && data.ids && data.ids.length);
     return {
       ...complete,
@@ -573,7 +605,7 @@ export class PersistenceService {
         projectId
           ? {
             [appDataKey]: {
-              ...(complete[appDataKey]),
+              ...((complete as any)[appDataKey]),
               [projectId]: data
             }
           }

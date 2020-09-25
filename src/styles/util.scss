@@ -24,8 +24,14 @@
 
 }
 
-.show-touch-only {
-  .isNoTouchDevice & {
+.show-only-on-touch-only {
+  .isNoTouchOnly & {
+    display: none !important;
+  }
+}
+
+.show-only-on-no-touch-only {
+  .isTouchOnly & {
     display: none !important;
   }
 }

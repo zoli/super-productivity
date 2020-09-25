@@ -54,7 +54,7 @@
 }
 
 @include mq(xs, max) {
-  .isNoTouchDevice {
+  .isNoTouchOnly {
     @include _scrollBarStyles;
   }
 }

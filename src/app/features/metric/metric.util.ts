@@ -1,8 +1,9 @@
-import {Worklog} from '../worklog/worklog.model';
-import {TaskWithSubTasks} from '../tasks/task.model';
-import {getWorklogStr} from '../../util/get-work-log-str';
-import {SimpleMetrics} from './metric.model';
-import {BreakNr, BreakTime} from '../work-context/work-context.model';
+import { Worklog } from '../worklog/worklog.model';
+import { TaskWithSubTasks } from '../tasks/task.model';
+import { getWorklogStr } from '../../util/get-work-log-str';
+import { SimpleMetrics } from './metric.model';
+import { BreakNr, BreakTime } from '../work-context/work-context.model';
+import { exists } from '../../util/exists';
 
 // really TaskWithSubTasks?
 export const mapSimpleMetrics = (
@@ -21,7 +22,9 @@ export const mapSimpleMetrics = (
     nrOfSubTasks: 0,
     nrOfMainTasks: 0,
     nrOfParentTasks: 0,
-    daysWorked: Object.keys(worklog).reduce((acc, y) => acc + worklog[y].daysWorked, 0),
+    daysWorked: Object.keys(worklog).reduce((acc, y: any) => {
+      return acc + exists<any>(worklog[y]).daysWorked;
+    }, 0),
   };
 
   allTasks.forEach((task) => {

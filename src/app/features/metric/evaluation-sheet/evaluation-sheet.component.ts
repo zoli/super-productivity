@@ -8,19 +8,16 @@ import {
   OnInit,
   Output
 } from '@angular/core';
-import {MetricCopy} from '../metric.model';
-import {MetricService} from '../metric.service';
-import {ObstructionService} from '../obstruction/obstruction.service';
-import {ImprovementService} from '../improvement/improvement.service';
-import {BehaviorSubject, Subscription} from 'rxjs';
-import {NoteService} from '../../note/note.service';
-import {getWorklogStr} from '../../../util/get-work-log-str';
-import {switchMap} from 'rxjs/operators';
-import {ProjectService} from '../../project/project.service';
-import {T} from '../../../t.const';
-import {DialogAddNoteComponent} from '../../note/dialog-add-note/dialog-add-note.component';
-import {MatDialog} from '@angular/material/dialog';
-
+import { MetricCopy } from '../metric.model';
+import { MetricService } from '../metric.service';
+import { ObstructionService } from '../obstruction/obstruction.service';
+import { ImprovementService } from '../improvement/improvement.service';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { getWorklogStr } from '../../../util/get-work-log-str';
+import { switchMap } from 'rxjs/operators';
+import { T } from '../../../t.const';
+import { DialogAddNoteComponent } from '../../note/dialog-add-note/dialog-add-note.component';
+import { MatDialog } from '@angular/material/dialog';
 
 @Component({
   selector: 'evaluation-sheet',
@@ -29,23 +26,21 @@ import {MatDialog} from '@angular/material/dialog';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class EvaluationSheetComponent implements OnDestroy, OnInit {
-  @Output() save = new EventEmitter<any>();
-  T = T;
-  metricForDay: MetricCopy;
-  day$ = new BehaviorSubject<string>(getWorklogStr());
-  private _metricForDay$ = this.day$.pipe(
+  @Output() save: EventEmitter<any> = new EventEmitter();
+  T: typeof T = T;
+  metricForDay?: MetricCopy;
+  day$: BehaviorSubject<string> = new BehaviorSubject(getWorklogStr());
+  private _metricForDay$: Observable<MetricCopy> = this.day$.pipe(
     switchMap((day) => this._metricService.getMetricForDayOrDefaultWithCheckedImprovements$(day)),
   );
   // isForToday$: Observable<boolean> = this.day$.pipe(map(day => day === getWorklogStr()));
-  private _subs = new Subscription();
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public obstructionService: ObstructionService,
     public improvementService: ImprovementService,
     private _metricService: MetricService,
-    private _projectService: ProjectService,
     private _matDialog: MatDialog,
-    private _noteService: NoteService,
     private _cd: ChangeDetectorRef,
   ) {
   }
@@ -74,43 +69,43 @@ export class EvaluationSheetComponent implements OnDestroy, OnInit {
   }
 
   addObstruction(v: string) {
-    this._update({obstructions: [...this.metricForDay.obstructions, v]});
+    this._update({obstructions: [...(this.metricForDay as MetricCopy).obstructions, v]});
   }
 
   addNewObstruction(v: string) {
     const id = this.obstructionService.addObstruction(v);
-    this._update({obstructions: [...this.metricForDay.obstructions, id]});
+    this._update({obstructions: [...(this.metricForDay as MetricCopy).obstructions, id]});
   }
 
   removeObstruction(idToRemove: string) {
-    this._update({obstructions: this.metricForDay.obstructions.filter(id => id !== idToRemove)});
+    this._update({obstructions: (this.metricForDay as MetricCopy).obstructions.filter(id => id !== idToRemove)});
   }
 
   addImprovement(v: string) {
-    this._update({improvements: [...this.metricForDay.improvements, v]});
+    this._update({improvements: [...(this.metricForDay as MetricCopy).improvements, v]});
   }
 
   addNewImprovement(v: string) {
     const id = this.improvementService.addImprovement(v);
-    this._update({improvements: [...this.metricForDay.improvements, id]});
+    this._update({improvements: [...(this.metricForDay as MetricCopy).improvements, id]});
   }
 
   removeImprovement(idToRemove: string) {
-    this._update({improvements: this.metricForDay.improvements.filter(id => id !== idToRemove)});
+    this._update({improvements: (this.metricForDay as MetricCopy).improvements.filter(id => id !== idToRemove)});
   }
 
   addImprovementTomorrow(v: string) {
-    this._update({improvementsTomorrow: [...this.metricForDay.improvementsTomorrow, v]});
+    this._update({improvementsTomorrow: [...(this.metricForDay as MetricCopy).improvementsTomorrow, v]});
   }
 
   addNewImprovementTomorrow(v: string) {
     const id = this.improvementService.addImprovement(v);
-    this._update({improvementsTomorrow: [...this.metricForDay.improvementsTomorrow, id]});
+    this._update({improvementsTomorrow: [...(this.metricForDay as MetricCopy).improvementsTomorrow, id]});
   }
 
   removeImprovementTomorrow(idToRemove: string) {
     this._update({
-      improvementsTomorrow: this.metricForDay.improvementsTomorrow.filter(id => id !== idToRemove),
+      improvementsTomorrow: (this.metricForDay as MetricCopy).improvementsTomorrow.filter(id => id !== idToRemove),
     });
     // this.improvementService.disableImprovementRepeat(idToRemove);
   }
@@ -125,9 +120,9 @@ export class EvaluationSheetComponent implements OnDestroy, OnInit {
 
   private _update(updateData: Partial<MetricCopy>) {
     this.metricForDay = {
-      ...this.metricForDay,
+      ...(this.metricForDay as MetricCopy),
       ...updateData,
     } as MetricCopy;
-    this._metricService.upsertMetric(this.metricForDay);
+    this._metricService.upsertMetric((this.metricForDay as MetricCopy));
   }
 }

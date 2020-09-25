@@ -9,21 +9,26 @@ import {
   MessageBoxReturnValue,
   shell
 } from 'electron';
-import {errorHandler} from './error-handler';
-import {join, normalize} from 'path';
-import {format} from 'url';
-import {IPC} from './ipc-events.const';
-import {getSettings} from './get-settings';
+import { errorHandler } from './error-handler';
+import { join, normalize } from 'path';
+import { format } from 'url';
+import { IPC } from './ipc-events.const';
+import { getSettings } from './get-settings';
 
 let mainWin: BrowserWindow;
-let indicatorMod;
 
-const mainWinModule = {
+const mainWinModule: {
+  win?: BrowserWindow;
+  isAppReady: boolean;
+} = {
   win: undefined,
   isAppReady: false
 };
 
-export const getWin = () => {
+export const getWin = (): BrowserWindow => {
+  if (!mainWinModule.win) {
+    throw new Error('No main window');
+  }
   return mainWinModule.win;
 };
 
@@ -31,19 +36,26 @@ export const getIsAppReady = () => {
   return mainWinModule.isAppReady;
 };
 
-export const createWindow = (params) => {
+export const createWindow = ({
+  IS_DEV,
+  ICONS_FOLDER,
+  IS_MAC,
+  quitApp,
+  app,
+  customUrl,
+}: {
+  IS_DEV: boolean;
+  ICONS_FOLDER: string;
+  IS_MAC: boolean;
+  quitApp: () => void;
+  app: App;
+  customUrl?: string;
+}): BrowserWindow => {
   // make sure the main window isn't already created
   if (mainWin) {
     errorHandler('Main window already exists');
-    return;
+    return mainWin;
   }
-
-  const IS_DEV = params.IS_DEV;
-  const ICONS_FOLDER = params.ICONS_FOLDER;
-  const IS_MAC = params.IS_MAC;
-  const quitApp = params.quitApp;
-  const app = params.app;
-  indicatorMod = params.indicatorMod;
 
   // workaround for https://github.com/electron/electron/issues/16521
   if (!IS_MAC) {
@@ -66,18 +78,23 @@ export const createWindow = (params) => {
       scrollBounce: true,
       webSecurity: false,
       nodeIntegration: true,
+      // NOTE: will be deprecated with v10
+      enableRemoteModule: true
     },
     icon: ICONS_FOLDER + '/icon_256x256.png'
   });
 
   mainWindowState.manage(mainWin);
 
-  // const url = format({
-  //   pathname: normalize(join(__dirname, '../dist/index.html')),
-  //   protocol: 'file:',
-  //   slashes: true,
-  // });
-
+  // const url = customUrl
+  //   ? customUrl
+  //   : (IS_DEV)
+  //     ? 'http://localhost:4200'
+  //     : format({
+  //       pathname: normalize(join(__dirname, '../dist/index.html')),
+  //       protocol: 'file:',
+  //       slashes: true,
+  //     });
   const url = (IS_DEV)
     ? 'http://localhost:4200'
     : format({
@@ -86,6 +103,7 @@ export const createWindow = (params) => {
       slashes: true,
     });
   console.log(url);
+
 
   mainWin.loadURL(url);
   // mainWin.loadURL('app://./index.html');
@@ -116,19 +134,22 @@ export const createWindow = (params) => {
 };
 
 function initWinEventListeners(app: any) {
-  // open new window links in browser
-  mainWin.webContents.on('new-window', (event, url) => {
+  const handleRedirect = (event, url) => {
     event.preventDefault();
     // needed for mac; especially for jira urls we might have a host like this www.host.de//
     const urlObj = new URL(url);
     urlObj.pathname = urlObj.pathname
       .replace('//', '/');
     const wellFormedUrl = urlObj.toString();
-    const wasOpened = shell.openPath(wellFormedUrl);
+    const wasOpened = shell.openExternal(wellFormedUrl);
     if (!wasOpened) {
       shell.openExternal(wellFormedUrl);
     }
-  });
+  };
+
+  // open new window links in browser
+  mainWin.webContents.on('new-window', handleRedirect);
+  mainWin.webContents.on('will-navigate', handleRedirect);
 
   // TODO refactor quiting mess
   appCloseHandler(app);
@@ -164,12 +185,11 @@ function createMenu(quitApp) {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTplOUT));
 }
 
-
 // TODO this is ugly as f+ck
 const appCloseHandler = (
   app: App,
 ) => {
-  let ids = [];
+  let ids: string[] = [];
 
   const _quitApp = () => {
     (app as any).isQuiting = true;

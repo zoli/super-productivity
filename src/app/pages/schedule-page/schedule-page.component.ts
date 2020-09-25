@@ -1,17 +1,18 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {T} from '../../t.const';
-import {TaskService} from '../../features/tasks/task.service';
-import {ScheduledTaskService} from '../../features/tasks/scheduled-task.service';
-import {ReminderService} from '../../features/reminder/reminder.service';
-import {MatDialog} from '@angular/material/dialog';
-import {Task, TaskWithReminderData} from '../../features/tasks/task.model';
-import {DialogAddTaskReminderComponent} from '../../features/tasks/dialog-add-task-reminder/dialog-add-task-reminder.component';
-import {standardListAnimation} from '../../ui/animations/standard-list.ani';
-import {Router} from '@angular/router';
-import {take} from 'rxjs/operators';
-import {AddTaskReminderInterface} from '../../features/tasks/dialog-add-task-reminder/add-task-reminder-interface';
-import {WorkContextService} from '../../features/work-context/work-context.service';
-import {TODAY_TAG} from '../../features/tag/tag.const';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { T } from '../../t.const';
+import { TaskService } from '../../features/tasks/task.service';
+import { ScheduledTaskService } from '../../features/tasks/scheduled-task.service';
+import { ReminderService } from '../../features/reminder/reminder.service';
+import { MatDialog } from '@angular/material/dialog';
+import { Task, TaskWithReminderData } from '../../features/tasks/task.model';
+import { DialogAddTaskReminderComponent } from '../../features/tasks/dialog-add-task-reminder/dialog-add-task-reminder.component';
+import { standardListAnimation } from '../../ui/animations/standard-list.ani';
+import { Router } from '@angular/router';
+import { take } from 'rxjs/operators';
+import { AddTaskReminderInterface } from '../../features/tasks/dialog-add-task-reminder/add-task-reminder-interface';
+import { WorkContextService } from '../../features/work-context/work-context.service';
+import { TODAY_TAG } from '../../features/tag/tag.const';
+import { Tag } from '../../features/tag/tag.model';
 
 @Component({
   selector: 'schedule-page',
@@ -21,8 +22,8 @@ import {TODAY_TAG} from '../../features/tag/tag.const';
   animations: [standardListAnimation]
 })
 export class SchedulePageComponent {
-  T = T;
-  TODAY_TAG = TODAY_TAG;
+  T: typeof T = T;
+  TODAY_TAG: Tag = TODAY_TAG;
 
   constructor(
     public scheduledTaskService: ScheduledTaskService,
@@ -42,7 +43,7 @@ export class SchedulePageComponent {
     }
   }
 
-  toggleToday(task: TaskWithReminderData) {
+  toggleToday(task: TaskWithReminderData|Task) {
     if (task.tagIds.includes(TODAY_TAG.id)) {
       this._taskService.updateTags(task, task.tagIds.filter(id => id !== TODAY_TAG.id), task.tagIds);
     } else {
@@ -52,7 +53,10 @@ export class SchedulePageComponent {
   }
 
   removeReminder(task: TaskWithReminderData) {
-    this._taskService.removeReminder(task.id, task.reminderId);
+    if (task.reminderId) {
+      this._taskService.removeReminder(task.id, task.reminderId);
+    }
+
   }
 
   editReminder(task: TaskWithReminderData) {
@@ -69,18 +73,19 @@ export class SchedulePageComponent {
     // this.focusSelf();
   }
 
-
   trackByFn(i: number, task: TaskWithReminderData) {
     return task.id;
   }
 
   private _startTaskFronCurrentProject(task: TaskWithReminderData) {
-    if (task.parentId) {
+    if (!!task.parentId) {
       this._taskService.moveToToday(task.parentId, true);
     } else {
       this._taskService.moveToToday(task.id, true);
     }
-    this._taskService.removeReminder(task.id, task.reminderId);
+    if (!!task.reminderId) {
+      this._taskService.removeReminder(task.id, task.reminderId);
+    }
     this._taskService.setCurrentId(task.id);
     this._router.navigate(['/active/tasks']);
   }

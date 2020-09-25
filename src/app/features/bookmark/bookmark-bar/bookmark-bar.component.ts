@@ -1,13 +1,13 @@
-import {ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, ViewChild} from '@angular/core';
-import {BookmarkService} from '../bookmark.service';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogEditBookmarkComponent} from '../dialog-edit-bookmark/dialog-edit-bookmark.component';
-import {Bookmark} from '../bookmark.model';
-import {fadeAnimation} from '../../../ui/animations/fade.ani';
-import {DragulaService} from 'ng2-dragula';
-import {Subscription} from 'rxjs';
-import {slideAnimation} from '../../../ui/animations/slide.ani';
-import {T} from '../../../t.const';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
+import { BookmarkService } from '../bookmark.service';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogEditBookmarkComponent } from '../dialog-edit-bookmark/dialog-edit-bookmark.component';
+import { Bookmark } from '../bookmark.model';
+import { fadeAnimation } from '../../../ui/animations/fade.ani';
+import { DragulaService } from 'ng2-dragula';
+import { Subscription } from 'rxjs';
+import { slideAnimation } from '../../../ui/animations/slide.ani';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'bookmark-bar',
@@ -20,14 +20,14 @@ import {T} from '../../../t.const';
   ],
 })
 export class BookmarkBarComponent implements OnDestroy {
-  isDragOver = false;
-  isEditMode = false;
-  dragEnterTarget: HTMLElement;
-  LIST_ID = 'BOOKMARKS';
-  T = T;
-  isContextMenuDisabled = false;
-  bookmarkBarHeight = 50;
-  private _subs = new Subscription();
+  isDragOver: boolean = false;
+  isEditMode: boolean = false;
+  dragEnterTarget?: HTMLElement;
+  LIST_ID: string = 'BOOKMARKS';
+  T: typeof T = T;
+  isContextMenuDisabled: boolean = false;
+  bookmarkBarHeight: number = 50;
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public readonly bookmarkService: BookmarkService,
@@ -42,15 +42,15 @@ export class BookmarkBarComponent implements OnDestroy {
     // });
 
     this._subs.add(this._dragulaService.dropModel(this.LIST_ID)
-      .subscribe((params: any) => {
-        const {target, source, targetModel, item} = params;
-        const newIds = targetModel.map(m => m.id);
+      .subscribe(({targetModel}: any) => {
+        // const {target, source, targetModel, item} = params;
+        const newIds = targetModel.map((m: Bookmark) => m.id);
         this.bookmarkService.reorderBookmarks(newIds);
       })
     );
   }
 
-  @ViewChild('bookmarkBar', { read: ElementRef }) set bookmarkBarEl(content: ElementRef) {
+  @ViewChild('bookmarkBar', {read: ElementRef}) set bookmarkBarEl(content: ElementRef) {
     if (content && content.nativeElement) {
       this.bookmarkBarHeight = content.nativeElement.offsetHeight;
     }
@@ -60,20 +60,20 @@ export class BookmarkBarComponent implements OnDestroy {
     this._subs.unsubscribe();
   }
 
-  @HostListener('dragenter', ['$event']) onDragEnter(ev: Event) {
+  @HostListener('dragenter', ['$event']) onDragEnter(ev: DragEvent) {
     this.dragEnterTarget = ev.target as HTMLElement;
     ev.preventDefault();
     this.isDragOver = true;
   }
 
-  @HostListener('dragleave', ['$event']) onDragLeave(ev: Event) {
+  @HostListener('dragleave', ['$event']) onDragLeave(ev: DragEvent) {
     if (this.dragEnterTarget === (ev.target as HTMLElement)) {
       ev.preventDefault();
       this.isDragOver = false;
     }
   }
 
-  @HostListener('drop', ['$event']) onDrop(ev: Event) {
+  @HostListener('drop', ['$event']) onDrop(ev: DragEvent) {
     this.bookmarkService.createFromDrop(ev);
     this.isDragOver = false;
   }
@@ -96,7 +96,7 @@ export class BookmarkBarComponent implements OnDestroy {
       });
   }
 
-  remove(id) {
+  remove(id: string) {
     this.bookmarkService.deleteBookmark(id);
   }
 

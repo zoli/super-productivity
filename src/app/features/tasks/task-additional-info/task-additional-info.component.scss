@@ -24,8 +24,6 @@ progress-bar {
 }
 
 .wrapper {
-  // 1px for the border
-  //margin: 0 1px 0;
   transition: $transition-standard;
 
   @media (max-width: $layout-xs) {
@@ -42,19 +40,16 @@ progress-bar {
   position: sticky;
   background: inherit;
   top: 0;
-  margin-top: -4px;
-  margin-right: -4px;
-  margin-left: -4px;
   padding: 0 $s;
   z-index: 44;
 
   @include lightTheme() {
     background: #fff;
-    box-shadow: $whiteframe-shadow-1dp;
+    //border-bottom: 1px solid $c-primary;
   }
   @include darkTheme() {
-    background: $dark-theme-bg-lighter;
-    border-bottom: 1px solid $dark-theme-extra-border-color;
+    background: $dark-theme-bg-slightly-lighter;
+    //border-bottom: 1px solid $c-primary;
   }
 }
 
@@ -64,9 +59,31 @@ progress-bar {
   transform-origin: top center;
   padding-top: $s;
   padding-bottom: $s;
-  font-size: 15px;
+  padding: $s;
+  font-size: 17px;
   margin: 0;
   flex-grow: 1;
+  margin-top: 4px;
   line-height: 1.4;
+
+
+  &:focus {
+    transform: scale(1);
+  }
 }
 
+
+.drag-over-msg {
+  pointer-events: none;
+  position: absolute;
+  top: -$s;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  opacity: 1;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  display: flex;
+  z-index: 2;
+}

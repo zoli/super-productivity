@@ -1,31 +1,23 @@
-import {Injectable} from '@angular/core';
-import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, HttpRequest} from '@angular/common/http';
-import {EMPTY, forkJoin, Observable, ObservableInput, throwError, of} from 'rxjs';
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, HttpRequest } from '@angular/common/http';
+import { EMPTY, forkJoin, Observable, ObservableInput, of, throwError } from 'rxjs';
+import { SnackService } from 'src/app/core/snack/snack.service';
 
-import {ProjectService} from 'src/app/features/project/project.service';
-import {SnackService} from 'src/app/core/snack/snack.service';
-
-import {GitlabCfg} from '../gitlab';
-import {GitlabOriginalComment, GitlabOriginalIssue} from './gitlab-api-responses';
-import {HANDLED_ERROR_PROP_STR} from 'src/app/app.constants';
-import {GITLAB_API_BASE_URL} from '../gitlab.const';
-import {T} from 'src/app/t.const';
-import {catchError, filter, flatMap, map, share, switchMap, take} from 'rxjs/operators';
-import {GitlabIssue} from '../gitlab-issue/gitlab-issue.model';
-import {mapGitlabIssue, mapGitlabIssueToSearchResult} from '../gitlab-issue/gitlab-issue-map.util';
-import {SearchResultItem} from '../../../issue.model';
-
-const BASE = GITLAB_API_BASE_URL;
+import { GitlabCfg } from '../gitlab';
+import { GitlabOriginalComment, GitlabOriginalIssue } from './gitlab-api-responses';
+import { HANDLED_ERROR_PROP_STR } from 'src/app/app.constants';
+import { GITLAB_API_BASE_URL, GITLAB_URL_REGEX, GITLAB_PROJECT_REGEX } from '../gitlab.const';
+import { T } from 'src/app/t.const';
+import { catchError, filter, map, mergeMap, share, switchMap, take } from 'rxjs/operators';
+import { GitlabIssue } from '../gitlab-issue/gitlab-issue.model';
+import { mapGitlabIssue, mapGitlabIssueToSearchResult } from '../gitlab-issue/gitlab-issue-map.util';
+import { SearchResultItem } from '../../../issue.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GitlabApiService {
-  /** @deprecated */
-  private _header: HttpHeaders;
-
   constructor(
-    private _projectService: ProjectService,
     private _snackService: SnackService,
     private _http: HttpClient,
   ) {
@@ -36,7 +28,7 @@ export class GitlabApiService {
       return EMPTY;
     }
     return this._getProjectIssues$(1, cfg).pipe(
-      flatMap(
+      mergeMap(
         (issues: GitlabIssue[]) => {
           if (issues && issues.length) {
             return forkJoin([
@@ -69,7 +61,7 @@ export class GitlabApiService {
   }
 
   searchIssueInProject$(searchText: string, cfg: GitlabCfg): Observable<SearchResultItem[]> {
-    const filterFn = issue => {
+    const filterFn = (issue: GitlabIssue) => {
       try {
         return issue.title.toLowerCase().match(searchText.toLowerCase())
           || issue.body.toLowerCase().match(searchText.toLowerCase());
@@ -94,7 +86,7 @@ export class GitlabApiService {
 
   private _getProjectIssues$(pageNumber: number, cfg: GitlabCfg): Observable<GitlabIssue[]> {
     return this._sendRequest$({
-      url: `${BASE}/${cfg.project}/issues?order_by=updated_at&per_page=100&page=${pageNumber}`
+      url: `${this.apiLink(cfg)}/issues?order_by=updated_at&per_page=100&page=${pageNumber}`
     }, cfg).pipe(
       take(1),
       map((issues: GitlabOriginalIssue[]) => {
@@ -108,7 +100,7 @@ export class GitlabApiService {
       return EMPTY;
     }
     return this._sendRequest$({
-      url: `${BASE}/${cfg.project}/issues/${issueid}/notes?per_page=100&page=${pageNumber}`,
+      url: `${this.apiLink(cfg)}/issues/${issueid}/notes?per_page=100&page=${pageNumber}`,
     }, cfg).pipe(
       map((comments: GitlabOriginalComment[]) => {
         return comments ? comments : [];
@@ -126,7 +118,6 @@ export class GitlabApiService {
     });
     return false;
   }
-
 
   private _sendRequest$(params: HttpRequest<string> | any, cfg: GitlabCfg): Observable<any> {
     this._isValidSettings(cfg);
@@ -185,5 +176,26 @@ export class GitlabApiService {
       return throwError({[HANDLED_ERROR_PROP_STR]: 'Gitlab: ' + error.message});
     }
     return throwError({[HANDLED_ERROR_PROP_STR]: 'Gitlab: Api request failed.'});
+  }
+
+  private apiLink(projectConfig: GitlabCfg): string {
+    let apiURL: string = '';
+    let projectURL: string = projectConfig.project ? projectConfig.project : '';
+    const hostURL = projectConfig.project?.match(GITLAB_URL_REGEX);
+    if (hostURL) {
+      apiURL = hostURL[0] + 'api/v4/projects/';
+      projectURL = projectURL.substring(hostURL[0].length);
+    } else {
+      apiURL = GITLAB_API_BASE_URL + '/';
+    }
+    const projectPath = projectURL.match(GITLAB_PROJECT_REGEX);
+    if (projectPath) {
+      projectURL = projectURL.replace(/\//ig, '%2F');
+    } else {
+      // Should never enter here
+      throwError('Gitlab Project URL');
+    }
+    apiURL += projectURL;
+    return apiURL;
   }
 }

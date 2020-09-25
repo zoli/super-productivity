@@ -8,26 +8,24 @@ import {
   OnInit,
   ViewChild
 } from '@angular/core';
-import {TaskService} from '../../features/tasks/task.service';
-import {expandAnimation, expandFadeAnimation} from '../../ui/animations/expand.ani';
-import {LayoutService} from '../../core-ui/layout/layout.service';
-import {DragulaService} from 'ng2-dragula';
-import {TakeABreakService} from '../../features/time-tracking/take-a-break/take-a-break.service';
-import {ActivatedRoute} from '@angular/router';
-import {from, fromEvent, ReplaySubject, Subscription, timer, zip} from 'rxjs';
-import {TaskWithSubTasks} from '../../features/tasks/task.model';
-import {delay, filter, map, switchMap, tap} from 'rxjs/operators';
-import {fadeAnimation} from '../../ui/animations/fade.ani';
-import {PlanningModeService} from '../../features/planning-mode/planning-mode.service';
-import {T} from '../../t.const';
-import {ImprovementService} from '../../features/metric/improvement/improvement.service';
-import {ProjectService} from '../../features/project/project.service';
-import {workViewProjectChangeAnimation} from '../../ui/animations/work-view-project-change.ani';
-import {WorkContextService} from '../work-context/work-context.service';
+import { TaskService } from '../tasks/task.service';
+import { expandAnimation, expandFadeAnimation } from '../../ui/animations/expand.ani';
+import { LayoutService } from '../../core-ui/layout/layout.service';
+import { DragulaService } from 'ng2-dragula';
+import { TakeABreakService } from '../time-tracking/take-a-break/take-a-break.service';
+import { ActivatedRoute } from '@angular/router';
+import { from, fromEvent, Observable, ReplaySubject, Subscription, timer, zip } from 'rxjs';
+import { TaskWithSubTasks } from '../tasks/task.model';
+import { delay, filter, map, switchMap } from 'rxjs/operators';
+import { fadeAnimation } from '../../ui/animations/fade.ani';
+import { PlanningModeService } from '../planning-mode/planning-mode.service';
+import { T } from '../../t.const';
+import { ImprovementService } from '../metric/improvement/improvement.service';
+import { workViewProjectChangeAnimation } from '../../ui/animations/work-view-project-change.ani';
+import { WorkContextService } from '../work-context/work-context.service';
 
 const SUB = 'SUB';
 const PARENT = 'PARENT';
-
 
 @Component({
   selector: 'work-view',
@@ -37,19 +35,18 @@ const PARENT = 'PARENT';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
-  @Input() undoneTasks: TaskWithSubTasks[];
-  @Input() doneTasks: TaskWithSubTasks[];
-  @Input() backlogTasks: TaskWithSubTasks[];
-  @Input() isShowBacklog = false;
+  @Input() undoneTasks: TaskWithSubTasks[] = [];
+  @Input() doneTasks: TaskWithSubTasks[] = [];
+  @Input() backlogTasks: TaskWithSubTasks[] = [];
+  @Input() isShowBacklog: boolean = false;
 
-  isShowTimeWorkedWithoutBreak = true;
-  splitInputPos = 100;
-  isPreloadBacklog = false;
-  T = T;
-
+  isShowTimeWorkedWithoutBreak: boolean = true;
+  splitInputPos: number = 100;
+  isPreloadBacklog: boolean = false;
+  T: typeof T = T;
 
   // NOTE: not perfect but good enough for now
-  isTriggerBacklogIconAni$ = this.workContextService.onMoveToBacklog$.pipe(
+  isTriggerBacklogIconAni$: Observable<boolean> = this.workContextService.onMoveToBacklog$.pipe(
     switchMap(() =>
       zip(
         from([true, false]),
@@ -58,27 +55,25 @@ export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
     ),
     map(v => v[0]),
   );
-  splitTopEl$ = new ReplaySubject<HTMLElement>(1);
+  splitTopEl$: ReplaySubject<HTMLElement> = new ReplaySubject(1);
 
   // TODO make this work for tag page without backlog
-  upperContainerScroll$ = this.workContextService.isContextChanging$.pipe(
+  upperContainerScroll$: Observable<Event> = this.workContextService.isContextChanging$.pipe(
     filter(isChanging => !isChanging),
     delay(50),
     switchMap(() => this.splitTopEl$),
     switchMap((el) => fromEvent(el, 'scroll')),
   );
-  private _subs = new Subscription();
-  private _switchListAnimationTimeout: number;
+  private _subs: Subscription = new Subscription();
+  private _switchListAnimationTimeout?: number;
 
   constructor(
     public taskService: TaskService,
-    public projectService: ProjectService,
     public takeABreakService: TakeABreakService,
     public planningModeService: PlanningModeService,
     public improvementService: ImprovementService,
     public layoutService: LayoutService,
     public workContextService: WorkContextService,
-    private _elementRef: ElementRef,
     private _dragulaService: DragulaService,
     private _activatedRoute: ActivatedRoute,
   ) {
@@ -98,7 +93,7 @@ export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
       this._dragulaService.createGroup(SUB, {
         direction: 'vertical',
         moves: (el, container, handle) => {
-          return handle.className.indexOf && handle.className.indexOf('handle-sub') > -1;
+          return !!handle && handle.className.indexOf && handle.className.indexOf('handle-sub') > -1;
         }
       });
     }
@@ -106,7 +101,7 @@ export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
       this._dragulaService.createGroup(PARENT, {
         direction: 'vertical',
         moves: (el, container, handle) => {
-          return handle.className.indexOf && handle.className.indexOf('handle-par') > -1;
+          return !!handle && handle.className.indexOf && handle.className.indexOf('handle-par') > -1;
         }
       });
     }
@@ -138,7 +133,6 @@ export class WorkViewComponent implements OnInit, OnDestroy, AfterContentInit {
     }
     this.layoutService.isScrolled$.next(false);
   }
-
 
   planMore() {
     this.planningModeService.enterPlanningMode();

@@ -1,13 +1,15 @@
-import {ElectronService} from '../electron/electron.service';
-import {HANDLED_ERROR_PROP_STR, IS_ELECTRON} from '../../app.constants';
-import {environment} from '../../../environments/environment';
+import { ElectronService } from '../electron/electron.service';
+import { HANDLED_ERROR_PROP_STR, IS_ELECTRON } from '../../app.constants';
+import { environment } from '../../../environments/environment';
 import * as StackTrace from 'stacktrace-js';
 import * as pThrottle from 'p-throttle';
 import * as newGithubIssueUrl from 'new-github-issue-url';
+import { remote } from 'electron';
+import { getBeforeLastErrorActionLog } from '../../util/action-logger';
 
 let isWasErrorAlertCreated = false;
 
-async function _getStacktrace(err): Promise<string> {
+async function _getStacktrace(err: Error | any): Promise<string> {
   const isHttpError = err && (err.url || err.headers);
   const isErrorWithStack = err && err.stack;
 
@@ -29,8 +31,7 @@ async function _getStacktrace(err): Promise<string> {
 
 const _getStacktraceThrottled = pThrottle(_getStacktrace, 2, 5000);
 
-export const logAdvancedStacktrace = (origErr, additionalLogFn?: (stack: string) => void) => _getStacktraceThrottled(origErr).then(stack => {
-  console.log(stack);
+export const logAdvancedStacktrace = (origErr: unknown, additionalLogFn?: (stack: string) => void) => _getStacktraceThrottled(origErr).then(stack => {
 
   if (additionalLogFn) {
     additionalLogFn(stack);
@@ -42,17 +43,14 @@ export const logAdvancedStacktrace = (origErr, additionalLogFn?: (stack: string)
   }
 
   const githubIssueLink = document.getElementById('github-issue-url');
-  console.log(githubIssueLink);
 
   if (githubIssueLink) {
-    const errEscaped = _cleanHtml(origErr);
+    const errEscaped = _cleanHtml(origErr as string);
     githubIssueLink.setAttribute('href', getGithubUrl(errEscaped, stack));
   }
 
-
 // NOTE: there is an issue with this sometimes -> https://github.com/stacktracejs/stacktrace.js/issues/202
 }).catch(console.error);
-
 
 const _cleanHtml = (str: string): string => {
   const div = document.createElement('div');
@@ -88,13 +86,13 @@ export const createErrorAlert = (eSvc: ElectronService, err: string = '', stackT
   btnReload.innerText = 'Reload App';
   btnReload.addEventListener('click', () => {
     if (IS_ELECTRON) {
-      eSvc.remote.getCurrentWindow().webContents.reload();
+      (eSvc.remote as typeof remote).getCurrentWindow().webContents.reload();
     } else {
       window.location.reload();
     }
   });
   document.body.append(errorAlert);
-  const innerWrapper = document.getElementById('error-alert-inner-wrapper');
+  const innerWrapper = document.getElementById('error-alert-inner-wrapper') as HTMLElement;
   innerWrapper.append(btnReload);
   isWasErrorAlertCreated = true;
 
@@ -105,29 +103,30 @@ export const createErrorAlert = (eSvc: ElectronService, err: string = '', stackT
   }, 1500);
 
   if (IS_ELECTRON) {
-    eSvc.remote.getCurrentWindow().webContents.openDevTools();
+    (eSvc.remote as typeof remote).getCurrentWindow().webContents.openDevTools();
   }
 };
-
 
 export const getSimpleMeta = (): string => {
   const n = window.navigator;
   return `META: SP${environment.version} ${IS_ELECTRON ? 'Electron' : 'Browser'} – ${n.language} – ${n.platform} – ${n.userAgent}`;
 };
 
-export const isHandledError = (err): boolean => {
-  const errStr = (typeof err === 'string') ? err : err.toString();
+export const isHandledError = (err: unknown): boolean => {
+  const errStr = (typeof err === 'string')
+    ? err
+    : (typeof err === 'object' && err !== null && typeof (err as any).toString === 'function' && err.toString());
   // NOTE: for some unknown reason sometimes err is undefined while err.toString is not...
   // this is why we also check the string value
-  return (err && err.hasOwnProperty(HANDLED_ERROR_PROP_STR)) || (errStr.match(HANDLED_ERROR_PROP_STR));
+  return (err && (err as {}).hasOwnProperty(HANDLED_ERROR_PROP_STR)) || !!((errStr as string).match(HANDLED_ERROR_PROP_STR));
 };
 
 const getGithubUrl = (errEscaped: string, stackTrace: string): string => {
   return newGithubIssueUrl({
     user: 'johannesjo',
     repo: 'super-productivity',
-    body: getGithubIssueErrorMarkdown(stackTrace),
     title: errEscaped,
+    body: getGithubIssueErrorMarkdown(stackTrace),
   });
 };
 
@@ -164,5 +163,10 @@ ${code}
 
 ### Meta Info
 ${getSimpleMeta()}
+
+### Actions Before Error
+${code}
+${getBeforeLastErrorActionLog().join(' \n')}
+${code}
 `;
 };

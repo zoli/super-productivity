@@ -14,10 +14,7 @@
     "UPDATE_WEB_APP": "Una nuova versione è disponibile. Vuoi caricare la nuova versione?"
   },
   "BL": {
-    "FROM_OTHER_PROJECTS": "Da altri progetti",
-    "NO_TASKS": "Non ci sono task nel tuo backlog",
-    "SCHEDULED": "Programmato",
-    "TITLE": "Backlog"
+    "NO_TASKS": "Non ci sono task nel tuo backlog"
   },
   "DATETIME_INPUT": {
     "IN": "in {{time}}",
@@ -80,6 +77,13 @@
       }
     },
     "DROPBOX": {
+      "C": {
+        "EMPTY_SYNC": "Stai tentando di sincronizzare un oggetto dati vuoto. Questa è la tua prima sincronizzazione di un'app (quasi) vergine?",
+        "FORCE_IMPORT": "Importare comunque i dati remoti?",
+        "FORCE_UPLOAD": "Caricare comunque i dati locali?",
+        "FORCE_UPLOAD_AFTER_ERROR": "Si è verificato un errore durante il caricamento dei dati locali. Prova a forzare l'aggiornamento?",
+        "TRY_LOAD_REMOTE_AGAIN": "Vuoi provare a ricaricare i dati da remoto ancora una volta?"
+      },
       "D_CONFLICT": {
         "LAST_CHANGE": "Ultima modifica:",
         "LAST_SYNC": "ultima sincronizzazione:",
@@ -160,11 +164,11 @@
         "IS_AUTO_ADD_TO_BACKLOG": "Aggiungi automaticamente gli issue non risolti da Github al backlog",
         "IS_AUTO_POLL": "Esegui il polling automatico delle modifiche sugli issue di git importati",
         "IS_SEARCH_ISSUES_FROM_GITLAB": "Mostra gli issue di git come suggerimenti quando aggiungi un nuovo task",
-        "PROJECT": "\"username%2FProjectName\" per il progetto su Gitlab che vuoi tracciare",
+        "PROJECT": "Percorso completo o nome utente / progetto",
         "TOKEN": "Token di accesso"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Qui puoi configurare SuperProductivity per aggiungere la lista degli issue di una specifica repository nel pannello di creazione task nella vista pianificazione giornaliera. Saranno mostrati come suggerimenti e forniranno un link all'issue ed alcune informazioni su di esso.</p> <p>Inoltre puoi aggiungere e sincronizzare automaticamente tutti gli issue aperti al backlog dei task.</p>",
+        "HELP": "<p> Qui puoi configurare SuperProductivity per elencare i problemi di Gitlab aperti (sia la versione online o un'istanza ospitata autonomamente) per un progetto specifico nel pannello di creazione dell'attività nella vista di pianificazione giornaliera. Saranno elencati come suggerimenti e forniranno un collegamento al problema, nonché ulteriori informazioni al riguardo. </p> <p> Inoltre puoi aggiungere e sincronizzare automaticamente tutti i problemi aperti nel tuo backlog delle attività. </p>",
         "TITLE": "Gitlab"
       },
       "ISSUE_CONTENT": {
@@ -315,7 +319,8 @@
         "ALLOW_SELF_SIGNED": "Consenti certificato autofirmato",
         "HOST": "Host (e.g.: http://my-host.de:1234)",
         "PASSWORD": "Token / Password",
-        "USER_NAME": "Email / Username"
+        "USER_NAME": "Email / Username",
+        "WONKY_COOKIE_MODE": "Wonky Cookie Fallback Authentication (solo app desktop)"
       },
       "FORM_SECTION": {
         "ADV_CFG": "Configurazione avanzata",
@@ -609,8 +614,12 @@
         "TIME": "Tempo"
       },
       "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "Aggiungi attività esistente \"{{taskTitle}}\"",
+        "ADD_ISSUE_TASK": "Aggiungi problema n.{{issueNr}} da {{issueType}}",
         "ADD_TASK": "Aggiungi task",
         "ADD_TASK_TO_BACKLOG": "Aggiungi task al backlog",
+        "CREATE_TASK": "Crea nuova attività",
+        "EXAMPLE": "Esempio: \"Qualche titolo di attività + nomeProgetto #some tag #some altro tag 10m / 3h\"",
         "START": "Premi ancora invio per iniziare"
       },
       "B": {
@@ -831,12 +840,14 @@
     "SAVE": "Salva",
     "TITLE": "Titolo",
     "UNDO": "Annulla",
-    "UPDATE": "Aggiorna"
+    "UPDATE": "Aggiorna",
+    "WITHOUT_PROJECT": "Senza progetto"
   },
   "GCF": {
     "AUTO_BACKUPS": {
       "HELP": "Salva automaticamente tutti i dati sulla cartella dell'applicazione in modo da averli pronti nel caso succedesse qualcosa.",
       "LABEL_IS_ENABLED": "Abilita backup automatici",
+      "LOCATION_INFO": "I backup vengono salvati in:",
       "TITLE": "Backup automatici"
     },
     "EVALUATION": {
@@ -926,6 +937,7 @@
       "IS_AUTO_START_NEXT_TASK": "Inizia a tracciare l'attività successiva quando si contrassegna corrente come fatto",
       "IS_CONFIRM_BEFORE_EXIT": "Conferma prima di uscire dall'applicazione",
       "IS_DARK_MODE": "Tema scuro",
+      "IS_DISABLE_INITIAL_DIALOG": "Disabilita la finestra di dialogo delle informazioni iniziali (potresti perdere importanti aggiornamenti!)",
       "IS_HIDE_NAV": "Nascondi la navigazione mentre il cursore è sull'header principale (solo Desktop)",
       "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Notificami quando il tempo stimato viene superato",
       "IS_TURN_OFF_MARKDOWN": "Disattiva markdown per le note",
@@ -945,6 +957,13 @@
       "LONGER_BREAK_DURATION": "Durata delle pause più lunghe",
       "TITLE": "Impostazioni del pomodoro"
     },
+    "SOUND": {
+      "DONE_SOUND": "Compito fatto suono",
+      "IS_INCREASE_DONE_PITCH": "Aumenta il tono per ogni attività svolta",
+      "IS_PLAY_DONE_SOUND": "Riproduci un suono quando l'attività è contrassegnata come completata",
+      "TITLE": "Suono",
+      "VOLUME": "Volume"
+    },
     "TAKE_A_BREAK": {
       "HELP": "<div> <p>Ti permette di configurare un promemoria ricorrente quando hai lavorato per uno specifica quantità di tempo senza prenderti una pausa.</p> <p>Puoi modificare il messaggio mostrato. ${duration} sarà rimpiazzata con il tempo speso senza una pausa.</p> </div>",
       "IS_ENABLED": "Abilita il promemoria di fare una pausa",
@@ -960,7 +979,9 @@
     "COPY_TO_CLIPPBOARD": "Copiato negli appunti",
     "ERR_COMPRESSION": "Errore per l'interfaccia di compressione",
     "PERSISTENCE_DISALLOWED": "I dati non saranno salvati permanentemente. Fai attenzione che questo può portare a perdita dei dati!!",
-    "RUNNING_X": "Eseguendo \"{{str}}\"."
+    "RUNNING_X": "Eseguendo \"{{str}}\".",
+    "SHORTCUT_WARN_OPEN_BOOKMARKS_FROM_TAG": "{{keyCombo}} premuto, ma la scorciatoia Apri segnalibri è disponibile solo nel contesto del progetto.",
+    "SHORTCUT_WARN_OPEN_NOTES_FROM_TAG": "{{keyCombo}} premuto, ma la scorciatoia per le note aperte è disponibile solo nel contesto del progetto."
   },
   "GPB": {
     "ASSETS": "Caricamento risorse in corso ...",
@@ -1078,7 +1099,6 @@
     }
   },
   "SCHEDULE": {
-    "ADD_TO_TODAY": "Aggiungi a oggi e rimuovi promemoria",
     "NO_SCHEDULED": "Non ci sono task pianificati al momento. Puoi pianificare un task scegliendo \"Pianifica task\" nel menu di contesto. Per aprirlo clicca i tre puntini sulla destra dei task.",
     "START_TASK": "Inizia il task ora e rimuovi promemoria"
   },

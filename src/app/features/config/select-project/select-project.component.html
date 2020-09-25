@@ -1,11 +1,11 @@
-<select matNativeControl
+<select [errorStateMatcher]="errorStateMatcher"
+        [formControl]="formControl"
+        [formlyAttributes]="field"
         [id]="id"
         [readonly]="to.readonly"
-        [errorStateMatcher]="errorStateMatcher"
-        [formControl]="formControl"
-        [formlyAttributes]="field">
+        matNativeControl>
   <option [ngValue]="null">{{T.G.NONE|translate}}</option>
-  <ng-container *ngFor="let opt of projectService.list$|async">
+  <ng-container *ngFor="let opt of projectService.list$|async; trackBy: trackById">
     <option [ngValue]="opt.id">{{ opt.title }}</option>
   </ng-container>
 </select>

@@ -1,6 +1,6 @@
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
-import {T} from 'src/app/t.const';
-import {TaskWithSubTasks} from 'src/app/features/tasks/task.model';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { T } from 'src/app/t.const';
+import { TaskWithSubTasks } from 'src/app/features/tasks/task.model';
 
 @Component({
   selector: 'gitlab-issue-header',
@@ -9,8 +9,8 @@ import {TaskWithSubTasks} from 'src/app/features/tasks/task.model';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class GitlabIssueHeaderComponent {
-  T = T;
-  @Input() public task: TaskWithSubTasks;
+  T: typeof T = T;
+  @Input() public task?: TaskWithSubTasks;
 
   constructor() {
   }

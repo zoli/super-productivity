@@ -1,61 +1,67 @@
-import {Injectable} from '@angular/core';
-import {LS_INITIAL_DIALOG_NR} from '../../core/persistence/ls-keys.const';
-import {HttpClient} from '@angular/common/http';
-import {MatDialog} from '@angular/material/dialog';
-import {catchError, switchMap, tap, timeout} from 'rxjs/operators';
-import {InitialDialogResponse} from './initial-dialog.model';
-import {Observable, of} from 'rxjs';
-import {DialogInitialComponent} from './dialog-initial/dialog-initial.component';
-import {DataInitService} from '../../core/data-init/data-init.service';
-import {version} from '../../../../package.json';
-import {lt} from 'semver';
-import {environment} from '../../../environments/environment';
+import { Injectable } from '@angular/core';
+import { LS_INITIAL_DIALOG_NR } from '../../core/persistence/ls-keys.const';
+import { HttpClient } from '@angular/common/http';
+import { MatDialog } from '@angular/material/dialog';
+import { catchError, filter, switchMap, tap, timeout } from 'rxjs/operators';
+import { InitialDialogResponse, instanceOfInitialDialogResponse } from './initial-dialog.model';
+import { Observable, of } from 'rxjs';
+import { DialogInitialComponent } from './dialog-initial/dialog-initial.component';
+import { DataInitService } from '../../core/data-init/data-init.service';
+import { version } from '../../../../package.json';
+import { lt } from 'semver';
+import { GlobalConfigService } from '../config/global-config.service';
 
 const URL = 'https://app.super-productivity.com/news.json?ngsw-bypass=true&no-cache=' + Date.now();
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class InitialDialogService {
 
   constructor(
     private _http: HttpClient,
     private _matDialog: MatDialog,
     private _dataInitService: DataInitService,
+    private _globalConfigService: GlobalConfigService,
   ) {
   }
 
   showDialogIfNecessary$(): Observable<any> {
-    if (!environment.production) {
-      return of(null);
-    }
+    // if (!environment.production) {
+    //   return of(null);
+    // }
 
     return this._dataInitService.isAllDataLoadedInitially$.pipe(
-      switchMap(() => this._http.get(URL)),
-      timeout(3000),
-      switchMap((res: InitialDialogResponse) => {
+      switchMap(() => this._globalConfigService.misc$),
+      filter(miscCfg => !miscCfg.isDisableInitialDialog),
+      switchMap(() => this._http.get(URL).pipe(timeout(4000))),
+      switchMap((res: InitialDialogResponse | unknown) => {
         const lastLocalDialogNr = this._loadDialogNr();
         const isNewUser = !lastLocalDialogNr;
 
-        if (isNewUser && !res.isShowToNewUsers) {
-          // we need to get started somehow
-          if (lastLocalDialogNr === 0) {
-            this._saveDialogNr(1);
-          }
-          return of(null);
-        } else if (res.dialogNr <= lastLocalDialogNr) {
-          return of(null);
-        } else if (res.showStartingWithVersion && lt(version, res.showStartingWithVersion)) {
+        if (!instanceOfInitialDialogResponse(res)) {
+          console.error('Invalid initial Dialog response');
           return of(null);
         } else {
-          return this._openDialog$(res).pipe(
-            tap(() => {
-              this._saveDialogNr(res.dialogNr);
-            }),
-          );
+          if (isNewUser && !res.isShowToNewUsers) {
+            // we need to get started somehow
+            if (!lastLocalDialogNr) {
+              this._saveDialogNr(1);
+            }
+            return of(null);
+          } else if (res.dialogNr <= lastLocalDialogNr) {
+            return of(null);
+          } else if (res.showStartingWithVersion && lt(version, res.showStartingWithVersion)) {
+            return of(null);
+          } else {
+            return this._openDialog$(res).pipe(
+              tap(() => {
+                this._saveDialogNr(res.dialogNr);
+              }),
+            );
+          }
         }
       }),
       catchError((err) => {
+        console.error('Initial Dialog Error');
         console.error(err);
         return of(null);
       }),
@@ -69,7 +75,8 @@ export class InitialDialogService {
   }
 
   private _loadDialogNr(): number {
-    return +localStorage.getItem(LS_INITIAL_DIALOG_NR) || 0;
+    const v = localStorage.getItem(LS_INITIAL_DIALOG_NR);
+    return v ? +v : 0;
   }
 
   private _saveDialogNr(nr: number = 0) {

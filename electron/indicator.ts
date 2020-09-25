@@ -1,9 +1,8 @@
-import {ipcMain, Menu, Tray} from 'electron';
-import {existsSync, readFileSync} from 'fs';
+import { App, ipcMain, Menu, Tray } from 'electron';
+import { existsSync, readFileSync } from 'fs';
 // const dbus = require('./dbus');
-import * as moment from 'moment';
-import {errorHandler} from './error-handler';
-import {IPC} from './ipc-events.const';
+import { errorHandler } from './error-handler';
+import { IPC } from './ipc-events.const';
 
 const GNOME_SHELL_EXT_MIN_VERSION = 2;
 
@@ -11,14 +10,24 @@ let tray;
 let isIndicatorRunning = false;
 let isGnomeShellExtensionRunning = false;
 
-export const initIndicator = (params) => {
-  const IS_LINUX = params.IS_LINUX;
-  const IS_GNOME = params.IS_GNOME;
-  const showApp = params.showApp;
-  const quitApp = params.quitApp;
-  const IS_MAC = params.IS_MAC;
-  const app = params.app;
-  const ICONS_FOLDER = params.ICONS_FOLDER;
+export const initIndicator = ({
+  IS_LINUX,
+  IS_GNOME,
+  IS_MAC,
+  showApp,
+  quitApp,
+  app,
+  ICONS_FOLDER,
+}: {
+  IS_LINUX: boolean;
+  IS_GNOME: boolean;
+  IS_MAC: boolean;
+  showApp: () => void;
+  quitApp: () => void;
+  app: App;
+  ICONS_FOLDER: string;
+}) => {
+
   const isGnomeShellExtensionInstalled = isGnomeShellInstalled(IS_LINUX, IS_GNOME);
 
   initAppListeners(app);
@@ -96,7 +105,7 @@ function initAppListeners(app) {
 function initListeners(isGnomeShellExtInstalled) {
   ipcMain.on(IPC.CURRENT_TASK_UPDATED, (ev, params) => {
     const currentTask = params.current;
-    const lastActiveTaskTask = params.lastActiveTask;
+    // const lastActiveTaskTask = params.lastActiveTask;
 
     let msg;
 
@@ -127,9 +136,9 @@ function initListeners(isGnomeShellExtInstalled) {
   });
 
   ipcMain.on(IPC.POMODORO_UPDATE, (ev, params) => {
-    const isOnBreak = params.isOnBreak;
-    const currentSessionTime = params.currentSessionTime;
-    const currentSessionInitialTime = params.currentSessionInitialTime;
+    // const isOnBreak = params.isOnBreak;
+    // const currentSessionTime = params.currentSessionTime;
+    // const currentSessionInitialTime = params.currentSessionInitialTime;
 
     // if (isGnomeShellExtInstalled) {
     //  dbus.updatePomodoro(isOnBreak, currentSessionTime, currentSessionInitialTime);
@@ -148,12 +157,12 @@ function createIndicatorStr(task) {
     }
 
     // TODO replace with our format helpers once we have ts support
-    if (task.timeSpent && task.timeSpent) {
-      task.timeSpent = moment.duration({milliseconds: task.timeSpent});
-      timeStr += parseInt(task.timeSpent.asMinutes(), 10).toString();
+    if (task.timeSpent) {
+      const timeSpentAsMinutes = Math.round(task.timeSpent / 60 / 1000);
+      timeStr += timeSpentAsMinutes.toString();
     }
-    task.timeEstimate = task.timeEstimate && moment.duration({milliseconds: task.timeEstimate});
-    const timeEstimateAsMin = moment.duration(task.timeEstimate).asMinutes();
+    const timeEstimateAsMin = Math.round(task.timeEstimate / 60 / 1000);
+
     if (task.timeEstimate && timeEstimateAsMin > 0) {
       timeStr += '/' + timeEstimateAsMin;
     }

@@ -14,10 +14,12 @@
     "UPDATE_WEB_APP": "New version available. Load New Version?"
   },
   "BL": {
-    "FROM_OTHER_PROJECTS": "From other Projects",
-    "NO_TASKS": "There are currently no tasks in your backlog",
-    "SCHEDULED": "Scheduled",
-    "TITLE": "Backlog"
+    "NO_TASKS": "There are currently no tasks in your backlog"
+  },
+  "CONFIRM": {
+    "AUTO_FIX": "Your data seems to be damaged. Do you want to try to automatically fix it? This might result in partial data loss.",
+    "DELETE_STRAY_BACKUP": "Do you want to delete the back to avoid seeing this dialog?",
+    "RESTORE_STRAY_BACKUP": "During last sync there might have been some error. Do you want to restore the last backup?"
   },
   "DATETIME_INPUT": {
     "IN": "in {{time}}",
@@ -80,6 +82,13 @@
       }
     },
     "DROPBOX": {
+      "C": {
+        "EMPTY_SYNC": "You're trying to sync an empty data object. Is this your very first sync of a (almost) virgin app?",
+        "FORCE_IMPORT": "Import remote data anyway?",
+        "FORCE_UPLOAD": "Upload local data anyway?",
+        "FORCE_UPLOAD_AFTER_ERROR": "An Error occurred while uploading your local data. Try to force the update?",
+        "TRY_LOAD_REMOTE_AGAIN": "Try to re-load data from remote once again?"
+      },
       "D_CONFLICT": {
         "LAST_CHANGE": "last change:",
         "LAST_SYNC": "last sync:",
@@ -122,7 +131,7 @@
         "TOKEN": "Access Token"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Here you can configure SuperProductivity to list open GithHub issues for a specific repository in the task creation panel in the daily planning view. They will be listed as suggestions and will provide a link to the issue as well as more information about it.</p> <p>In addition you can automatically add and sync all open issues to your task backlog.</p>",
+        "HELP": "<p>Here you can configure SuperProductivity to list open GitHub issues for a specific repository in the task creation panel in the daily planning view. They will be listed as suggestions and will provide a link to the issue as well as more information about it.</p> <p>In addition you can automatically add and sync all open issues to your task backlog.</p>",
         "TITLE": "Github"
       },
       "ISSUE_CONTENT": {
@@ -160,11 +169,11 @@
         "IS_AUTO_ADD_TO_BACKLOG": "Automatically add unresolved issues from Gitlab to backlog",
         "IS_AUTO_POLL": "Automatically poll imported git issues for changes",
         "IS_SEARCH_ISSUES_FROM_GITLAB": "Show issues from git as suggestions when adding new tasks",
-        "PROJECT": "\"username%2FProjectName\" for the gitlab project you want to track",
+        "PROJECT": "Full path or user name/project",
         "TOKEN": "Access Token"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Here you can configure SuperProductivity to list open Gitlab issues for a specific project in the task creation panel in the daily planning view. They will be listed as suggestions and will provide a link to the issue as well as more information about it.</p> <p>In addition you can automatically add and sync all open issues to your task backlog.</p>",
+        "HELP": "<p>Here you can configure SuperProductivity to list open Gitlab (either its the online version or a self-hosted instance) issues for a specific project in the task creation panel in the daily planning view. They will be listed as suggestions and will provide a link to the issue as well as more information about it.</p> <p>In addition you can automatically add and sync all open issues to your task backlog.</p>",
         "TITLE": "Gitlab"
       },
       "ISSUE_CONTENT": {
@@ -315,7 +324,8 @@
         "ALLOW_SELF_SIGNED": "Allow self signed certificate",
         "HOST": "Host (e.g.: http://my-host.de:1234)",
         "PASSWORD": "Token / Password",
-        "USER_NAME": "Email / Username"
+        "USER_NAME": "Email / Username",
+        "WONKY_COOKIE_MODE": "Wonky Cookie Fallback Authentication (desktop app only)"
       },
       "FORM_SECTION": {
         "ADV_CFG": "Advanced Config",
@@ -491,7 +501,7 @@
       "P2": "If you want to know more about the science behind all here I can recommend <a target=\"_blank\" href=\"https://www.nytimes.com/2019/03/25/smarter-living/why-you-procrastinate-it-has-nothing-to-do-with-self-control.html\" target=\"_blank\">this article</a> from which are some of the exercises.",
       "P3": "Remember: Procrastination is an emotion regulation problem, not a time management problem.",
       "REFRAME": {
-        "INTRO": "Think about what might be positive about the task despite its.",
+        "INTRO": "Think about what might be positive about the task despite its flaws.",
         "TITLE": "Reframing",
         "TL1": "What might be interesting about it?",
         "TL2": "What is to gain if you complete it?",
@@ -609,12 +619,16 @@
         "TIME": "Time"
       },
       "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "Add existing task \"{{taskTitle}}\"",
+        "ADD_ISSUE_TASK": "Add issue #{{issueNr}} from {{issueType}}",
         "ADD_TASK": "Add task",
         "ADD_TASK_TO_BACKLOG": "Add task to backlog",
+        "CREATE_TASK": "Create new task",
+        "EXAMPLE": "Example: \"Some task title +projectName #some tag #some other tag 10m/3h\"",
         "START": "Press enter one more time to start"
       },
       "B": {
-        "ADD_HALF_HOUR": "Add 1/2 hou",
+        "ADD_HALF_HOUR": "Add 1/2 hour",
         "ESTIMATE_EXCEEDED": "Time estimate exceeded for  \"{{title}}\""
       },
       "CMP": {
@@ -740,14 +754,25 @@
         "ALREADY_DID": "I already did",
         "SNOOZE": "Snooze {{time}}"
       },
+      "B_TTR": {
+        "ADD_TO_TASK": "Add to Task",
+        "MSG": "You have not been tracking time for {{time}}"
+      },
       "D_IDLE": {
         "BREAK": "Break",
-        "CREATE_AND_TRACK": "<em>Create</em> and track to:",
+        "CREATE_AND_TRACK": "<em>Create</em> and track to",
         "IDLE_FOR": "You have been idle for:",
         "SKIP": "Skip",
         "TASK": "Task",
         "TASK_BREAK": "Task+Break",
-        "TRACK_TO": "Track to:"
+        "TRACK_TO": "Track to"
+      },
+      "D_TRACKING_REMINDER": {
+        "UNTRACKED_TIME": "Untracked time:",
+        "TRACK_TO": "Track to:",
+        "CREATE_AND_TRACK": "<em>Create</em> and track to",
+        "IDLE_FOR": "You have been idle for:",
+        "TASK": "Task"
       }
     },
     "WORKLOG": {
@@ -831,12 +856,14 @@
     "SAVE": "Save",
     "TITLE": "Title",
     "UNDO": "Undo",
-    "UPDATE": "Update"
+    "UPDATE": "Update",
+    "WITHOUT_PROJECT": "Without Project"
   },
   "GCF": {
     "AUTO_BACKUPS": {
       "HELP": "Auto save all data to your app folder in order to have it ready in case something goes wrong.",
       "LABEL_IS_ENABLED": "Enable automatic backups",
+      "LOCATION_INFO": "Backups are saved to:",
       "TITLE": "Automatic Backups"
     },
     "EVALUATION": {
@@ -926,6 +953,7 @@
       "IS_AUTO_START_NEXT_TASK": "Start tracking next task when marking current as done",
       "IS_CONFIRM_BEFORE_EXIT": "Confirm before exiting the app",
       "IS_DARK_MODE": "Dark Mode",
+      "IS_DISABLE_INITIAL_DIALOG": "Disable initial info dialog (you might miss important updates!)",
       "IS_HIDE_NAV": "Hide navigation until main header is hovered (desktop only)",
       "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Notify when time estimate was exceeded",
       "IS_TURN_OFF_MARKDOWN": "Turn off markdown parsing for notes",
@@ -945,6 +973,13 @@
       "LONGER_BREAK_DURATION": "Duration of longer breaks",
       "TITLE": "Pomodoro Timer"
     },
+    "SOUND": {
+      "DONE_SOUND": "Task done sound",
+      "IS_INCREASE_DONE_PITCH": "Increase pitch for every task done",
+      "IS_PLAY_DONE_SOUND": "Play sound when task is marked done",
+      "TITLE": "Sound",
+      "VOLUME": "Volume"
+    },
     "TAKE_A_BREAK": {
       "HELP": "<div> <p>Allows you to configure a reoccurring reminder when you have worked for a specified amount of time without taking a break.</p> <p>You can modify the message displayed. ${duration} will be replaced with the time spent without a break.</p> </div>",
       "IS_ENABLED": "Enable take a break reminder",
@@ -954,13 +989,21 @@
       "MIN_WORKING_TIME": "Trigger take a break notification after X working without one",
       "MOTIVATIONAL_IMG": "Motivational image (web url)",
       "TITLE": "Break Reminder"
+    },
+    "TRACKING_REMINDER": {
+      "HELP": "Configure a banner to show up in case you forgot to start time tracking.",
+      "TITLE": "Time Tracking Reminder",
+      "L_IS_ENABLED": "Enabled",
+      "L_MIN_TIME": "Time to wait before showing Banner"
     }
   },
   "GLOBAL_SNACK": {
     "COPY_TO_CLIPPBOARD": "Copied to clipboard",
     "ERR_COMPRESSION": "Error for compression interface",
     "PERSISTENCE_DISALLOWED": "Data will be not persisted permanently. Be aware that this can lead to data loss!!",
-    "RUNNING_X": "Running \"{{str}}\"."
+    "RUNNING_X": "Running \"{{str}}\".",
+    "SHORTCUT_WARN_OPEN_BOOKMARKS_FROM_TAG": "{{keyCombo}} pressed, but open bookmarks shortcut is only available when in project context.",
+    "SHORTCUT_WARN_OPEN_NOTES_FROM_TAG": "{{keyCombo}} pressed, but open notes shortcut is only available when in project context."
   },
   "GPB": {
     "ASSETS": "Loading assets...",
@@ -1078,7 +1121,6 @@
     }
   },
   "SCHEDULE": {
-    "ADD_TO_TODAY": "",
     "NO_SCHEDULED": "There are currently no scheduled tasks. You can schedule a task by choosing \"Schedule Task\" in the task context menu. To open it click on the 3 little dots on the right of a task.",
     "START_TASK": "Start task and remove reminder"
   },

@@ -1,14 +1,14 @@
-import {EntityState} from '@ngrx/entity';
-import {Task} from '../../tasks/task.model';
-import {getWeeksInMonth} from '../../../util/get-weeks-in-month';
-import {getWeekNumber} from '../../../util/get-week-number';
+import { EntityState } from '@ngrx/entity';
+import { Task } from '../../tasks/task.model';
+import { getWeeksInMonth } from '../../../util/get-weeks-in-month';
+import { getWeekNumber } from '../../../util/get-week-number';
 import * as moment from 'moment';
-import {Worklog, WorklogDay, WorklogMonth, WorklogWeek, WorklogYear} from '../worklog.model';
-import {getWorklogStr} from '../../../util/get-work-log-str';
-import {WorkStartEnd} from '../../work-context/work-context.model';
+import { Worklog, WorklogDay, WorklogMonth, WorklogWeek, WorklogYear } from '../worklog.model';
+import { getWorklogStr } from '../../../util/get-work-log-str';
+import { WorkStartEnd } from '../../work-context/work-context.model';
 
 // Provides defaults to display tasks without time spent on them
-const _getTimeSpentOnDay = (entities, task): { [key: string]: number } => {
+const _getTimeSpentOnDay = (entities: any, task: Task): { [key: string]: number } => {
   const isTimeSpentTracked = (task.timeSpentOnDay && !!Object.keys(task.timeSpentOnDay).length);
   if (isTimeSpentTracked) {
     return task.timeSpentOnDay;
@@ -25,16 +25,13 @@ const _getTimeSpentOnDay = (entities, task): { [key: string]: number } => {
 
 export const mapArchiveToWorklog = (
   taskState: EntityState<Task>,
-  noRestoreIds = [],
-  startEnd: { workStart: WorkStartEnd, workEnd: WorkStartEnd }):
-  {
-    worklog: Worklog, totalTimeSpent
-  } => {
+  noRestoreIds: string[] = [],
+  startEnd: { workStart: WorkStartEnd, workEnd: WorkStartEnd }): { worklog: Worklog, totalTimeSpent: number } => {
   const entities = taskState.entities;
   const worklog: Worklog = {};
   let totalTimeSpent = 0;
   Object.keys(entities).forEach(id => {
-    const task = entities[id];
+    const task = entities[id] as Task;
     const timeSpentOnDay = _getTimeSpentOnDay(entities, task);
 
     Object.keys(timeSpentOnDay).forEach(dateStr => {
@@ -83,7 +80,8 @@ export const mapArchiveToWorklog = (
         totalTimeSpent += timeSpentForTask;
       }
 
-      const newItem = {
+      // TODO real types
+      const newItem: any = {
         task,
         parentId: task.parentId,
         isNoRestore: noRestoreIds.includes(task.id),
@@ -110,12 +108,12 @@ export const mapArchiveToWorklog = (
   });
 
   Object.keys(worklog).forEach((yearIN: string) => {
-    const year: WorklogYear = worklog[yearIN];
+    const year: WorklogYear = worklog[yearIN as any];
     const monthKeys = Object.keys(year.ent);
     year.monthWorked = monthKeys.length;
 
     monthKeys.forEach((monthIN: string) => {
-      const month: WorklogMonth = worklog[yearIN].ent[monthIN];
+      const month: WorklogMonth = worklog[yearIN as any].ent[monthIN as any];
       const days = Object.keys(month.ent);
       month.daysWorked = days.length;
       year.daysWorked += days.length;
@@ -132,11 +130,11 @@ export const mapArchiveToWorklog = (
         };
 
         days.forEach((dayIN: string) => {
-          const day: WorklogDay = month.ent[dayIN];
+          const day: WorklogDay = month.ent[dayIN as any];
           if (+dayIN >= week.start && +dayIN <= week.end) {
-            weekForMonth.timeSpent += month.ent[dayIN].timeSpent;
+            weekForMonth.timeSpent += month.ent[dayIN as any].timeSpent;
             weekForMonth.daysWorked += 1;
-            weekForMonth.ent[dayIN] = day;
+            weekForMonth.ent[dayIN as any] = day;
           }
         });
 

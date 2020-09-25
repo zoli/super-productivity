@@ -1,7 +1,7 @@
-import {projectReducer} from './project.reducer';
-import {fakeEntityStateFromArray} from '../../../util/fake-entity-state-from-array';
-import {Project} from '../project.model';
-import {UpdateProjectOrder} from './project.actions';
+import { projectReducer } from './project.reducer';
+import { fakeEntityStateFromArray } from '../../../util/fake-entity-state-from-array';
+import { Project } from '../project.model';
+import { UpdateProjectOrder } from './project.actions';
 
 describe('projectReducer', () => {
 
@@ -26,7 +26,7 @@ describe('projectReducer', () => {
       ] as Partial<Project>[]);
       const ids = ['B', 'A'];
       expect(() => {
-        const r = projectReducer(s as any, new UpdateProjectOrder({ids}));
+        projectReducer(s as any, new UpdateProjectOrder({ids}));
       }).toThrowError('Invalid param given to UpdateProjectOrder');
     });
 

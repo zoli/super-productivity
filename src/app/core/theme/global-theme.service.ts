@@ -1,23 +1,22 @@
-import {Inject, Injectable} from '@angular/core';
-import {BodyClass, IS_ELECTRON} from '../../app.constants';
-import {IS_MAC} from '../../util/is-mac';
-import {take} from 'rxjs/operators';
-import {isTouch} from '../../util/is-touch';
-import {MaterialCssVarsService} from 'angular-material-css-vars';
-import {DOCUMENT} from '@angular/common';
-import {MatIconRegistry} from '@angular/material/icon';
-import {DomSanitizer} from '@angular/platform-browser';
-import {ChromeExtensionInterfaceService} from '../chrome-extension-interface/chrome-extension-interface.service';
-import {ThemeService as NgChartThemeService} from 'ng2-charts';
-import {GlobalConfigService} from '../../features/config/global-config.service';
-import {MiscConfig} from '../../features/config/global-config.model';
-import {ElectronService} from '../electron/electron.service';
-import {WorkContextThemeCfg} from '../../features/work-context/work-context.model';
-import {WorkContextService} from '../../features/work-context/work-context.service';
+import { Inject, Injectable } from '@angular/core';
+import { BodyClass, IS_ELECTRON } from '../../app.constants';
+import { IS_MAC } from '../../util/is-mac';
+import { take } from 'rxjs/operators';
+import { isTouchOnly } from '../../util/is-touch';
+import { MaterialCssVarsService } from 'angular-material-css-vars';
+import { DOCUMENT } from '@angular/common';
+import { MatIconRegistry } from '@angular/material/icon';
+import { DomSanitizer } from '@angular/platform-browser';
+import { ChromeExtensionInterfaceService } from '../chrome-extension-interface/chrome-extension-interface.service';
+import { ThemeService as NgChartThemeService } from 'ng2-charts';
+import { GlobalConfigService } from '../../features/config/global-config.service';
+import { MiscConfig } from '../../features/config/global-config.model';
+import { ElectronService } from '../electron/electron.service';
+import { WorkContextThemeCfg } from '../../features/work-context/work-context.model';
+import { WorkContextService } from '../../features/work-context/work-context.service';
+import { remote } from 'electron';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class GlobalThemeService {
   constructor(
     @Inject(DOCUMENT) private document: Document,
@@ -69,44 +68,38 @@ export class GlobalThemeService {
   }
 
   private _initIcons() {
-    this._matIconRegistry.addSvgIcon(
-      `sp`,
-      this._domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/sp.svg`)
-    );
-    this._matIconRegistry.addSvgIcon(
-      `play`,
-      this._domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/play.svg`)
-    );
-    this._matIconRegistry.addSvgIcon(
-      `github`,
-      this._domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/github.svg`)
-    );
-    this._matIconRegistry.addSvgIcon(
-      `gitlab`,
-      this._domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/gitlab.svg`)
-    );
-    this._matIconRegistry.addSvgIcon(
-      `jira`,
-      this._domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/jira.svg`)
-    );
-    this._matIconRegistry.addSvgIcon(
-      `drag_handle`,
-      this._domSanitizer.bypassSecurityTrustResourceUrl(`assets/icons/drag-handle.svg`)
-    );
+    const icons = [
+      ['sp', 'assets/icons/sp.svg'],
+      ['play', 'assets/icons/play.svg'],
+      ['github', 'assets/icons/github.svg'],
+      ['gitlab', 'assets/icons/gitlab.svg'],
+      ['jira', 'assets/icons/jira.svg'],
+      ['drag_handle', 'assets/icons/drag-handle.svg'],
+      ['remove_today', 'assets/icons/remove-today-48px.svg'],
+      ['estimate_remaining', 'assets/icons/estimate-remaining.svg'],
+      ['working_today', 'assets/icons/working-today.svg'],
+      ['repeat', 'assets/icons/repeat.svg'],
+    ];
+
+    icons.forEach(([name, path]) => {
+      this._matIconRegistry.addSvgIcon(
+        name,
+        this._domSanitizer.bypassSecurityTrustResourceUrl(path)
+      );
+    });
   }
 
   private _initThemeWatchers() {
     // init theme watchers
     this._workContextService.currentTheme$.subscribe((theme: WorkContextThemeCfg) => this._setColorTheme(theme));
 
-
     // TODO beautify code here
     if (IS_ELECTRON && this._electronService.isMacOS) {
-      this._setDarkTheme(this._electronService.remote.nativeTheme.shouldUseDarkColors);
-      this._electronService.remote.systemPreferences.subscribeNotification('AppleInterfaceThemeChangedNotification', () => {
+      this._setDarkTheme((this._electronService.remote as typeof remote).nativeTheme.shouldUseDarkColors);
+      (this._electronService.remote as typeof remote).systemPreferences.subscribeNotification('AppleInterfaceThemeChangedNotification', () => {
         this._globalConfigService.misc$.pipe(take(1)).subscribe((misc: MiscConfig) => {
           const isDarkTheme = (IS_ELECTRON && this._electronService.isMacOS)
-            ? this._electronService.remote.nativeTheme.shouldUseDarkColors
+            ? (this._electronService.remote as typeof remote).nativeTheme.shouldUseDarkColors
             : misc.isDarkMode;
 
           this._setDarkTheme(isDarkTheme);
@@ -115,7 +108,7 @@ export class GlobalThemeService {
     } else {
       this._globalConfigService.misc$.subscribe((misc: MiscConfig) => {
         const isDarkTheme = (IS_ELECTRON && this._electronService.isMacOS)
-          ? this._electronService.remote.nativeTheme.shouldUseDarkColors
+          ? (this._electronService.remote as typeof remote).nativeTheme.shouldUseDarkColors
           : misc.isDarkMode;
 
         this._setDarkTheme(isDarkTheme);
@@ -145,13 +138,12 @@ export class GlobalThemeService {
       });
     }
 
-    if (isTouch()) {
-      this.document.body.classList.add(BodyClass.isTouchDevice);
+    if (isTouchOnly()) {
+      this.document.body.classList.add(BodyClass.isTouchOnly);
     } else {
-      this.document.body.classList.add(BodyClass.isNoTouchDevice);
+      this.document.body.classList.add(BodyClass.isNoTouchOnly);
     }
   }
-
 
   private _setChartTheme(isDarkTheme: boolean) {
     const overrides = (isDarkTheme)

@@ -1,4 +1,4 @@
-import {Pipe, PipeTransform} from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'toArray',
@@ -16,7 +16,7 @@ export class ToArrayPipe implements PipeTransform {
           keys.splice(index, 1);
         }
       }
-      const newArray = [];
+      const newArray: any[] = [];
       keys.forEach((key) => {
         newArray.push({
           key,

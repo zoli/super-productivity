@@ -1,7 +1,7 @@
-import {createEntityAdapter, EntityAdapter} from '@ngrx/entity';
+import { createEntityAdapter, EntityAdapter } from '@ngrx/entity';
 import * as tagActions from './tag.actions';
-import {Tag, TagState} from '../tag.model';
-import {Action, createFeatureSelector, createReducer, createSelector, on} from '@ngrx/store';
+import { Tag, TagState } from '../tag.model';
+import { Action, createFeatureSelector, createReducer, createSelector, on } from '@ngrx/store';
 import {
   AddTask,
   DeleteMainTasks,
@@ -11,23 +11,22 @@ import {
   TaskActionTypes,
   UpdateTaskTags
 } from '../../tasks/store/task.actions';
-import {TODAY_TAG} from '../tag.const';
-import {WorkContextType} from '../../work-context/work-context.model';
+import { TODAY_TAG } from '../tag.const';
+import { WorkContextType } from '../../work-context/work-context.model';
 import {
   moveTaskDownInTodayList,
   moveTaskInTodayList,
   moveTaskUpInTodayList
 } from '../../work-context/store/work-context-meta.actions';
-import {moveTaskForWorkContextLikeState} from '../../work-context/store/work-context-meta.helper';
-import {arrayMoveLeft, arrayMoveRight} from '../../../util/array-move';
-import {Update} from '@ngrx/entity/src/models';
-import {unique} from '../../../util/unique';
-import {Project} from '../../project/project.model';
-import {loadAllData} from '../../../root-store/meta/load-all-data.action';
+import { moveTaskForWorkContextLikeState } from '../../work-context/store/work-context-meta.helper';
+import { arrayMoveLeft, arrayMoveRight } from '../../../util/array-move';
+import { Update } from '@ngrx/entity/src/models';
+import { unique } from '../../../util/unique';
+import { loadAllData } from '../../../root-store/meta/load-all-data.action';
+import { TaskWithSubTasks } from '../../tasks/task.model';
 
 export const TAG_FEATURE_NAME = 'tag';
 const WORK_CONTEXT_TYPE: WorkContextType = WorkContextType.TAG;
-
 
 export const tagAdapter: EntityAdapter<Tag> = createEntityAdapter<Tag>();
 export const selectTagFeatureState = createFeatureSelector<TagState>(TAG_FEATURE_NAME);
@@ -40,28 +39,33 @@ export const selectAllTagsWithoutMyDay = createSelector(
 
 export const selectTagById = createSelector(
   selectTagFeatureState,
-  (state, props: { id: string }): Tag => state.entities[props.id]
+  (state: TagState, props: { id: string }): Tag => {
+    const tag = state.entities[props.id];
+    if (!tag) {
+      throw new Error('No tag ' + props.id);
+    }
+    return tag;
+  }
 );
 export const selectTagsByIds = createSelector(
   selectTagFeatureState,
-  (state, props: { ids }) => props.ids ? props.ids.map(
-    id => state.entities[id]) : []
-);
-export const selectTagByName = createSelector(
-  selectTagFeatureState,
-  (state, props: { name: string }): Tag | undefined => {
-    const results = Object.values(state.entities).filter(
-      (tag: Tag) => tag.title === props.name
-    ) as Tag[];
-    return results.length ? results[0] : undefined;
-  }
-);
+  (state: TagState, props: { ids: string[]; isAllowNull: boolean }): Tag[] => (props.isAllowNull
+    ? props.ids
+      .map(id => state.entities[id])
+      .filter(tag => !!tag) as Tag[]
 
+    : props.ids.map(id => {
+      const tag = state.entities[id];
+      if (!tag) {
+        throw new Error('No tag ' + id);
+      }
+      return tag;
+    }))
+);
 
 export const initialTagState: TagState = tagAdapter.getInitialState({
   // additional entity state properties
 });
-
 
 const _addMyDayTagIfNecessary = (state: TagState): TagState => {
   const ids = state.ids as string[];
@@ -89,7 +93,7 @@ const _reducer = createReducer<TagState>(
       : oldState)
   ),
 
-  on(moveTaskInTodayList, (state, {
+  on(moveTaskInTodayList, (state: TagState, {
     taskId,
     newOrderedIds,
     src,
@@ -100,8 +104,11 @@ const _reducer = createReducer<TagState>(
     if (workContextType !== WORK_CONTEXT_TYPE) {
       return state;
     }
-
-    const taskIdsBefore = state.entities[workContextId].taskIds;
+    const tag = state.entities[workContextId];
+    if (!tag) {
+      throw new Error('No tag');
+    }
+    const taskIdsBefore = tag.taskIds;
     const taskIds = moveTaskForWorkContextLikeState(taskId, newOrderedIds, target, taskIdsBefore);
     return tagAdapter.updateOne({
       id: workContextId,
@@ -111,59 +118,58 @@ const _reducer = createReducer<TagState>(
     }, state);
   }),
 
-  on(moveTaskUpInTodayList, (state, {taskId, workContextId, workContextType}) => (workContextType === WORK_CONTEXT_TYPE)
+  on(moveTaskUpInTodayList, (state: TagState, {taskId, workContextId, workContextType}) => (workContextType === WORK_CONTEXT_TYPE)
     ? tagAdapter.updateOne({
       id: workContextId,
       changes: {
-        taskIds: arrayMoveLeft(state.entities[workContextId].taskIds, taskId)
+        taskIds: arrayMoveLeft((state.entities[workContextId] as Tag).taskIds, taskId)
       }
     }, state)
     : state
   ),
 
-  on(moveTaskDownInTodayList, (state, {taskId, workContextId, workContextType}) => (workContextType === WORK_CONTEXT_TYPE)
+  on(moveTaskDownInTodayList, (state: TagState, {taskId, workContextId, workContextType}) => (workContextType === WORK_CONTEXT_TYPE)
     ? tagAdapter.updateOne({
       id: workContextId,
       changes: {
-        taskIds: arrayMoveRight(state.entities[workContextId].taskIds, taskId)
+        taskIds: arrayMoveRight((state.entities[workContextId] as Tag).taskIds, taskId)
       }
     }, state)
     : state
   ),
-
 
   // INTERNAL
   // --------
-  on(tagActions.addTag, (state, {tag}) => tagAdapter.addOne(tag, state)),
+  on(tagActions.addTag, (state: TagState, {tag}) => tagAdapter.addOne(tag, state)),
 
-  on(tagActions.updateTag, (state, {tag}) => tagAdapter.updateOne(tag, state)),
+  on(tagActions.updateTag, (state: TagState, {tag}) => tagAdapter.updateOne(tag, state)),
 
-  on(tagActions.upsertTag, (state, {tag}) => tagAdapter.upsertOne(tag, state)),
+  on(tagActions.upsertTag, (state: TagState, {tag}) => tagAdapter.upsertOne(tag, state)),
 
-  on(tagActions.deleteTag, (state, {id}) => tagAdapter.removeOne(id, state)),
+  on(tagActions.deleteTag, (state: TagState, {id}) => tagAdapter.removeOne(id, state)),
 
-  on(tagActions.deleteTags, (state, {ids}) => tagAdapter.removeMany(ids, state)),
+  on(tagActions.deleteTags, (state: TagState, {ids}) => tagAdapter.removeMany(ids, state)),
 
-  on(tagActions.updateWorkStartForTag, (state, {id, newVal, date}) => tagAdapter.updateOne({
+  on(tagActions.updateWorkStartForTag, (state: TagState, {id, newVal, date}) => tagAdapter.updateOne({
     id, changes: {
       workStart: {
-        ...state.entities[id].workStart,
+        ...(state.entities[id] as Tag).workStart,
         [date]: newVal,
       }
     }
   }, state)),
 
-  on(tagActions.updateWorkEndForTag, (state, {id, newVal, date}) => tagAdapter.updateOne({
+  on(tagActions.updateWorkEndForTag, (state: TagState, {id, newVal, date}) => tagAdapter.updateOne({
     id, changes: {
       workEnd: {
-        ...state.entities[id].workEnd,
+        ...(state.entities[id] as Tag).workEnd,
         [date]: newVal,
       }
     }
   }, state)),
 
-  on(tagActions.addToBreakTimeForTag, (state, {id, valToAdd, date}) => {
-      const oldTag = state.entities[id];
+  on(tagActions.addToBreakTimeForTag, (state: TagState, {id, valToAdd, date}) => {
+      const oldTag = state.entities[id] as Tag;
       const oldBreakTime = oldTag.breakTime[date] || 0;
       const oldBreakNr = oldTag.breakNr[date] || 0;
       return tagAdapter.updateOne({
@@ -182,8 +188,8 @@ const _reducer = createReducer<TagState>(
     }
   ),
 
-  on(tagActions.updateAdvancedConfigForTag, (state, {tagId, sectionKey, data}) => {
-    const tagToUpdate = state.entities[tagId];
+  on(tagActions.updateAdvancedConfigForTag, (state: TagState, {tagId, sectionKey, data}) => {
+    const tagToUpdate = state.entities[tagId] as Tag;
     return tagAdapter.updateOne({
       id: tagId,
       changes: {
@@ -199,9 +205,8 @@ const _reducer = createReducer<TagState>(
   }),
 );
 
-
 export function tagReducer(
-  state = initialTagState,
+  state: TagState = initialTagState,
   action: Action,
 ): TagState {
   switch (action.type) {
@@ -209,18 +214,18 @@ export function tagReducer(
     // ---------
     case TaskActionTypes.AddTask: {
       const {payload} = action as AddTask;
-      const {workContextId, workContextType, task, isAddToBottom} = payload;
+      const {task, isAddToBottom} = payload;
       const updates: Update<Tag>[] = task.tagIds.map((tagId) => ({
         id: tagId,
         changes: {
           taskIds: isAddToBottom
             ? [
-              ...state.entities[tagId].taskIds,
+              ...(state.entities[tagId] as Tag).taskIds,
               task.id,
             ]
             : [
               task.id,
-              ...state.entities[tagId].taskIds
+              ...(state.entities[tagId] as Tag).taskIds
             ]
         }
       }));
@@ -233,7 +238,7 @@ export function tagReducer(
       const updates: Update<Tag>[] = task.tagIds.map(tagId => ({
         id: tagId,
         changes: {
-          taskIds: state.entities[tagId].taskIds.filter(taskIdForTag => taskIdForTag !== task.id)
+          taskIds: (state.entities[tagId] as Tag).taskIds.filter(taskIdForTag => taskIdForTag !== task.id)
         }
       }));
       return tagAdapter.updateMany(updates, state);
@@ -244,15 +249,15 @@ export function tagReducer(
       const {tasks} = payload;
       const taskIdsToMoveToArchive = tasks.map(t => t.id);
       const tagIds = unique(
-        tasks.reduce((acc, t) => ([
+        tasks.reduce((acc: string[], t: TaskWithSubTasks) => ([
           ...acc,
           ...t.tagIds
         ]), [])
       );
-      const updates: Update<Project>[] = tagIds.map(pid => ({
+      const updates: Update<Tag>[] = tagIds.map((pid: string) => ({
         id: pid,
         changes: {
-          taskIds: state.entities[pid].taskIds.filter(taskId => !taskIdsToMoveToArchive.includes(taskId)),
+          taskIds: (state.entities[pid] as Tag).taskIds.filter(taskId => !taskIdsToMoveToArchive.includes(taskId)),
         }
       }));
       return tagAdapter.updateMany(updates, state);
@@ -262,10 +267,10 @@ export function tagReducer(
     case TaskActionTypes.DeleteMainTasks: {
       const {payload} = action as DeleteMainTasks;
       const {taskIds} = payload;
-      const updates: Update<Project>[] = (state.ids as string[]).map(tagId => ({
+      const updates: Update<Tag>[] = (state.ids as string[]).map(tagId => ({
         id: tagId,
         changes: {
-          taskIds: state.entities[tagId].taskIds.filter(taskId => !taskIds.includes(taskId)),
+          taskIds: (state.entities[tagId] as Tag).taskIds.filter(taskId => !taskIds.includes(taskId)),
         }
       }));
       return tagAdapter.updateMany(updates, state);
@@ -277,11 +282,11 @@ export function tagReducer(
 
       return tagAdapter.updateMany(task.tagIds
         // NOTE: if the tag model is gone we don't update
-        .filter(tagId => !!state.entities[tagId])
+        .filter(tagId => !!(state.entities[tagId] as Tag))
         .map(tagId => ({
             id: tagId,
             changes: {
-              taskIds: [...state.entities[tagId].taskIds, task.id]
+              taskIds: [...(state.entities[tagId] as Tag).taskIds, task.id]
             }
           })
         ), state);
@@ -296,13 +301,13 @@ export function tagReducer(
       const removeFrom: Update<Tag>[] = removedFrom.map(tagId => ({
         id: tagId,
         changes: {
-          taskIds: state.entities[tagId].taskIds.filter(id => id !== taskId),
+          taskIds: (state.entities[tagId] as Tag).taskIds.filter(id => id !== taskId),
         }
       }));
       const addTo: Update<Tag>[] = addedTo.map(tagId => ({
         id: tagId,
         changes: {
-          taskIds: [...state.entities[tagId].taskIds, taskId],
+          taskIds: [...(state.entities[tagId] as Tag).taskIds, taskId],
         }
       }));
       return tagAdapter.updateMany([...removeFrom, ...addTo], state);

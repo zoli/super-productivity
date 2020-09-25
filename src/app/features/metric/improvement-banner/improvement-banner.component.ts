@@ -1,10 +1,10 @@
-import {ChangeDetectionStrategy, Component, OnDestroy} from '@angular/core';
-import {Improvement} from '../improvement/improvement.model';
-import {ImprovementService} from '../improvement/improvement.service';
-import {getWorklogStr} from '../../../util/get-work-log-str';
-import {improvementBannerAnimation} from './improvement-banner.ani';
-import {Subscription} from 'rxjs';
-import {T} from '../../../t.const';
+import { ChangeDetectionStrategy, Component, OnDestroy } from '@angular/core';
+import { Improvement } from '../improvement/improvement.model';
+import { ImprovementService } from '../improvement/improvement.service';
+import { getWorklogStr } from '../../../util/get-work-log-str';
+import { improvementBannerAnimation } from './improvement-banner.ani';
+import { Subscription } from 'rxjs';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'improvement-banner',
@@ -14,15 +14,15 @@ import {T} from '../../../t.const';
   animations: [improvementBannerAnimation]
 })
 export class ImprovementBannerComponent implements OnDestroy {
-  T = T;
-  improvements: Improvement[];
+  T: typeof T = T;
+  improvements: Improvement[] = [];
 
-  private _subs = new Subscription();
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public improvementService: ImprovementService,
   ) {
-    this._subs.add(this.improvementService.improvementBannerImprovements$.subscribe(val => this.improvements = val));
+    this._subs.add(this.improvementService.improvementBannerImprovements$.subscribe(val => this.improvements = val || []));
   }
 
   ngOnDestroy(): void {
@@ -37,4 +37,9 @@ export class ImprovementBannerComponent implements OnDestroy {
     this.improvementService.addCheckedDay(improvement.id, getWorklogStr());
     this.improvementService.hideImprovement(improvement.id);
   }
+
+  trackById(i: number, improvement: Improvement): string {
+    return improvement.id;
+  }
+
 }

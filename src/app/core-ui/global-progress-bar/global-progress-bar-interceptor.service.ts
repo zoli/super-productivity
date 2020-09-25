@@ -1,13 +1,11 @@
-import {Injectable} from '@angular/core';
-import {HttpEvent, HttpHandler, HttpInterceptor, HttpRequest} from '@angular/common/http';
-import {Observable} from 'rxjs';
-import {finalize} from 'rxjs/operators';
-import {GlobalProgressBarService} from './global-progress-bar.service';
+import { Injectable } from '@angular/core';
+import { HttpEvent, HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { finalize } from 'rxjs/operators';
+import { GlobalProgressBarService } from './global-progress-bar.service';
 import axios from 'axios';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class GlobalProgressBarInterceptorService implements HttpInterceptor {
 
   constructor(
@@ -15,7 +13,7 @@ export class GlobalProgressBarInterceptorService implements HttpInterceptor {
   ) {
 
     axios.interceptors.request.use((config) => {
-      this.globalProgressBarService.countUp(config.url);
+      this.globalProgressBarService.countUp(config.url as string);
       return config;
     }, (error) => {
       this.globalProgressBarService.countDown();
@@ -31,7 +29,7 @@ export class GlobalProgressBarInterceptorService implements HttpInterceptor {
     });
   }
 
-  intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+  intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     this.globalProgressBarService.countUp(req.url);
     return next.handle(req).pipe(
       finalize(() => {

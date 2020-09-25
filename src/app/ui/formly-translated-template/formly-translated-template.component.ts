@@ -1,7 +1,7 @@
-import {ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import {FieldType} from '@ngx-formly/core';
-import {Subscription} from 'rxjs';
-import {TranslateService} from '@ngx-translate/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { FieldType } from '@ngx-formly/core';
+import { Subscription } from 'rxjs';
+import { TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'formly-translated-template',
@@ -11,10 +11,10 @@ import {TranslateService} from '@ngx-translate/core';
 })
 export class FormlyTranslatedTemplateComponent extends FieldType implements OnInit, OnDestroy {
 
-  @ViewChild('tplWrapper', {static: true}) tplWrapper: ElementRef;
+  @ViewChild('tplWrapper', {static: true}) tplWrapper?: ElementRef;
 
-  private _el: HTMLElement;
-  private _subs = new Subscription();
+  private _el?: HTMLElement;
+  private _subs: Subscription = new Subscription();
 
   constructor(
     private _translateService: TranslateService,
@@ -23,7 +23,11 @@ export class FormlyTranslatedTemplateComponent extends FieldType implements OnIn
   }
 
   ngOnInit(): void {
+    if (!this.field.templateOptions) {
+      throw new Error();
+    }
     this._createTag();
+
     const translationId = this.field.templateOptions.text;
     if (!translationId) {
       console.warn('No translation id provided');
@@ -31,7 +35,7 @@ export class FormlyTranslatedTemplateComponent extends FieldType implements OnIn
     }
 
     this._subs.add(this._translateService.stream(translationId).subscribe((translationString) => {
-      this._el.innerHTML = translationString;
+      (this._el as HTMLElement).innerHTML = translationString;
     }));
   }
 
@@ -40,6 +44,9 @@ export class FormlyTranslatedTemplateComponent extends FieldType implements OnIn
   }
 
   private _createTag() {
+    if (!this.field.templateOptions || !this.tplWrapper) {
+      throw new Error();
+    }
     const tag = this.field.templateOptions.tag || 'div';
     const tplWrapperEl = this.tplWrapper.nativeElement;
 
@@ -47,7 +54,7 @@ export class FormlyTranslatedTemplateComponent extends FieldType implements OnIn
       this._el = document.createElement(tag);
 
       if (this.field.templateOptions.class) {
-        this._el.classList.add(this.field.templateOptions.class);
+        (this._el as HTMLElement).classList.add(this.field.templateOptions.class);
       }
 
       this.tplWrapper.nativeElement.append(this._el);

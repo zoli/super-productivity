@@ -1,14 +1,12 @@
-import {Injectable} from '@angular/core';
-import {Observable} from 'rxjs';
-import {map, shareReplay, switchMap} from 'rxjs/operators';
-import {TaskService} from './task.service';
-import {ReminderService} from '../reminder/reminder.service';
-import {TaskWithReminderData} from './task.model';
-import {devError} from '../../util/dev-error';
+import { Injectable } from '@angular/core';
+import { forkJoin, Observable, of } from 'rxjs';
+import { map, shareReplay, switchMap } from 'rxjs/operators';
+import { TaskService } from './task.service';
+import { ReminderService } from '../reminder/reminder.service';
+import { TaskWithReminderData } from './task.model';
+import { devError } from '../../util/dev-error';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class ScheduledTaskService {
   allScheduledTasks$: Observable<TaskWithReminderData[]> = this._reminderService.reminders$.pipe(
     map((reminders) => reminders.filter(
@@ -29,15 +27,21 @@ export class ScheduledTaskService {
             task => ({
               ...task,
               reminderData: reminders.find(reminder => reminder.relatedId === task.id)
-            })),
+            } as TaskWithReminderData)),
+        ),
+        switchMap((tasks: TaskWithReminderData[]) => forkJoin(tasks.map(task => !!task.parentId
+          ? this._taskService.getByIdOnce$(task.parentId).pipe(map(parentData => ({
+            ...task,
+            parentData
+          })))
+          : of(task)))
         ),
       );
     }),
-    map(tasks => tasks
+    map((tasks: TaskWithReminderData[]) => tasks
       .sort((a, b) => a.reminderData.remindAt - b.reminderData.remindAt)),
     shareReplay(1),
   );
-
 
   constructor(
     private _taskService: TaskService,

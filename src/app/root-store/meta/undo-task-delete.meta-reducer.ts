@@ -1,15 +1,15 @@
-import {RootState} from '../root-state';
-import {Dictionary} from '@ngrx/entity';
-import {Task, TaskWithSubTasks} from '../../features/tasks/task.model';
-import {TaskActionTypes} from '../../features/tasks/store/task.actions';
-import {PROJECT_FEATURE_NAME, projectAdapter} from '../../features/project/store/project.reducer';
-import {TASK_FEATURE_NAME} from '../../features/tasks/store/task.reducer';
-import {TAG_FEATURE_NAME, tagAdapter} from '../../features/tag/store/tag.reducer';
-import {taskAdapter} from '../../features/tasks/store/task.adapter';
-
+import { RootState } from '../root-state';
+import { Dictionary } from '@ngrx/entity';
+import { Task, TaskWithSubTasks } from '../../features/tasks/task.model';
+import { TaskActionTypes } from '../../features/tasks/store/task.actions';
+import { PROJECT_FEATURE_NAME, projectAdapter } from '../../features/project/store/project.reducer';
+import { TASK_FEATURE_NAME } from '../../features/tasks/store/task.reducer';
+import { TAG_FEATURE_NAME, tagAdapter } from '../../features/tag/store/tag.reducer';
+import { taskAdapter } from '../../features/tasks/store/task.adapter';
+import { Project } from '../../features/project/project.model';
 
 export interface UndoTaskDeleteState {
-  projectId: string;
+  projectId: string | null;
   taskIdsForProjectBacklog?: string[];
   taskIdsForProject?: string[];
 
@@ -25,25 +25,28 @@ export interface UndoTaskDeleteState {
 
 let U_STORE: UndoTaskDeleteState;
 
-export const undoTaskDeleteMetaReducer = (reducer) => {
-  return (state: RootState, action) => {
+export const undoTaskDeleteMetaReducer = (reducer: any): any => {
+  return (state: RootState, action: any) => {
 
     switch (action.type) {
       case TaskActionTypes.DeleteTask:
         U_STORE = _createTaskDeleteState(state, action.payload.task);
         return reducer(state, action);
 
-
       case TaskActionTypes.UndoDeleteTask:
-        console.log(U_STORE, state);
-
         let updatedState = state;
+        const tasksToRestore: Task[] = Object.keys(U_STORE.deletedTaskEntities).map(
+          (id: string) => U_STORE.deletedTaskEntities[id]
+        ).filter(t => {
+          if (!t) {
+            throw new Error('Task Restore Error: Missing task data when restoruii');
+          }
+          return true;
+        }) as Task[];
+
         updatedState = {
           ...updatedState,
-          [TASK_FEATURE_NAME]: taskAdapter.addMany(
-            Object.keys(U_STORE.deletedTaskEntities).map(
-              id => U_STORE.deletedTaskEntities[id]
-            ), updatedState[TASK_FEATURE_NAME]
+          [TASK_FEATURE_NAME]: taskAdapter.addMany(tasksToRestore, updatedState[TASK_FEATURE_NAME]
           ),
         };
 
@@ -63,12 +66,20 @@ export const undoTaskDeleteMetaReducer = (reducer) => {
           updatedState = {
             ...updatedState,
             [TAG_FEATURE_NAME]: tagAdapter.updateMany(
-              Object.keys(U_STORE.tagTaskIdMap).map(id => ({
-                  id,
-                  changes: {
-                    taskIds: U_STORE.tagTaskIdMap[id]
+              Object.keys(U_STORE.tagTaskIdMap).map(id => {
+                  if (!U_STORE.tagTaskIdMap) {
+                    throw new Error('Task Restore Error: Missing tagTaskIdMap data for restoring task');
                   }
-                })
+                  if (!U_STORE.tagTaskIdMap[id]) {
+                    throw new Error('Task Restore Error: Missing tag data for restoring task');
+                  }
+                  return {
+                    id,
+                    changes: {
+                      taskIds: U_STORE.tagTaskIdMap[id]
+                    }
+                  };
+                }
               ), updatedState[TAG_FEATURE_NAME]),
           };
         }
@@ -112,22 +123,43 @@ const _createTaskDeleteState = (state: RootState, task: TaskWithSubTasks): UndoT
 
   // SUB TASK CASE
   // Note: should work independent as sub tasks dont show up in tag or project lists
-  if (task.parentId) {
+  if (task.parentId !== null) {
     return {
       projectId: task.projectId,
       parentTaskId: task.parentId,
-      subTaskIds: taskEntities[task.parentId].subTaskIds,
+      subTaskIds: (taskEntities[task.parentId] as Task).subTaskIds,
       deletedTaskEntities,
     };
   } else {
     // PROJECT CASE
-    const project = state[PROJECT_FEATURE_NAME].entities[task.projectId];
-    const taskIdsForProjectBacklog = (task.projectId && project.backlogTaskIds);
-    const taskIdsForProject = (task.projectId && project.taskIds);
+    const project: (Project | undefined) = state[PROJECT_FEATURE_NAME].entities[task.projectId as string];
+    const isProjectTask = (task.projectId !== null && project !== undefined);
+
+    let taskIdsForProjectBacklog;
+    let taskIdsForProject;
+    if (isProjectTask) {
+      taskIdsForProjectBacklog = (project as Project).backlogTaskIds;
+      taskIdsForProject = (project as Project).taskIds;
+      if (!taskIdsForProject || !taskIdsForProjectBacklog || (!taskIdsForProjectBacklog.length && !taskIdsForProject.length)) {
+        console.log('------ERR_ADDITIONAL_INFO------');
+        console.log('project', project);
+        console.log('taskIdsForProject', taskIdsForProject);
+        console.log('taskIdsForProjectBacklog', taskIdsForProjectBacklog);
+        throw new Error('Invalid project data');
+      }
+    }
 
     const tagState = state[TAG_FEATURE_NAME];
     const tagTaskIdMap = (task.tagIds).reduce((acc, id) => {
       const tag = tagState.entities[id];
+      if (!tag) {
+        console.log('------ERR_ADDITIONAL_INFO------');
+        console.log('id', id);
+        console.log('tagState', tagState);
+        console.log('tagTaskIdMap', tagTaskIdMap);
+        throw new Error('Task Restore Error: Missing tag');
+      }
+
       if (tag.taskIds.includes(task.id)) {
         return {
           ...acc,
@@ -138,7 +170,6 @@ const _createTaskDeleteState = (state: RootState, task: TaskWithSubTasks): UndoT
       }
     }, {});
 
-    // TODO handle sub task only case
     return {
       projectId: task.projectId,
       taskIdsForProjectBacklog,

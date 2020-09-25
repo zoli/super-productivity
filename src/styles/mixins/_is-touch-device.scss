@@ -1,19 +1,11 @@
-@mixin touchDevice {
-  :host-context(.isTouchDevice) & {
+@mixin touchOnlyDevice {
+  :host-context(.isTouchOnly) & {
     @content;
   }
 }
 
-@mixin noTouchDevice {
-  :host-context(.isNoTouchDevice) & {
+@mixin noTouchOnly {
+  :host-context(.isNoTouchOnly) & {
     @content;
-  }
-}
-
-@mixin mobileTouchDevice {
-  @include mq(sm, max) {
-    :host-context(.isTouchDevice) & {
-      @content;
-    }
   }
 }

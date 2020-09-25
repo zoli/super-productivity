@@ -1,10 +1,10 @@
-import {Injectable} from '@angular/core';
-import {Observable, of} from 'rxjs';
-import {Project} from './project.model';
-import {PersistenceService} from '../../core/persistence/persistence.service';
-import {select, Store} from '@ngrx/store';
-import {ProjectActionTypes, UpdateProjectOrder} from './store/project.actions';
-import shortid from 'shortid';
+import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { Project } from './project.model';
+import { PersistenceService } from '../../core/persistence/persistence.service';
+import { select, Store } from '@ngrx/store';
+import { ProjectActionTypes, UpdateProjectOrder } from './store/project.actions';
+import * as shortid from 'shortid';
 import {
   selectArchivedProjects,
   selectGithubCfgByProjectId,
@@ -16,19 +16,19 @@ import {
   selectUnarchivedProjects,
   selectUnarchivedProjectsWithoutCurrent
 } from './store/project.reducer';
-import {IssueIntegrationCfg, IssueProviderKey} from '../issue/issue.model';
-import {JiraCfg} from '../issue/providers/jira/jira.model';
-import {GithubCfg} from '../issue/providers/github/github.model';
-import {Actions, ofType} from '@ngrx/effects';
-import {map, shareReplay, switchMap, take} from 'rxjs/operators';
-import {isValidProjectExport} from './util/is-valid-project-export';
-import {SnackService} from '../../core/snack/snack.service';
-import {T} from '../../t.const';
-import {BreakNr, BreakTime, WorkContextType} from '../work-context/work-context.model';
-import {WorkContextService} from '../work-context/work-context.service';
-import {GITHUB_TYPE, GITLAB_TYPE, JIRA_TYPE} from '../issue/issue.const';
-import {GitlabCfg} from '../issue/providers/gitlab/gitlab';
-import {ExportedProject} from './project-archive.model';
+import { IssueIntegrationCfg, IssueProviderKey } from '../issue/issue.model';
+import { JiraCfg } from '../issue/providers/jira/jira.model';
+import { GithubCfg } from '../issue/providers/github/github.model';
+import { Actions, ofType } from '@ngrx/effects';
+import { map, shareReplay, switchMap, take } from 'rxjs/operators';
+import { isValidProjectExport } from './util/is-valid-project-export';
+import { SnackService } from '../../core/snack/snack.service';
+import { T } from '../../t.const';
+import { BreakNr, BreakTime, WorkContextType } from '../work-context/work-context.model';
+import { WorkContextService } from '../work-context/work-context.service';
+import { GITHUB_TYPE, GITLAB_TYPE, JIRA_TYPE } from '../issue/issue.const';
+import { GitlabCfg } from '../issue/providers/gitlab/gitlab';
+import { ExportedProject } from './project-archive.model';
 
 @Injectable({
   providedIn: 'root',
@@ -38,8 +38,8 @@ export class ProjectService {
 
   archived$: Observable<Project[]> = this._store$.pipe(select(selectArchivedProjects));
 
-  currentProject$: Observable<Project> = this._workContextService.activeWorkContextTypeAndId$.pipe(
-    switchMap(({activeId, activeType}) => activeType === WorkContextType.PROJECT
+  currentProject$: Observable<Project | null> = this._workContextService.activeWorkContextTypeAndId$.pipe(
+    switchMap(({activeId, activeType}) => (activeType === WorkContextType.PROJECT)
       ? this.getByIdLive$(activeId)
       : of(null)
     ),
@@ -59,8 +59,18 @@ export class ProjectService {
     )
   );
 
-
   // DYNAMIC
+
+  constructor(
+    private readonly _persistenceService: PersistenceService,
+    private readonly _snackService: SnackService,
+    private readonly _workContextService: WorkContextService,
+    // TODO correct type?
+    private readonly _store$: Store<any>,
+    private readonly _actions$: Actions,
+  ) {
+  }
+
   // -------
   getJiraCfgForProject$(projectId: string): Observable<JiraCfg> {
     return this._store$.pipe(select(selectJiraCfgByProjectId, {id: projectId}));
@@ -74,7 +84,7 @@ export class ProjectService {
     return this._store$.pipe(select(selectGitlabCfgByProjectId, {id: projectId}));
   }
 
-  getProjectsWithoutId$(projectId: string): Observable<Project[]> {
+  getProjectsWithoutId$(projectId: string | null): Observable<Project[]> {
     return this._store$.pipe(select(selectUnarchivedProjectsWithoutCurrent, {currentId: projectId}));
   }
 
@@ -86,7 +96,6 @@ export class ProjectService {
     return this._store$.pipe(select(selectProjectBreakTimeForProject, {id: projectId}));
   }
 
-
   getIssueProviderCfgForProject$(projectId: string, issueProviderKey: IssueProviderKey): Observable<IssueIntegrationCfg> {
     if (issueProviderKey === GITHUB_TYPE) {
       return this.getGithubCfgForProject$(projectId);
@@ -97,17 +106,6 @@ export class ProjectService {
     } else {
       throw new Error('Invalid IssueProviderKey');
     }
-  }
-
-
-  constructor(
-    private readonly _persistenceService: PersistenceService,
-    private readonly _snackService: SnackService,
-    private readonly _workContextService: WorkContextService,
-    // TODO correct type?
-    private readonly _store$: Store<any>,
-    private readonly _actions$: Actions,
-  ) {
   }
 
   archive(projectId: string) {
@@ -125,6 +123,9 @@ export class ProjectService {
   }
 
   getByIdOnce$(id: string): Observable<Project> {
+    if (!id) {
+      throw new Error('No id given');
+    }
     return this._store$.pipe(select(selectProjectById, {id}), take(1));
   }
 
@@ -155,7 +156,7 @@ export class ProjectService {
     });
   }
 
-  remove(projectId) {
+  remove(projectId: string) {
     this._store$.dispatch({
       type: ProjectActionTypes.DeleteProject,
       payload: {id: projectId}
@@ -178,7 +179,7 @@ export class ProjectService {
     projectId: string,
     issueProviderKey: IssueProviderKey,
     providerCfg: Partial<IssueIntegrationCfg>,
-    isOverwrite = false
+    isOverwrite: boolean = false
   ) {
     this._store$.dispatch({
       type: ProjectActionTypes.UpdateProjectIssueProviderCfg,
@@ -190,7 +191,6 @@ export class ProjectService {
       }
     });
   }
-
 
   updateOrder(ids: string[]) {
     this._store$.dispatch(new UpdateProjectOrder({ids}));

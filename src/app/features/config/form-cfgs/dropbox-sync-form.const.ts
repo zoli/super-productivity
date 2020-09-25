@@ -1,8 +1,7 @@
 // tslint:disable:max-line-length
-import {T} from '../../../t.const';
-import {ConfigFormSection, DropboxSyncConfig} from '../global-config.model';
-import {DROPBOX_AUTH_CODE_URL} from '../../dropbox/dropbox.const';
-
+import { T } from '../../../t.const';
+import { ConfigFormSection, DropboxSyncConfig } from '../global-config.model';
+import { DROPBOX_AUTH_CODE_URL } from '../../dropbox/dropbox.const';
 
 export const DROPBOX_SYNC_FORM: ConfigFormSection<DropboxSyncConfig> = {
   title: T.F.DROPBOX.FORM.TITLE,
@@ -34,6 +33,7 @@ export const DROPBOX_SYNC_FORM: ConfigFormSection<DropboxSyncConfig> = {
       hideExpression: ((model: DropboxSyncConfig) => !!model.accessToken || !model.authCode),
       templateOptions: {
         tag: 'button',
+        class: 'mat-raised-button',
         text: T.F.DROPBOX.FORM.B_GENERATE_TOKEN,
       },
     },

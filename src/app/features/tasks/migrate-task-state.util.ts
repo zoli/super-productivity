@@ -1,25 +1,28 @@
-import {Dictionary} from '@ngrx/entity';
-import {ArchiveTask, Task, TaskArchive, TaskState} from './task.model';
-import {GITHUB_TYPE} from '../issue/issue.const';
-import {MODEL_VERSION_KEY, WORKLOG_DATE_STR_FORMAT} from '../../app.constants';
+import { Dictionary } from '@ngrx/entity';
+import { ArchiveTask, Task, TaskArchive, TaskCopy, TaskState } from './task.model';
+import { GITHUB_TYPE } from '../issue/issue.const';
+import { MODEL_VERSION_KEY, WORKLOG_DATE_STR_FORMAT } from '../../app.constants';
 import * as moment from 'moment';
-import {convertToWesternArabic} from '../../util/numeric-converter';
+import { convertToWesternArabic } from '../../util/numeric-converter';
+import { isMigrateModel } from '../../util/model-version';
 
-const MODEL_VERSION = 3.1313;
+const MODEL_VERSION = 3.3334;
 export const LEGACY_GITHUB_TYPE = 'GIT';
 
 export const migrateTaskState = (taskState: TaskState): TaskState => {
-  if (!taskState || (taskState && taskState[MODEL_VERSION_KEY] === MODEL_VERSION)) {
+  if (!isMigrateModel(taskState, MODEL_VERSION, 'Task')) {
     return taskState;
   }
 
   const taskEntities: Dictionary<Task> = _addProjectIdForSubTasksAndRemoveTags({...taskState.entities});
+
   Object.keys(taskEntities).forEach((key) => {
-    taskEntities[key] = _addNewIssueFields(taskEntities[key]);
-    taskEntities[key] = _replaceLegacyGitType(taskEntities[key]);
-    taskEntities[key] = _addTagIds(taskEntities[key]);
-    taskEntities[key] = _deleteUnusedFields(taskEntities[key]);
-    taskEntities[key] = _convertToWesternArabicDateKeys(taskEntities[key]);
+    taskEntities[key] = _addNewIssueFields(taskEntities[key] as TaskCopy);
+    taskEntities[key] = _makeNullAndArraysConsistent(taskEntities[key] as TaskCopy);
+    taskEntities[key] = _replaceLegacyGitType(taskEntities[key] as TaskCopy);
+    taskEntities[key] = _addTagIds(taskEntities[key] as TaskCopy);
+    taskEntities[key] = _deleteUnusedFields(taskEntities[key] as TaskCopy);
+    taskEntities[key] = _convertToWesternArabicDateKeys(taskEntities[key] as TaskCopy);
   });
 
   return {...taskState, entities: taskEntities, [MODEL_VERSION_KEY]: MODEL_VERSION};
@@ -34,10 +37,10 @@ export const migrateTaskArchiveState = (
 
   const taskEntities: Dictionary<Task> = {...taskArchiveState.entities};
   Object.keys(taskEntities).forEach((key) => {
-    taskEntities[key] = _addNewIssueFields(taskEntities[key]) as ArchiveTask;
-    taskEntities[key] = _replaceLegacyGitType(taskEntities[key]) as ArchiveTask;
-    taskEntities[key] = _deleteUnusedFields(taskEntities[key]) as ArchiveTask;
-    taskEntities[key] = _convertToWesternArabicDateKeys(taskEntities[key]) as ArchiveTask;
+    taskEntities[key] = _addNewIssueFields(taskEntities[key] as ArchiveTask);
+    taskEntities[key] = _replaceLegacyGitType(taskEntities[key] as ArchiveTask);
+    taskEntities[key] = _deleteUnusedFields(taskEntities[key] as ArchiveTask);
+    taskEntities[key] = _convertToWesternArabicDateKeys(taskEntities[key] as ArchiveTask);
   });
 
   taskArchiveState[MODEL_VERSION_KEY] = MODEL_VERSION;
@@ -107,7 +110,7 @@ const _convertToWesternArabicDateKeys = (task: Task) => {
     : task;
 };
 
-const _deleteUnusedFields = (task: Task) => {
+const _deleteUnusedFields = (task: Task): Task => {
   const {
     // legacy
     _isAdditionalInfoOpen,
@@ -118,21 +121,51 @@ const _deleteUnusedFields = (task: Task) => {
   return cleanTask;
 };
 
+const _makeNullAndArraysConsistent = (task: Task): Task => {
+  return {
+    ...task,
+
+    projectId: task.projectId ?? null,
+    doneOn: task.doneOn ?? null,
+    parentId: task.parentId ?? null,
+    reminderId: task.reminderId ?? null,
+    repeatCfgId: task.repeatCfgId ?? null,
+
+    tagIds: task.tagIds ?? [],
+    subTaskIds: task.subTaskIds ?? [],
+    attachments: task.attachments ?? [],
+
+    notes: task.notes ?? '',
+
+    isDone: task.isDone ?? false,
+
+    issueId: task.issueId ?? null,
+    issueType: task.issueType ?? null,
+    issueWasUpdated: task.issueWasUpdated ?? null,
+    issueLastUpdated: task.issueLastUpdated ?? null,
+    issueAttachmentNr: task.issueAttachmentNr ?? null,
+    issuePoints: task.issuePoints ?? null,
+  };
+};
 
 const _addProjectIdForSubTasksAndRemoveTags = (entities: Dictionary<Task>): Dictionary<Task> => {
-  const copy = {...entities};
-  Object.keys(copy).forEach(id => {
-    const task = copy[id];
+  const entitiesCopy: any = {...entities};
+  Object.keys(entitiesCopy).forEach(id => {
+    const task = entitiesCopy[id];
+    if (!task) {
+      throw new Error('No task');
+    }
+
     if (task.parentId) {
-      copy[id] = {
-        ...copy[id],
+      entitiesCopy[id] = {
+        ...entitiesCopy[id],
         tagIds: [],
-        projectId: copy[task.parentId].projectId,
+        projectId: entitiesCopy[task.parentId].projectId,
       };
     }
   });
 
-  return copy;
+  return entitiesCopy;
 };
 
 

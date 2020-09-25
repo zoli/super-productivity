@@ -1,20 +1,19 @@
-import {Inject, Injectable} from '@angular/core';
-import {loadFromLs, saveToLs} from '../../core/persistence/local-storage';
-import {LS_LOCAL_UI_HELPER} from '../../core/persistence/ls-keys.const';
-import {DOCUMENT} from '@angular/common';
-import {LocalUiHelperSettings} from './ui-helper.model';
-import {UI_LOCAL_HELPER_DEFAULT} from './ui-helper.const';
-import {ElectronService} from '../../core/electron/electron.service';
-import {IPC} from '../../../../electron/ipc-events.const';
-import {IS_ELECTRON} from '../../app.constants';
-import {fromEvent} from 'rxjs';
-import {throttleTime} from 'rxjs/operators';
+import { Inject, Injectable } from '@angular/core';
+import { loadFromRealLs, saveToRealLs } from '../../core/persistence/local-storage';
+import { LS_LOCAL_UI_HELPER } from '../../core/persistence/ls-keys.const';
+import { DOCUMENT } from '@angular/common';
+import { LocalUiHelperSettings } from './ui-helper.model';
+import { UI_LOCAL_HELPER_DEFAULT } from './ui-helper.const';
+import { ElectronService } from '../../core/electron/electron.service';
+import { IPC } from '../../../../electron/ipc-events.const';
+import { IS_ELECTRON } from '../../app.constants';
+import { fromEvent } from 'rxjs';
+import { throttleTime } from 'rxjs/operators';
+import { ipcRenderer, webFrame } from 'electron';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class UiHelperService {
-  private _webFrame = this._electronService.webFrame;
+  private _webFrame: typeof webFrame = (this._electronService.webFrame as typeof webFrame);
 
   constructor(
     @Inject(DOCUMENT) private _document: Document,
@@ -27,7 +26,7 @@ export class UiHelperService {
   }
 
   zoomTo(zoomFactor: number) {
-    if (Number.isNaN(zoomFactor) || typeof zoomFactor !== 'number') {
+    if (Number.isNaN(zoomFactor)) {
       console.error('Invalid zoom factor', zoomFactor);
       return;
     }
@@ -37,7 +36,7 @@ export class UiHelperService {
   }
 
   zoomBy(zoomBy: number) {
-    if (Number.isNaN(zoomBy) || typeof zoomBy !== 'number') {
+    if (Number.isNaN(zoomBy)) {
       console.error('Invalid zoom factor', zoomBy);
       return;
     }
@@ -48,7 +47,6 @@ export class UiHelperService {
     this._updateLocalUiHelperSettings({zoomFactor});
   }
 
-
   focusApp() {
     if (IS_ELECTRON) {
 
@@ -57,12 +55,11 @@ export class UiHelperService {
         (document.activeElement as HTMLElement).blur();
       }
 
-      this._electronService.ipcRenderer.send(IPC.SHOW_OR_FOCUS);
+      (this._electronService.ipcRenderer as typeof ipcRenderer).send(IPC.SHOW_OR_FOCUS);
     } else {
       console.error('Cannot execute focus app window in browser');
     }
   }
-
 
   private _initMousewheelZoomForElectron() {
     const ZOOM_DELTA = 0.025;
@@ -72,7 +69,7 @@ export class UiHelperService {
 
     fromEvent(this._document, 'mousewheel').pipe(
       throttleTime(20)
-    ).subscribe((event: WheelEvent) => {
+    ).subscribe((event: any) => {
       if (event && event.ctrlKey) {
         // this does not prevent scrolling unfortunately
         // event.preventDefault();
@@ -90,11 +87,11 @@ export class UiHelperService {
   }
 
   private _getLocalUiHelperSettings(): LocalUiHelperSettings {
-    return loadFromLs(LS_LOCAL_UI_HELPER) || UI_LOCAL_HELPER_DEFAULT;
+    return loadFromRealLs(LS_LOCAL_UI_HELPER) as LocalUiHelperSettings || UI_LOCAL_HELPER_DEFAULT;
   }
 
   private _updateLocalUiHelperSettings(newCfg: Partial<LocalUiHelperSettings>) {
-    saveToLs(LS_LOCAL_UI_HELPER, {
+    saveToRealLs(LS_LOCAL_UI_HELPER, {
       ...this._getLocalUiHelperSettings(),
       ...newCfg,
     });

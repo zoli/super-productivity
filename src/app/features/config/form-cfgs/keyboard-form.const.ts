@@ -1,7 +1,7 @@
 // tslint:disable:max-line-length
-import {ConfigFormSection, KeyboardConfig, LimitedFormlyFieldConfig} from '../global-config.model';
-import {T} from '../../../t.const';
-import {IS_ELECTRON} from '../../../app.constants';
+import { ConfigFormSection, KeyboardConfig, LimitedFormlyFieldConfig } from '../global-config.model';
+import { T } from '../../../t.const';
+import { IS_ELECTRON } from '../../../app.constants';
 
 export const KEYBOARD_SETTINGS_FORM_CFG: ConfigFormSection<KeyboardConfig> = {
   title: T.GCF.KEYBOARD.TITLE,
@@ -74,13 +74,13 @@ export const KEYBOARD_SETTINGS_FORM_CFG: ConfigFormSection<KeyboardConfig> = {
         label: T.GCF.KEYBOARD.ADD_NEW_NOTE
       },
     },
-    {
-      key: 'openProjectNotes',
-      type: 'keyboard',
-      templateOptions: {
-        label: T.GCF.KEYBOARD.OPEN_PROJECT_NOTES
-      },
-    },
+    // {
+    //   key: 'openProjectNotes',
+    //   type: 'keyboard',
+    //   templateOptions: {
+    //     label: T.GCF.KEYBOARD.OPEN_PROJECT_NOTES
+    //   },
+    // },
     // {
     //   key: 'openDistractionPanel',
     //   type: 'keyboard',

@@ -1,9 +1,8 @@
-import {ChangeDetectionStrategy, Component, OnInit, ViewChild} from '@angular/core';
-import {FieldType} from '@ngx-formly/material';
-import {MatInput} from '@angular/material/input';
-import {MATERIAL_ICONS} from '../../../ui/material-icons.const';
-import {Observable} from 'rxjs';
-import {filter, map, startWith} from 'rxjs/operators';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
+import { FieldType } from '@ngx-formly/material';
+import { MATERIAL_ICONS } from '../../../ui/material-icons.const';
+import { Observable } from 'rxjs';
+import { filter, map, startWith } from 'rxjs/operators';
 
 @Component({
   selector: 'icon-input',
@@ -12,11 +11,10 @@ import {filter, map, startWith} from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class IconInputComponent extends FieldType implements OnInit {
-  @ViewChild(MatInput) formFieldControl: MatInput;
+  // @ViewChild(MatInput) formFieldControl: MatInput;
 
   customIcons: string[] = MATERIAL_ICONS;
-  filteredIcons$: Observable<string[]>;
-
+  filteredIcons$?: Observable<string[]>;
 
   get type() {
     return this.to.type || 'text';
@@ -35,5 +33,9 @@ export class IconInputComponent extends FieldType implements OnInit {
         );
       }),
     );
+  }
+
+  trackByIndex(i: number, p: any) {
+    return i;
   }
 }

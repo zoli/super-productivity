@@ -10,10 +10,10 @@ import {
   Output,
   ViewChild
 } from '@angular/core';
-import shortid from 'shortid';
+import * as shortid from 'shortid';
 import * as moment from 'moment';
-import {dotAnimation} from './dot.ani';
-import {T} from '../../../t.const';
+import { dotAnimation } from './dot.ani';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'input-duration-slider',
@@ -23,31 +23,31 @@ import {T} from '../../../t.const';
   animations: [dotAnimation],
 })
 export class InputDurationSliderComponent implements OnInit, OnDestroy {
-  T = T;
-  minutesBefore = 0;
-  dots: any[];
+  T: typeof T = T;
+  minutesBefore: number = 0;
+  dots: any[] = [];
   uid: string = 'duration-input-slider' + shortid();
   el: HTMLElement;
 
-  startHandler: (ev: any) => void;
-  endHandler: () => void;
-  moveHandler: (ev: any) => void;
+  startHandler?: (ev: any) => void;
+  endHandler?: () => void;
+  moveHandler?: (ev: any) => void;
 
-  @ViewChild('circleEl', {static: true}) circleEl: ElementRef;
+  @ViewChild('circleEl', {static: true}) circleEl?: ElementRef;
 
-  @Input() label: string;
+  @Input() label: string = '';
   @Output() modelChange: EventEmitter<number> = new EventEmitter();
 
   constructor(
     private _el: ElementRef,
     private _cd: ChangeDetectorRef,
   ) {
-    this.el = _el.nativeElement;
+    this.el = this._el.nativeElement;
   }
 
-  _model: number;
+  _model: number = 0;
 
-  @Input() set model(val) {
+  @Input() set model(val: number) {
     if (this._model !== val) {
       this._model = val;
       this.setRotationFromValue(val);
@@ -56,6 +56,11 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.startHandler = (ev) => {
+
+      if (!this.endHandler || !this.moveHandler || !this.circleEl) {
+        throw new Error();
+      }
+
       // don't execute when clicked on label or input
       if (ev.target.tagName === 'LABEL' || ev.target.tagName === 'INPUT') {
         this.endHandler();
@@ -77,11 +82,14 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
           ev.target.tagName === 'INPUT')) {
         return;
       }
+      if (!this.endHandler || !this.moveHandler || !this.circleEl) {
+        throw new Error();
+      }
 
       // prevent touchmove
       ev.preventDefault();
 
-      function convertThetaToCssDegrees(thetaIN) {
+      function convertThetaToCssDegrees(thetaIN: number) {
         return 90 - thetaIN;
       }
 
@@ -110,6 +118,10 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
     };
 
     this.endHandler = () => {
+      if (!this.endHandler || !this.moveHandler || !this.circleEl) {
+        throw new Error();
+      }
+
       this.el.classList.remove('is-dragging');
       this.el.removeEventListener('mousemove', this.moveHandler);
       document.removeEventListener('mouseup', this.endHandler);
@@ -127,6 +139,10 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (!this.endHandler || !this.moveHandler || !this.startHandler || !this.circleEl) {
+      throw new Error();
+    }
+
     // remove mouse events
     this.el.removeEventListener('mousedown', this.startHandler);
     this.el.removeEventListener('mousemove', this.moveHandler);
@@ -138,18 +154,23 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
     document.removeEventListener('touchend', this.endHandler);
   }
 
-  setCircleRotation(cssDegrees) {
+  setCircleRotation(cssDegrees: number) {
+    if (!this.circleEl) {
+      throw new Error();
+    }
     this.circleEl.nativeElement.style.transform = 'rotate(' + cssDegrees + 'deg)';
   }
 
-  setDots(hours = 0) {
+  setDots(hours: number = 0) {
     if (hours > 12) {
       hours = 12;
     }
+    console.log(hours);
+
     this.dots = new Array(hours);
   }
 
-  setValueFromRotation(degrees) {
+  setValueFromRotation(degrees: number) {
     const THRESHOLD = 40;
 
     let minutesFromDegrees;
@@ -160,7 +181,6 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
       minutesFromDegrees = ((degrees + 360) / 360 * 60);
     }
 
-    minutesFromDegrees = parseInt(minutesFromDegrees, 10);
     minutesFromDegrees = Math.round(minutesFromDegrees / 5) * 5;
 
     if (minutesFromDegrees >= 60) {
@@ -178,7 +198,6 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
     } else if ((-1 * minuteDelta) > THRESHOLD) {
       hours++;
     }
-
 
     if (hours < 0) {
       hours = 0;
@@ -199,13 +218,14 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
     this._cd.detectChanges();
   }
 
-  onInputChange($event) {
+  onInputChange($event: number) {
     this._model = $event;
     this.modelChange.emit(this._model);
     this.setRotationFromValue();
   }
 
-  setRotationFromValue(val = this._model) {
+  setRotationFromValue(val: number = this._model) {
+    console.log(val);
     const momentVal = moment.duration({
       milliseconds: val
     });
@@ -216,5 +236,9 @@ export class InputDurationSliderComponent implements OnInit, OnDestroy {
     this.minutesBefore = minutes;
     this.setCircleRotation(degrees);
     this._cd.detectChanges();
+  }
+
+  trackByIndex(i: number, p: any) {
+    return i;
   }
 }

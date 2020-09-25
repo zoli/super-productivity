@@ -1,5 +1,5 @@
-import {ChangeDetectionStrategy, Component, Input, OnInit} from '@angular/core';
-import {expandFadeAnimation} from '../animations/expand.ani';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { expandFadeAnimation } from '../animations/expand.ani';
 
 @Component({
   selector: 'help-section',
@@ -8,13 +8,10 @@ import {expandFadeAnimation} from '../animations/expand.ani';
   changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [expandFadeAnimation]
 })
-export class HelpSectionComponent implements OnInit {
-  @Input() isShowHelp: boolean;
+export class HelpSectionComponent {
+  @Input() isShowHelp: boolean = false;
 
   constructor() {
-  }
-
-  ngOnInit() {
   }
 
 }

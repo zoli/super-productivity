@@ -1,8 +1,8 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
-import {Task} from '../task.model';
-import {getWorklogStr} from '../../../util/get-work-log-str';
-import {TaskService} from '../task.service';
-import {T} from '../../../t.const';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { Task } from '../task.model';
+import { getWorklogStr } from '../../../util/get-work-log-str';
+import { TaskService } from '../task.service';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'task-summary-table',
@@ -11,11 +11,11 @@ import {T} from '../../../t.const';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TaskSummaryTableComponent {
-  @Input() flatTasks: Task[];
+  @Input() flatTasks: Task[] = [];
   @Input() day: string = getWorklogStr();
-  @Output() updated = new EventEmitter<void>();
+  @Output() updated: EventEmitter<void> = new EventEmitter();
 
-  T = T;
+  T: typeof T = T;
 
   constructor(
     private _taskService: TaskService,

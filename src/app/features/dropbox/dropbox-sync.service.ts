@@ -1,32 +1,31 @@
-import {Injectable} from '@angular/core';
-import {GlobalConfigService} from '../config/global-config.service';
-import {combineLatest, Observable} from 'rxjs';
-import {DropboxSyncConfig} from '../config/global-config.model';
-import {concatMap, distinctUntilChanged, first, map, take, tap} from 'rxjs/operators';
-import {DropboxApiService} from './dropbox-api.service';
-import {DROPBOX_SYNC_FILE_PATH} from './dropbox.const';
-import {AppDataComplete} from '../../imex/sync/sync.model';
-import {SyncService} from '../../imex/sync/sync.service';
-import {DataInitService} from '../../core/data-init/data-init.service';
+import { Injectable } from '@angular/core';
+import { GlobalConfigService } from '../config/global-config.service';
+import { combineLatest, Observable } from 'rxjs';
+import { DropboxSyncConfig } from '../config/global-config.model';
+import { concatMap, distinctUntilChanged, first, map, take, tap } from 'rxjs/operators';
+import { DropboxApiService } from './dropbox-api.service';
+import { DROPBOX_SYNC_FILE_PATH } from './dropbox.const';
+import { AppDataComplete } from '../../imex/sync/sync.model';
+import { SyncService } from '../../imex/sync/sync.service';
+import { DataInitService } from '../../core/data-init/data-init.service';
 import {
   LS_DROPBOX_LAST_LOCAL_REVISION,
   LS_DROPBOX_LOCAL_LAST_SYNC,
   LS_DROPBOX_LOCAL_LAST_SYNC_CHECK
 } from '../../core/persistence/ls-keys.const';
-import {DropboxConflictResolution, DropboxFileMetadata} from './dropbox.model';
-import {DataImportService} from '../../imex/sync/data-import.service';
-import {checkForUpdate, UpdateCheckResult} from '../../imex/sync/check-for-update.util';
-import {dbxLog} from './dropbox-log.util';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogDbxSyncConflictComponent} from './dialog-dbx-sync-conflict/dialog-dbx-sync-conflict.component';
-import {SnackService} from '../../core/snack/snack.service';
-import {environment} from '../../../environments/environment';
-import {T} from '../../t.const';
+import { DropboxConflictResolution, DropboxFileMetadata } from './dropbox.model';
+import { DataImportService } from '../../imex/sync/data-import.service';
+import { checkForUpdate, UpdateCheckResult } from '../../imex/sync/check-for-update.util';
+import { dbxLog } from './dropbox-log.util';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogDbxSyncConflictComponent } from './dialog-dbx-sync-conflict/dialog-dbx-sync-conflict.component';
+import { SnackService } from '../../core/snack/snack.service';
+import { environment } from '../../../environments/environment';
+import { T } from '../../t.const';
+import { isValidAppData } from '../../imex/sync/is-valid-app-data.util';
+import { TranslateService } from '@ngx-translate/core';
 
-
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class DropboxSyncService {
   dropboxCfg$: Observable<DropboxSyncConfig> = this._globalConfigService.cfg$.pipe(
     map(cfg => cfg.dropboxSync)
@@ -39,7 +38,7 @@ export class DropboxSyncService {
     distinctUntilChanged(),
   );
 
-  isEnabledAndReady$ = this._dataInitService.isAllDataLoadedInitially$.pipe(
+  isEnabledAndReady$: Observable<boolean> = this._dataInitService.isAllDataLoadedInitially$.pipe(
     concatMap(() => combineLatest([
       this._dropboxApiService.isTokenAvailable$,
       this.isEnabled$,
@@ -48,7 +47,7 @@ export class DropboxSyncService {
     distinctUntilChanged(),
   );
 
-  private _isReadyForRequests$ = this.isEnabledAndReady$.pipe(
+  private _isReadyForRequests$: Observable<boolean> = this.isEnabledAndReady$.pipe(
     tap((isReady) => !isReady && new Error('Dropbox Sync not ready')),
     first(),
   );
@@ -61,12 +60,13 @@ export class DropboxSyncService {
     private _dataInitService: DataInitService,
     private _snackService: SnackService,
     private _matDialog: MatDialog,
+    private _translateService: TranslateService,
   ) {
     // TODO initial syncing (do with immediate triggers)
   }
 
-  async sync() {
-    let local: AppDataComplete;
+  async sync(): Promise<unknown> {
+    let local: AppDataComplete | undefined;
     await this._isReadyForRequests$.toPromise();
 
     this._updateLocalLastSyncCheck();
@@ -82,7 +82,7 @@ export class DropboxSyncService {
 
       if (isAxiosError && e.response.data && e.response.data.error_summary === 'path/not_found/..') {
         dbxLog('DBX: File not found => ↑↑↑ Initial Upload ↑↑↑');
-        local = await this._syncService.inMemory$.pipe(take(1)).toPromise();
+        local = await this._syncService.inMemoryComplete$.pipe(take(1)).toPromise();
         return await this._uploadAppData(local);
       } else if (isAxiosError && e.response.status === 401) {
         this._snackService.open({msg: T.F.DROPBOX.S.AUTH_ERROR, type: 'ERROR'});
@@ -109,10 +109,10 @@ export class DropboxSyncService {
     const lastSync = this._getLocalLastSync();
     const localRev = this._getLocalRev();
 
-    if (rev === localRev) {
-      dbxLog('DBX PRE1: ↔ Same Rev');
+    if (rev && rev === localRev) {
+      dbxLog('DBX PRE1: ↔ Same Rev', rev);
       // NOTE: same rev, doesn't mean. that we can't have local changes
-      local = await this._syncService.inMemory$.pipe(take(1)).toPromise();
+      local = await this._syncService.inMemoryComplete$.pipe(take(1)).toPromise();
       if (lastSync === local.lastLocalSyncModelChange) {
         dbxLog('DBX PRE1: No local changes to sync');
         return;
@@ -123,9 +123,10 @@ export class DropboxSyncService {
     // simple check based on file meta data
     // ------------------------------------
     // if not defined yet
-    local = local || await this._syncService.inMemory$.pipe(take(1)).toPromise();
+    local = local || await this._syncService.inMemoryComplete$.pipe(take(1)).toPromise();
     if (local.lastLocalSyncModelChange === 0) {
-      if (!confirm('lastLocalSyncModelChange is 0. Which means data has been deleted or something is wrong. Proceed with Dropbox sync?')) {
+      console.log(local);
+      if (!(this._c(T.F.DROPBOX.C.EMPTY_SYNC))) {
         return;
       }
     }
@@ -143,7 +144,6 @@ export class DropboxSyncService {
       dbxLog('DBX PRE2: ↑ Update Remote');
       return await this._uploadAppData(local);
     }
-
 
     // COMPLEX SYNC HANDLING
     // ---------------------
@@ -173,7 +173,7 @@ export class DropboxSyncService {
 
       case UpdateCheckResult.RemoteNotUpToDateDespiteSync: {
         dbxLog('DBX: X Remote not up to date despite sync');
-        if (confirm('Try to re-load data from remote once again?')) {
+        if (this._c(T.F.DROPBOX.C.TRY_LOAD_REMOTE_AGAIN)) {
           return this.sync();
         } else {
           return this._handleConflict({remote, local, lastSync, downloadMeta: r.meta});
@@ -196,11 +196,11 @@ export class DropboxSyncService {
       case UpdateCheckResult.ErrorLastSyncNewerThanLocal: {
         dbxLog('DBX: XXX Wrong Data');
         if (local.lastLocalSyncModelChange > remote.lastLocalSyncModelChange) {
-          if (confirm('Upload local data anyway?')) {
+          if (this._c(T.F.DROPBOX.C.FORCE_UPLOAD)) {
             return await this._uploadAppData(local, true);
           }
         } else {
-          if (confirm('Import remote data anyway?')) {
+          if (this._c(T.F.DROPBOX.C.FORCE_IMPORT)) {
             return await this._importData(remote, r.meta.rev);
           }
         }
@@ -242,7 +242,13 @@ export class DropboxSyncService {
     });
   }
 
-  private async _uploadAppData(data: AppDataComplete, isForceOverwrite = false): Promise<DropboxFileMetadata> {
+  private async _uploadAppData(data: AppDataComplete, isForceOverwrite: boolean = false): Promise<DropboxFileMetadata | undefined> {
+    if (!isValidAppData(data)) {
+      console.log(data);
+      alert('The data you are trying to upload is invalid');
+      throw new Error('The data you are trying to upload is invalid');
+    }
+
     try {
       const r = await this._dropboxApiService.upload({
         path: DROPBOX_SYNC_FILE_PATH,
@@ -258,16 +264,16 @@ export class DropboxSyncService {
     } catch (e) {
       console.error(e);
       dbxLog('DBX: X Upload Request Error');
-      if (confirm('An Error occurred while uploading your local data. Try to force the update?')) {
+      if (this._c(T.F.DROPBOX.C.FORCE_UPLOAD_AFTER_ERROR)) {
         return this._uploadAppData(data, true);
       }
     }
+    return;
   }
-
 
   // LS HELPER
   // ---------
-  private _getLocalRev(): string {
+  private _getLocalRev(): string | null {
     return localStorage.getItem(LS_DROPBOX_LAST_LOCAL_REVISION);
   }
 
@@ -280,14 +286,14 @@ export class DropboxSyncService {
   }
 
   private _getLocalLastSync(): number {
-    const it = +localStorage.getItem(LS_DROPBOX_LOCAL_LAST_SYNC);
+    const it = +(localStorage.getItem(LS_DROPBOX_LOCAL_LAST_SYNC) as any);
     return isNaN(it)
       ? 0
-      : it;
+      : it || 0;
   }
 
   private _setLocalLastSync(localLastSync: number) {
-    if (typeof localLastSync !== 'number') {
+    if (typeof (localLastSync as any) !== 'number') {
       throw new Error('No correct localLastSync given');
     }
     return localStorage.setItem(LS_DROPBOX_LOCAL_LAST_SYNC, localLastSync.toString());
@@ -333,4 +339,9 @@ export class DropboxSyncService {
       }
     }).afterClosed();
   }
+
+  private _c(str: string): boolean {
+    return confirm(this._translateService.instant(str));
+  };
+
 }

@@ -1,19 +1,20 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
-import {filter, tap, withLatestFrom} from 'rxjs/operators';
-import {GlobalConfigActionTypes, UpdateGlobalConfigSection} from './global-config.actions';
-import {Store} from '@ngrx/store';
-import {CONFIG_FEATURE_NAME} from './global-config.reducer';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {KeyboardConfig} from '../global-config.model';
-import {IPC} from '../../../../../electron/ipc-events.const';
-import {IS_ELECTRON} from '../../../app.constants';
-import {T} from '../../../t.const';
-import {LanguageService} from '../../../core/language/language.service';
-import {SnackService} from '../../../core/snack/snack.service';
-import {ElectronService} from '../../../core/electron/electron.service';
-import {loadAllData} from '../../../root-store/meta/load-all-data.action';
-import {DEFAULT_GLOBAL_CONFIG} from '../default-global-config.const';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
+import { filter, tap, withLatestFrom } from 'rxjs/operators';
+import { GlobalConfigActionTypes, UpdateGlobalConfigSection } from './global-config.actions';
+import { Store } from '@ngrx/store';
+import { CONFIG_FEATURE_NAME } from './global-config.reducer';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { KeyboardConfig } from '../global-config.model';
+import { IPC } from '../../../../../electron/ipc-events.const';
+import { IS_ELECTRON, LanguageCode } from '../../../app.constants';
+import { T } from '../../../t.const';
+import { LanguageService } from '../../../core/language/language.service';
+import { SnackService } from '../../../core/snack/snack.service';
+import { ElectronService } from '../../../core/electron/electron.service';
+import { loadAllData } from '../../../root-store/meta/load-all-data.action';
+import { DEFAULT_GLOBAL_CONFIG } from '../default-global-config.const';
+import { ipcRenderer } from 'electron';
 
 @Injectable()
 export class GlobalConfigEffects {
@@ -53,7 +54,7 @@ export class GlobalConfigEffects {
       filter((action: UpdateGlobalConfigSection) => IS_ELECTRON && action.payload.sectionKey === 'keyboard'),
       tap((action: UpdateGlobalConfigSection) => {
         const keyboardCfg: KeyboardConfig = action.payload.sectionCfg as KeyboardConfig;
-        this._electronService.ipcRenderer.send(IPC.REGISTER_GLOBAL_SHORTCUTS_EVENT, keyboardCfg);
+        (this._electronService.ipcRenderer as typeof ipcRenderer).send(IPC.REGISTER_GLOBAL_SHORTCUTS_EVENT, keyboardCfg);
       }),
     );
 
@@ -66,7 +67,7 @@ export class GlobalConfigEffects {
       tap((action) => {
         const appDataComplete = action.appDataComplete;
         const keyboardCfg: KeyboardConfig = (appDataComplete.globalConfig || DEFAULT_GLOBAL_CONFIG).keyboard;
-        this._electronService.ipcRenderer.send(IPC.REGISTER_GLOBAL_SHORTCUTS_EVENT, keyboardCfg);
+        (this._electronService.ipcRenderer as typeof ipcRenderer).send(IPC.REGISTER_GLOBAL_SHORTCUTS_EVENT, keyboardCfg);
       }),
     );
 
@@ -77,10 +78,10 @@ export class GlobalConfigEffects {
       ),
       filter((action: UpdateGlobalConfigSection) => action.payload.sectionKey === 'lang'),
       // tslint:disable-next-line
-      filter((action: UpdateGlobalConfigSection) => action.payload.sectionCfg && action.payload.sectionCfg['lng']),
+      filter((action: UpdateGlobalConfigSection) => action.payload.sectionCfg && (action.payload.sectionCfg as any)['lng']),
       tap((action: UpdateGlobalConfigSection) => {
         // tslint:disable-next-line
-        this._languageService.setLng(action.payload.sectionCfg['lng']);
+        this._languageService.setLng((action.payload.sectionCfg as any)['lng']);
       })
     );
 
@@ -92,7 +93,7 @@ export class GlobalConfigEffects {
       tap((action) => {
         const cfg = action.appDataComplete.globalConfig || DEFAULT_GLOBAL_CONFIG;
         const lng = cfg && cfg.lang && cfg.lang.lng;
-        this._languageService.setLng(lng);
+        this._languageService.setLng(lng as LanguageCode);
       })
     );
 
@@ -106,9 +107,8 @@ export class GlobalConfigEffects {
   ) {
   }
 
-  private async _saveToLs([action, state]) {
-    this._persistenceService.updateLastLocalSyncModelChange();
-    const globalConfig = state[CONFIG_FEATURE_NAME];
-    await this._persistenceService.globalConfig.saveState(globalConfig);
+  private async _saveToLs([action, completeState]: [any, any]) {
+    const globalConfig = completeState[CONFIG_FEATURE_NAME];
+    await this._persistenceService.globalConfig.saveState(globalConfig, {isSyncModelChange: true});
   }
 }

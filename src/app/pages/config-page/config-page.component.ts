@@ -1,21 +1,23 @@
-import {ChangeDetectionStrategy, Component, OnDestroy, OnInit} from '@angular/core';
-import {GlobalConfigService} from '../../features/config/global-config.service';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { GlobalConfigService } from '../../features/config/global-config.service';
 import {
   GLOBAL_CONFIG_FORM_CONFIG,
-  GLOBAL_PRODUCTIVITY_FORM_CONFIG, GLOBAL_SYNC_FORM_CONFIG
+  GLOBAL_PRODUCTIVITY_FORM_CONFIG,
+  GLOBAL_SYNC_FORM_CONFIG
 } from '../../features/config/global-config-form-config.const';
 import {
   ConfigFormConfig,
   ConfigFormSection,
   GlobalConfigSectionKey,
-  GlobalConfigState
+  GlobalConfigState,
+  GlobalSectionConfig
 } from '../../features/config/global-config.model';
-import {Subscription} from 'rxjs';
-import {ProjectCfgFormKey} from '../../features/project/project.model';
-import {IS_ELECTRON} from '../../app.constants';
-import {environment} from '../../../environments/environment';
-import {T} from '../../t.const';
-import {MatSlideToggleChange} from '@angular/material/slide-toggle';
+import { Subscription } from 'rxjs';
+import { ProjectCfgFormKey } from '../../features/project/project.model';
+import { IS_ELECTRON } from '../../app.constants';
+import { environment } from '../../../environments/environment';
+import { T } from '../../t.const';
+import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'config-page',
@@ -24,18 +26,19 @@ import {MatSlideToggleChange} from '@angular/material/slide-toggle';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfigPageComponent implements OnInit, OnDestroy {
-  T = T;
+  T: typeof T = T;
   globalConfigFormCfg: ConfigFormConfig;
   globalSyncProviderFormCfg: ConfigFormConfig;
   globalProductivityConfigFormCfg: ConfigFormConfig;
 
-  globalCfg: GlobalConfigState;
+  globalCfg?: GlobalConfigState;
 
   appVersion: string = environment.version;
 
-  private _subs = new Subscription();
+  private _subs: Subscription = new Subscription();
 
   constructor(
+    private readonly _cd: ChangeDetectorRef,
     public readonly configService: GlobalConfigService,
   ) {
     // somehow they are only unproblematic if assigned here
@@ -47,6 +50,7 @@ export class ConfigPageComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this._subs.add(this.configService.cfg$.subscribe((cfg) => {
       this.globalCfg = cfg;
+      this._cd.detectChanges();
     }));
   }
 
@@ -71,5 +75,9 @@ export class ConfigPageComponent implements OnInit, OnDestroy {
 
   toggleDarkMode(change: MatSlideToggleChange) {
     this.configService.updateSection('misc', {isDarkMode: change.checked});
+  }
+
+  getGlobalCfgSection(sectionKey: GlobalConfigSectionKey | ProjectCfgFormKey): GlobalSectionConfig {
+    return (this.globalCfg as any)[sectionKey];
   }
 }

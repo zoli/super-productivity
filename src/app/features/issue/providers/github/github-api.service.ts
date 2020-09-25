@@ -1,18 +1,17 @@
-import {Injectable} from '@angular/core';
-import {ProjectService} from '../../../project/project.service';
-import {GithubCfg} from './github.model';
-import {SnackService} from '../../../../core/snack/snack.service';
-import {HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, HttpRequest} from '@angular/common/http';
-import {GITHUB_API_BASE_URL} from './github.const';
-import {Observable, ObservableInput, of, throwError} from 'rxjs';
-import {GithubIssueSearchResult, GithubOriginalIssue} from './github-api-responses';
-import {catchError, filter, map, switchMap} from 'rxjs/operators';
-import {mapGithubIssue, mapGithubIssueToSearchResult} from './github-issue/github-issue-map.util';
-import {GithubComment, GithubIssue, GithubIssueReduced} from './github-issue/github-issue.model';
-import {SearchResultItem} from '../../issue.model';
-import {HANDLED_ERROR_PROP_STR} from '../../../../app.constants';
-import {T} from '../../../../t.const';
-import {throwHandledError} from '../../../../util/throw-handled-error';
+import { Injectable } from '@angular/core';
+import { GithubCfg } from './github.model';
+import { SnackService } from '../../../../core/snack/snack.service';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams, HttpRequest } from '@angular/common/http';
+import { GITHUB_API_BASE_URL } from './github.const';
+import { Observable, ObservableInput, of, throwError } from 'rxjs';
+import { GithubIssueSearchResult, GithubOriginalIssue } from './github-api-responses';
+import { catchError, filter, map, switchMap } from 'rxjs/operators';
+import { mapGithubIssue, mapGithubIssueToSearchResult } from './github-issue/github-issue-map.util';
+import { GithubComment, GithubIssue, GithubIssueReduced } from './github-issue/github-issue.model';
+import { SearchResultItem } from '../../issue.model';
+import { HANDLED_ERROR_PROP_STR } from '../../../../app.constants';
+import { T } from '../../../../t.const';
+import { throwHandledError } from '../../../../util/throw-handled-error';
 
 const BASE = GITHUB_API_BASE_URL;
 
@@ -21,14 +20,12 @@ const BASE = GITHUB_API_BASE_URL;
 })
 export class GithubApiService {
   constructor(
-    private _projectService: ProjectService,
     private _snackService: SnackService,
     private _http: HttpClient,
   ) {
   }
 
-
-  getById$(issueId: number, cfg: GithubCfg, isGetComments = true): Observable<GithubIssue> {
+  getById$(issueId: number, cfg: GithubCfg, isGetComments: boolean = true): Observable<GithubIssue> {
     return this._sendRequest$({
       url: `${BASE}repos/${cfg.repo}/issues/${issueId}`
     }, cfg)
@@ -50,14 +47,13 @@ export class GithubApiService {
       );
   }
 
-
-  searchIssueForRepo$(searchText: string, cfg: GithubCfg, isSearchAllGithub = false): Observable<SearchResultItem[]> {
+  searchIssueForRepo$(searchText: string, cfg: GithubCfg, isSearchAllGithub: boolean = false): Observable<SearchResultItem[]> {
     const repoQuery = isSearchAllGithub
       ? '' :
       `+repo:${cfg.repo}`;
 
     return this._sendRequest$({
-      url: `${BASE}search/issues?q=${encodeURI(searchText + repoQuery)}`
+      url: `${BASE}search/issues?q=${encodeURIComponent(searchText + repoQuery)}`
     }, cfg)
       .pipe(
         map((res: GithubIssueSearchResult) => {
@@ -98,11 +94,9 @@ export class GithubApiService {
     }
   }
 
-
   private _isValidSettings(cfg: GithubCfg): boolean {
-    return cfg && cfg.repo && cfg.repo.length > 0;
+    return !!cfg && !!cfg.repo && cfg.repo.length > 0;
   }
-
 
   private _sendRequest$(params: HttpRequest<string> | any, cfg: GithubCfg): Observable<any> {
     this._checkSettings(cfg);

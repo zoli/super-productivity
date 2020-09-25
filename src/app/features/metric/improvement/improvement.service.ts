@@ -1,5 +1,5 @@
-import {Injectable} from '@angular/core';
-import {select, Store} from '@ngrx/store';
+import { Injectable } from '@angular/core';
+import { select, Store } from '@ngrx/store';
 import {
   initialImprovementState,
   selectAllImprovements,
@@ -17,12 +17,12 @@ import {
   ToggleImprovementRepeat,
   UpdateImprovement
 } from './store/improvement.actions';
-import {Observable} from 'rxjs';
-import {Improvement, ImprovementState} from './improvement.model';
-import shortid from 'shortid';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {selectHasLastTrackedImprovements, selectImprovementBannerImprovements} from '../store/metric.selectors';
-import {getWorklogStr} from '../../../util/get-work-log-str';
+import { Observable } from 'rxjs';
+import { Improvement, ImprovementState } from './improvement.model';
+import * as shortid from 'shortid';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { selectHasLastTrackedImprovements, selectImprovementBannerImprovements } from '../store/metric.selectors';
+import { getWorklogStr } from '../../../util/get-work-log-str';
 
 @Injectable({
   providedIn: 'root',
@@ -30,7 +30,7 @@ import {getWorklogStr} from '../../../util/get-work-log-str';
 export class ImprovementService {
   improvements$: Observable<Improvement[]> = this._store$.pipe(select(selectAllImprovements));
   repeatedImprovementIds$: Observable<string[]> = this._store$.pipe(select(selectRepeatedImprovementIds));
-  improvementBannerImprovements$: Observable<Improvement[]> = this._store$.pipe(select(selectImprovementBannerImprovements));
+  improvementBannerImprovements$: Observable<Improvement[] | null> = this._store$.pipe(select(selectImprovementBannerImprovements));
   hasLastTrackedImprovements$: Observable<boolean> = this._store$.pipe(select(selectHasLastTrackedImprovements));
 
   constructor(
@@ -61,7 +61,7 @@ export class ImprovementService {
     return id;
   }
 
-  addCheckedDay(id: string, checkedDay = getWorklogStr()) {
+  addCheckedDay(id: string, checkedDay: string = getWorklogStr()) {
     this._store$.dispatch(new AddImprovementCheckedDay({
       id,
       checkedDay,

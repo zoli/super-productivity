@@ -1,9 +1,6 @@
-<p align="center" style="text-align: center;">
-  <a href="https://super-productivity.com/">
-    <img align="center" alt="Logo" src="build/icons/128x128.png" width="128px"/>
-  </a>
-  <h1 align="center">Super Productivity</h1>
-</p>
+<a href="https://super-productivity.com/">
+  <img align="center" alt="Banner" src="screens/banner-bw.png" />
+</a>
 
 <p align="center" style="text-align: center;">
 <a href="https://lbesson.mit-license.org">
@@ -15,11 +12,6 @@
   <img alt="GitHub All Releases"
        src="https://img.shields.io/github/downloads/johannesjo/super-productivity/total"
        align="center">
-</a>
-<a href="https://spectrum.chat/super-productivity">
-  <img alt="Join the community on Spectrum"
-       align="center"
-       src="https://withspectrum.github.io/badge/badge.svg" />
 </a>
 <a href="https://www.reddit.com/r/selfhosted/comments/by7bcu/super_productivity_is_an_open_source_todo_list/?ref=readnext">
   <img alt="On reddit"
@@ -117,13 +109,23 @@ brew cask install superproductivity
 ### Android
 There is a [very early(!) Android version available](https://play.google.com/store/apps/details?id=com.superproductivity.superproductivity&hl=gsw). The sources can be [found here](https://github.com/johannesjo/super-productivity-android).
 
-## Setup WebDAV Syncing
-When starting the app via the command line the path to where emergency backups are saved is printed out to the command line. Just take away the `/backup` sub folder from the path and use the remaining path to sync via the cloud.
-
 ## :hearts: Contributing
-There are several ways to help. Publishing a bug or a feature request is a good first step. Also making it more popular by posting it on social media etc. is great, because it means more users, which in turn leads to more people testing the app and also more people contributing code.
+Please check out the [CONTRIBUTING.md](CONTRIBUTING.md)
 
-**Pull requests** are of course also very welcome. Please make sure that you're following the [angular commit guidelines](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#commits) and to also include the issue number in your commit message, if you're fixing a particular issue (e.g.: `feat: add nice feature with the number #31`).
+There are several ways to help. 
+
+1. **Spread the word:** More users means more people testing and contributing to the app which in turn means better stability and possibly more and better features. You can vote for Super Productivity on [Slant](https://www.slant.co/topics/14021/viewpoints/7/~productivity-tools-for-linux~super-productivity), [Product Hunt](https://www.producthunt.com/posts/super-productivity), [Softpedia](https://www.softpedia.com/get/Office-tools/Diary-Organizers-Calendar/Super-Productivity.shtml) or on [AlternativeTo](https://alternativeto.net/software/super-productivity/), you can [tweet about it](https://twitter.com/intent/tweet?text=I%20like%20Super%20Productivity%20%20https%3A%2F%2Fsuper-productivity.com), share it on [LinkedIn](http://www.linkedin.com/shareArticle?mini=true&url=https://super-productivity.com&title=I%20like%20Super%20Productivity&), [reddit](http://www.reddit.com/submit?url=https%3A%2F%2Fsuper-productivity.com&title=I%20like%20Super%20Productivity) or any of your favorite social media platforms. Every little bit helps!
+
+2. **[Make a feature or improvement request](https://github.com/johannesjo/super-productivity/issues/new)**: Something can be be done better? Something essential missing? Let us know! 
+
+3. **[Report bugs](https://github.com/johannesjo/super-productivity/issues/new)**
+
+4. **Contribute**: You don't have to be programmer to help. Some of the icons really need improvement and many of the translations could use some love. 
+
+
+### Pull Requests 
+**Pull requests** are of course very welcome! Please make sure that you're following the [angular commit guidelines](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#commits) and to also include the issue number in your commit message, if you're fixing a particular issue (e.g.: `feat: add nice feature with the number #31`).
+
 
 ### Running the development server
 To run the development server you need to have node installed at least in the version 10. Go to https://nodejs.org for installation instructions.
@@ -155,30 +157,16 @@ npm start
 ### Packaging the app
 Packaging the app is done via [electron-builder](https://github.com/electron-userland/electron-builder). To start packaging run `yarn dist`. If you want to add new platforms and experiment with the build options the easiest way to do so is manipulating the `build` property in the [package.json](https://github.com/johannesjo/super-productivity/blob/develop/package.json), but you can also use the [command line interface of electron builder](https://www.electron.build/cli).
 
-## :sparkling_heart: Contributors ✨
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+## Setup WebDAV Syncing
+When starting the app via the command line the path to where emergency backups are saved is printed out to the command line. Just take away the `/backup` sub folder from the path and use the remaining path to sync via the cloud.
 
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tr>
-    <td align="center"><a href="https://github.com/johannesjo"><img src="https://avatars1.githubusercontent.com/u/1456265?v=4" width="100px;" alt="Johannes Millan"/><br />
-    </a></td>
-    <td align="center"><a href="https://github.com/theCalcaholic"><img src="https://avatars1.githubusercontent.com/u/6317548?v=4" width="100px;" alt="Tobias K"/>
-    </a></td>
-    <td align="center"><a href="https://github.com/KonTy"><img src="https://avatars0.githubusercontent.com/u/9524513?v=4" width="100px;" alt="KonTy"/>
-    </a><a href="#ideas-KonTy" title="Ideas, Planning, & Feedback">🤔</a></td>
-    <td align="center"><a href="https://github.com/aitboudad"><img src="https://avatars2.githubusercontent.com/u/1753742?v=4" width="100px;" alt="Abdellatif Ait boudad"/>
-    </a></td>
-    <td align="center"><a href="https://github.com/Morganamilo"><img src="https://avatars2.githubusercontent.com/u/16593899?v=4" width="100px;" alt="Anna"/>
-    </a></td>
-  </tr>
-</table>
+## Using a custom folder to save user data
+You can specify a custom folder for saving your data by starting the application with the `--user-data-dir` parameter like so:
+```
+superproductivity --user-data-dir=/path/to/my/data
+```
 
-<!-- markdownlint-enable -->
-<!-- prettier-ignore-end -->
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+## Automatic Backups
+For the desktop version automatic backups are stored per default. You can see the backup folder location printed out when you start the app from the command line. 
+Once you located a backup you can restore it on the settings page under`Sync & Export/Import/Export/Import from file`.

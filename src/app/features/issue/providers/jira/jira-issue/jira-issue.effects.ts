@@ -1,6 +1,6 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
-import {select, Store} from '@ngrx/store';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
+import { select, Store } from '@ngrx/store';
 import {
   concatMap,
   filter,
@@ -14,40 +14,81 @@ import {
   throttleTime,
   withLatestFrom
 } from 'rxjs/operators';
-import {PersistenceService} from '../../../../../core/persistence/persistence.service';
-import {JiraApiService} from '../jira-api.service';
-import {GlobalConfigService} from '../../../../config/global-config.service';
-import {JiraIssue, JiraIssueReduced} from './jira-issue.model';
-import {SnackService} from '../../../../../core/snack/snack.service';
-import {Task, TaskWithSubTasks} from '../../../../tasks/task.model';
-import {TaskService} from '../../../../tasks/task.service';
-import {BehaviorSubject, EMPTY, forkJoin, Observable, of, throwError, timer} from 'rxjs';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogJiraTransitionComponent} from '../jira-view-components/dialog-jira-transition/dialog-jira-transition.component';
-import {IssueLocalState} from '../../../issue.model';
-import {JIRA_INITIAL_POLL_BACKLOG_DELAY, JIRA_POLL_INTERVAL} from '../jira.const';
-import {ProjectService} from '../../../../project/project.service';
-import {IssueService} from '../../../issue.service';
-import {JIRA_TYPE} from '../../../issue.const';
-import {T} from '../../../../../t.const';
-import {truncate} from '../../../../../util/truncate';
-import {WorkContextService} from '../../../../work-context/work-context.service';
-import {JiraCfg, JiraTransitionOption} from '../jira.model';
-import {IssueEffectHelperService} from '../../../issue-effect-helper.service';
-import {SetCurrentTask, TaskActionTypes, UpdateTask} from '../../../../tasks/store/task.actions';
-import {DialogJiraAddWorklogComponent} from '../jira-view-components/dialog-jira-add-worklog/dialog-jira-add-worklog.component';
-import {selectCurrentTaskParentOrCurrent, selectTaskEntities} from '../../../../tasks/store/task.selectors';
-import {Dictionary} from '@ngrx/entity';
-import {HANDLED_ERROR_PROP_STR} from '../../../../../app.constants';
-import {DialogConfirmComponent} from '../../../../../ui/dialog-confirm/dialog-confirm.component';
-import {setActiveWorkContext} from '../../../../work-context/store/work-context.actions';
-import {WorkContextType} from '../../../../work-context/work-context.model';
-import {SyncService} from '../../../../../imex/sync/sync.service';
-import {isJiraEnabled} from '../is-jira-enabled.util';
+import { JiraApiService } from '../jira-api.service';
+import { JiraIssueReduced } from './jira-issue.model';
+import { SnackService } from '../../../../../core/snack/snack.service';
+import { Task, TaskWithSubTasks } from '../../../../tasks/task.model';
+import { TaskService } from '../../../../tasks/task.service';
+import { BehaviorSubject, EMPTY, forkJoin, Observable, of, throwError, timer } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogJiraTransitionComponent } from '../jira-view-components/dialog-jira-transition/dialog-jira-transition.component';
+import { IssueLocalState } from '../../../issue.model';
+import { JIRA_INITIAL_POLL_BACKLOG_DELAY, JIRA_POLL_INTERVAL } from '../jira.const';
+import { ProjectService } from '../../../../project/project.service';
+import { IssueService } from '../../../issue.service';
+import { JIRA_TYPE } from '../../../issue.const';
+import { T } from '../../../../../t.const';
+import { truncate } from '../../../../../util/truncate';
+import { WorkContextService } from '../../../../work-context/work-context.service';
+import { JiraCfg, JiraTransitionOption } from '../jira.model';
+import { IssueEffectHelperService } from '../../../issue-effect-helper.service';
+import { SetCurrentTask, TaskActionTypes, UpdateTask } from '../../../../tasks/store/task.actions';
+import { DialogJiraAddWorklogComponent } from '../jira-view-components/dialog-jira-add-worklog/dialog-jira-add-worklog.component';
+import { selectCurrentTaskParentOrCurrent, selectTaskEntities } from '../../../../tasks/store/task.selectors';
+import { Dictionary } from '@ngrx/entity';
+import { HANDLED_ERROR_PROP_STR } from '../../../../../app.constants';
+import { DialogConfirmComponent } from '../../../../../ui/dialog-confirm/dialog-confirm.component';
+import { setActiveWorkContext } from '../../../../work-context/store/work-context.actions';
+import { WorkContextType } from '../../../../work-context/work-context.model';
+import { isJiraEnabled } from '../is-jira-enabled.util';
 
 @Injectable()
 export class JiraIssueEffects {
-  private _isInitialRequestForProjectDone$ = new BehaviorSubject(false);
+  // -----
+  @Effect({dispatch: false})
+  addWorklog$: any = this._actions$.pipe(
+    ofType(TaskActionTypes.UpdateTask),
+    filter((act: UpdateTask) => act.payload.task.changes.isDone === true),
+    withLatestFrom(
+      this._workContextService.isActiveWorkContextProject$,
+      this._workContextService.activeWorkContextId$
+    ),
+    filter(([, isActiveContextProject]) => isActiveContextProject),
+    concatMap(([act, , projectId]) => this._getCfgOnce$(projectId as string).pipe(
+      map(jiraCfg => ({
+        act,
+        projectId,
+        jiraCfg
+      })),
+    )),
+    filter(({jiraCfg}) => isJiraEnabled(jiraCfg)),
+    withLatestFrom(this._store$.pipe(select(selectTaskEntities))),
+    tap(([{act, projectId, jiraCfg}, taskEntities]: [{
+      act: UpdateTask,
+      projectId: string | null,
+      jiraCfg: JiraCfg
+    }, Dictionary<Task>]) => {
+      const taskId = act.payload.task.id;
+      const task = taskEntities[taskId];
+      if (!task) {
+        throw new Error('No task');
+      }
+
+      if (jiraCfg.isAddWorklogOnSubTaskDone && jiraCfg.isWorklogEnabled) {
+        if (task && task.issueType === JIRA_TYPE && task.issueId
+          && !(jiraCfg.isAddWorklogOnSubTaskDone && task.subTaskIds.length > 0)) {
+          this._openWorklogDialog(task, task.issueId, jiraCfg);
+        } else if (task.parentId) {
+          const parent = taskEntities[task.parentId];
+          if (parent && parent.issueId && parent.issueType === JIRA_TYPE) {
+            // NOTE we're still sending the sub task for the meta data we need
+            this._openWorklogDialog(task, parent.issueId, jiraCfg);
+          }
+        }
+      }
+      return undefined;
+    })
+  );
 
   // CHECK CONNECTION
   // ----------------
@@ -59,119 +100,6 @@ export class JiraIssueEffects {
   // from a project with a working jira cfg to one with a non working one, but on the other hand
   // this is already complicated enough as is...
   // I am sorry future me O:)
-
-  @Effect({dispatch: false})
-  checkConnection$: Observable<any> = this._actions$.pipe(
-    ofType(setActiveWorkContext),
-    tap(() => this._isInitialRequestForProjectDone$.next(false)),
-    filter(({activeType}) => (activeType === WorkContextType.PROJECT)),
-    concatMap(({activeId}) => this._getCfgOnce$(activeId)),
-    // NOTE: might not be loaded yet
-    filter(jiraCfg => isJiraEnabled(jiraCfg)),
-    // just fire any single request
-    concatMap((jiraCfg) => this._jiraApiService.getCurrentUser$(jiraCfg)),
-    tap(() => this._isInitialRequestForProjectDone$.next(true)),
-  );
-
-  // POLLING & UPDATES
-  // -----------------
-  @Effect({dispatch: false})
-  pollNewIssuesToBacklog$: any = this._issueEffectHelperService.pollToBacklogTriggerToProjectId$.pipe(
-    switchMap(this._afterInitialRequestCheckForProjectJiraSuccessfull$.bind(this)),
-    switchMap((pId: string) => this._getCfgOnce$(pId).pipe(
-      filter(jiraCfg => isJiraEnabled(jiraCfg) && jiraCfg.isAutoAddToBacklog),
-      // tap(() => console.log('POLL TIMER STARTED')),
-      switchMap(jiraCfg => this._pollTimer$.pipe(
-        // NOTE: required otherwise timer stays alive for filtered actions
-        takeUntil(this._issueEffectHelperService.pollToBacklogActions$),
-        tap(() => console.log('JIRA_POLL_BACKLOG_CHANGES')),
-        tap(() => this._importNewIssuesToBacklog(pId, jiraCfg))
-      )),
-    )),
-  );
-
-  @Effect({dispatch: false})
-  pollIssueChangesForCurrentContext$: any = this._issueEffectHelperService.pollIssueTaskUpdatesActions$.pipe(
-    switchMap((inVal) => this._workContextService.isActiveWorkContextProject$.pipe(
-      take(1),
-      switchMap(isProject => isProject
-        ? this._afterInitialRequestCheckForProjectJiraSuccessfull$(inVal)
-        : of(inVal)
-      ),
-    )),
-    switchMap(() => this._pollTimer$),
-    switchMap(() => this._workContextService.allTasksForCurrentContext$.pipe(
-      first(),
-      switchMap((tasks) => {
-        const jiraIssueTasks = tasks.filter(task => task.issueType === JIRA_TYPE);
-        return forkJoin(jiraIssueTasks.map(task =>
-          this._getCfgOnce$(task.projectId).pipe(
-            map(cfg => ({cfg, task}))
-          ))
-        );
-      }),
-      map((cos) => cos
-        .filter(({cfg, task}: { cfg: JiraCfg, task: TaskWithSubTasks }) =>
-          isJiraEnabled(cfg) && cfg.isAutoPollTickets
-        )
-        .map(({task}: { cfg: JiraCfg, task: TaskWithSubTasks }) => task)
-      ),
-      tap((jiraTasks: TaskWithSubTasks[]) => {
-        if (jiraTasks && jiraTasks.length > 0) {
-          this._snackService.open({
-            msg: T.F.JIRA.S.POLLING,
-            svgIco: 'jira',
-            isSpinner: true,
-          });
-          jiraTasks.forEach((task) => this._issueService.refreshIssue(task, true, false));
-        }
-      }),
-    )),
-  );
-
-  // HOOKS
-  // -----
-  @Effect({dispatch: false})
-  addWorklog$: any = this._actions$.pipe(
-    ofType(TaskActionTypes.UpdateTask),
-    filter((act: UpdateTask) => act.payload.task.changes.isDone === true),
-    withLatestFrom(
-      this._workContextService.isActiveWorkContextProject$,
-      this._workContextService.activeWorkContextId$
-    ),
-    filter(([, isActiveContextProject]) => isActiveContextProject),
-    concatMap(([act, , projectId]) => this._getCfgOnce$(projectId).pipe(
-      map(jiraCfg => ({
-        act,
-        projectId,
-        jiraCfg
-      })),
-    )),
-    filter(({jiraCfg}) => isJiraEnabled(jiraCfg)),
-    withLatestFrom(this._store$.pipe(select(selectTaskEntities))),
-    tap(([{act, projectId, jiraCfg}, taskEntities]: [{
-      act: UpdateTask,
-      projectId: string,
-      jiraCfg: JiraCfg
-    }, Dictionary<Task>]) => {
-      const taskId = act.payload.task.id;
-      const task = taskEntities[taskId];
-
-      if (jiraCfg.isWorklogEnabled
-        && task && task.issueType === JIRA_TYPE
-        && !(jiraCfg.isAddWorklogOnSubTaskDone && task.subTaskIds.length > 0)) {
-        this._openWorklogDialog(task, task.issueId, jiraCfg);
-
-      } else {
-        const parent = task.parentId && taskEntities[task.parentId];
-        if (parent && jiraCfg.isAddWorklogOnSubTaskDone && parent.issueType === JIRA_TYPE) {
-          // NOTE we're still sending the sub task for the meta data we need
-          this._openWorklogDialog(task, parent.issueId, jiraCfg);
-        }
-      }
-    })
-  );
-
   @Effect({dispatch: false})
   checkForReassignment: any = this._actions$
     .pipe(
@@ -181,19 +109,26 @@ export class JiraIssueEffects {
       withLatestFrom(
         this._store$.pipe(select(selectCurrentTaskParentOrCurrent)),
       ),
-      filter(([, currentTaskOrParent]) => (currentTaskOrParent && currentTaskOrParent.issueType === JIRA_TYPE)),
-      concatMap(([, currentTaskOrParent]) =>
-        this._getCfgOnce$(currentTaskOrParent.projectId).pipe(
-          map((jiraCfg) => ({jiraCfg, currentTaskOrParent}))
-        )
-      ),
+      filter(([, currentTaskOrParent]) => (
+        !!currentTaskOrParent
+        && currentTaskOrParent.issueType === JIRA_TYPE
+        && !!currentTaskOrParent.issueId
+      )),
+      concatMap(([, currentTaskOrParent]) => {
+        if (!currentTaskOrParent.projectId) {
+          throw new Error('No projectId for task');
+        }
+        return this._getCfgOnce$(currentTaskOrParent.projectId).pipe(
+          map((jiraCfg) => ({jiraCfg, currentTaskOrParent})),
+        );
+      }),
       filter(({jiraCfg, currentTaskOrParent}) => isJiraEnabled(jiraCfg) && jiraCfg.isCheckToReAssignTicketOnTaskStart),
       // show every 15s max to give time for updates
       throttleTime(15000),
       // TODO there is probably a better way to to do this
       // TODO refactor to actions
       switchMap(({jiraCfg, currentTaskOrParent}) => {
-        return this._jiraApiService.getReducedIssueById$(currentTaskOrParent.issueId, jiraCfg).pipe(
+        return this._jiraApiService.getReducedIssueById$(currentTaskOrParent.issueId as string, jiraCfg).pipe(
           withLatestFrom(this._jiraApiService.getCurrentUser$(jiraCfg)),
           concatMap(([issue, currentUser]) => {
             const assignee = issue.assignee;
@@ -231,6 +166,7 @@ export class JiraIssueEffects {
       })
     );
 
+  // POLLING & UPDATES
   @Effect({dispatch: false})
   checkForStartTransition$: Observable<any> = this._actions$
     .pipe(
@@ -243,11 +179,14 @@ export class JiraIssueEffects {
       filter(([, currentTaskOrParent]) =>
         (currentTaskOrParent && currentTaskOrParent.issueType === JIRA_TYPE)
       ),
-      concatMap(([, currentTaskOrParent]) =>
-        this._getCfgOnce$(currentTaskOrParent.projectId).pipe(
+      concatMap(([, currentTaskOrParent]) => {
+        if (!currentTaskOrParent.projectId) {
+          throw new Error('No projectId for task');
+        }
+        return this._getCfgOnce$(currentTaskOrParent.projectId).pipe(
           map((jiraCfg) => ({jiraCfg, currentTaskOrParent}))
-        )
-      ),
+        );
+      }),
       filter(({jiraCfg, currentTaskOrParent}) =>
         isJiraEnabled(jiraCfg) && jiraCfg.isTransitionIssuesEnabled
       ),
@@ -255,17 +194,21 @@ export class JiraIssueEffects {
         this._handleTransitionForIssue(IssueLocalState.IN_PROGRESS, jiraCfg, currentTaskOrParent)
       ),
     );
-
   @Effect({dispatch: false})
   checkForDoneTransition$: Observable<any> = this._actions$
     .pipe(
       ofType(TaskActionTypes.UpdateTask),
-      filter((a: UpdateTask) => a.payload.task.changes.isDone),
+      filter((a: UpdateTask): boolean => !!a.payload.task.changes.isDone),
       concatMap((a: UpdateTask) => this._taskService.getByIdOnce$(a.payload.task.id as string)),
       filter((task: Task) => (task && task.issueType === JIRA_TYPE)),
-      concatMap((task: Task) => this._getCfgOnce$(task.projectId).pipe(
-        map((jiraCfg) => ({jiraCfg, task})),
-      )),
+      concatMap((task: Task) => {
+        if (!task.projectId) {
+          throw new Error('No projectId for task');
+        }
+        return this._getCfgOnce$(task.projectId).pipe(
+          map((jiraCfg) => ({jiraCfg, task})),
+        );
+      }),
       filter(({jiraCfg, task}) =>
         isJiraEnabled(jiraCfg) && jiraCfg.isTransitionIssuesEnabled
       ),
@@ -274,22 +217,91 @@ export class JiraIssueEffects {
       })
     );
 
+  // HOOKS
+  private _isInitialRequestForProjectDone$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
+  @Effect({dispatch: false})
+  checkConnection$: Observable<any> = this._actions$.pipe(
+    ofType(setActiveWorkContext),
+    tap(() => this._isInitialRequestForProjectDone$.next(false)),
+    filter(({activeType}) => (activeType === WorkContextType.PROJECT)),
+    concatMap(({activeId}) => this._getCfgOnce$(activeId)),
+    // NOTE: might not be loaded yet
+    filter(jiraCfg => isJiraEnabled(jiraCfg)),
+    // just fire any single request
+    concatMap((jiraCfg) => this._jiraApiService.getCurrentUser$(jiraCfg)),
+    tap(() => this._isInitialRequestForProjectDone$.next(true)),
+  );
   private _pollTimer$: Observable<number> = timer(JIRA_INITIAL_POLL_BACKLOG_DELAY, JIRA_POLL_INTERVAL);
+  // -----------------
+  @Effect({dispatch: false})
+  pollNewIssuesToBacklog$: any = this._issueEffectHelperService.pollToBacklogTriggerToProjectId$.pipe(
+    switchMap(this._afterInitialRequestCheckForProjectJiraSuccessfull$.bind(this)),
+    switchMap((pId: string) => this._getCfgOnce$(pId).pipe(
+      filter(jiraCfg => isJiraEnabled(jiraCfg) && jiraCfg.isAutoAddToBacklog),
+      // tap(() => console.log('POLL TIMER STARTED')),
+      switchMap(jiraCfg => this._pollTimer$.pipe(
+        // NOTE: required otherwise timer stays alive for filtered actions
+        takeUntil(this._issueEffectHelperService.pollToBacklogActions$),
+        tap(() => console.log('JIRA_POLL_BACKLOG_CHANGES')),
+        tap(() => this._importNewIssuesToBacklog(pId, jiraCfg))
+      )),
+    )),
+  );
+  @Effect({dispatch: false})
+  pollIssueChangesForCurrentContext$: any = this._issueEffectHelperService.pollIssueTaskUpdatesActions$.pipe(
+    switchMap((inVal) => this._workContextService.isActiveWorkContextProject$.pipe(
+      take(1),
+      switchMap(isProject => isProject
+        ? this._afterInitialRequestCheckForProjectJiraSuccessfull$(inVal)
+        : of(inVal)
+      ),
+    )),
+    switchMap(() => this._pollTimer$),
+    switchMap(() => this._workContextService.allTasksForCurrentContext$.pipe(
+      first(),
+      switchMap((tasks) => {
+        const jiraIssueTasks = tasks.filter(task => task.issueType === JIRA_TYPE);
+        return forkJoin(jiraIssueTasks.map(task => {
+            if (!task.projectId) {
+              throw new Error('No projectId for task');
+            }
+            return this._getCfgOnce$(task.projectId).pipe(
+              map(cfg => ({cfg, task}))
+            );
+          }
+        ));
+      }),
+      map((cos) => cos
+        .filter(({cfg, task}: { cfg: JiraCfg, task: TaskWithSubTasks }) =>
+          isJiraEnabled(cfg) && cfg.isAutoPollTickets
+        )
+        .map(({task}: { cfg: JiraCfg, task: TaskWithSubTasks }) => task)
+      ),
+      tap((jiraTasks: TaskWithSubTasks[]) => {
+        if (jiraTasks && jiraTasks.length > 0) {
+          this._snackService.open({
+            msg: T.F.JIRA.S.POLLING,
+            svgIco: 'jira',
+            isSpinner: true,
+          });
+          jiraTasks.forEach((task) => this._issueService.refreshIssue(task, true, false));
+        }
+      }),
+    )),
+  );
 
-  constructor(private readonly _actions$: Actions,
-              private readonly _store$: Store<any>,
-              private readonly _configService: GlobalConfigService,
-              private readonly _snackService: SnackService,
-              private readonly _projectService: ProjectService,
-              private readonly _syncService: SyncService,
-              private readonly _taskService: TaskService,
-              private readonly _workContextService: WorkContextService,
-              private readonly _jiraApiService: JiraApiService,
-              private readonly _issueService: IssueService,
-              private readonly _persistenceService: PersistenceService,
-              private readonly _matDialog: MatDialog,
-              private readonly _issueEffectHelperService: IssueEffectHelperService,
+  constructor(
+    private readonly _actions$: Actions,
+    private readonly _store$: Store<any>,
+    private readonly _snackService: SnackService,
+    private readonly _projectService: ProjectService,
+    private readonly _taskService: TaskService,
+    private readonly _workContextService: WorkContextService,
+    private readonly _jiraApiService: JiraApiService,
+    private readonly _issueService: IssueService,
+    private readonly _matDialog: MatDialog,
+    private readonly _issueEffectHelperService: IssueEffectHelperService,
   ) {
   }
 
@@ -303,6 +315,10 @@ export class JiraIssueEffects {
 
   private _handleTransitionForIssue(localState: IssueLocalState, jiraCfg: JiraCfg, task: Task): Observable<any> {
     const chosenTransition: JiraTransitionOption = jiraCfg.transitionConfig[localState];
+
+    if (!task.issueId) {
+      throw new Error('No issueId for task');
+    }
 
     switch (chosenTransition) {
       case 'DO_NOT':
@@ -321,28 +337,27 @@ export class JiraIssueEffects {
           // NOTE: we would kill the whole effect chain if we do this
           // return throwError({[HANDLED_ERROR_PROP_STR]: 'Jira: No valid transition configured'});
           return timer(2000).pipe(
-            concatMap(() => this._jiraApiService.getReducedIssueById$(task.issueId, jiraCfg)),
-            concatMap((issue: JiraIssue) => this._openTransitionDialog(issue, localState, task))
+            concatMap(() => this._jiraApiService.getReducedIssueById$(task.issueId as string, jiraCfg)),
+            concatMap((issue: JiraIssueReduced) => this._openTransitionDialog(issue, localState, task))
           );
         }
 
         return this._jiraApiService.getReducedIssueById$(task.issueId, jiraCfg).pipe(
           concatMap((issue) => {
             if (!issue.status || issue.status.name !== chosenTransition.name) {
-              return this._jiraApiService.transitionIssue$(issue.id, chosenTransition.id, jiraCfg)
-                .pipe(
-                  tap(() => {
-                    this._snackService.open({
-                      type: 'SUCCESS',
-                      msg: T.F.JIRA.S.TRANSITION_SUCCESS,
-                      translateParams: {
-                        issueKey: `${issue.key}`,
-                        chosenTransition: `${chosenTransition.name}`,
-                      },
-                    });
-                    this._issueService.refreshIssue(task, false, false);
-                  })
-                );
+              return this._jiraApiService.transitionIssue$(issue.id, chosenTransition.id, jiraCfg).pipe(
+                concatMap(() => {
+                  this._snackService.open({
+                    type: 'SUCCESS',
+                    msg: T.F.JIRA.S.TRANSITION_SUCCESS,
+                    translateParams: {
+                      issueKey: `${issue.key}`,
+                      chosenTransition: `${chosenTransition.name}`,
+                    },
+                  });
+                  return this._issueService.refreshIssue(task, false, false);
+                })
+              );
             } else {
               // no transition required
               return EMPTY;
@@ -382,7 +397,6 @@ export class JiraIssueEffects {
         return;
       }
       const allTaskJiraIssueIds = await this._taskService.getAllIssueIdsForProject(projectId, JIRA_TYPE) as string[];
-
 
       // NOTE: we check for key as well as id although normally the key should suffice
       const issuesToAdd = issues.filter(

@@ -1,6 +1,10 @@
-import {Injectable} from '@angular/core';
-import {select, Store} from '@ngrx/store';
-import {selectAllTaskRepeatCfgs, selectTaskRepeatCfgById} from './store/task-repeat-cfg.reducer';
+import { Injectable } from '@angular/core';
+import { select, Store } from '@ngrx/store';
+import {
+  selectAllTaskRepeatCfgs,
+  selectTaskRepeatCfgById,
+  selectTaskRepeatCfgByIdAllowUndefined
+} from './store/task-repeat-cfg.reducer';
 import {
   AddTaskRepeatCfgToTask,
   DeleteTaskRepeatCfg,
@@ -9,13 +13,12 @@ import {
   UpdateTaskRepeatCfgs,
   UpsertTaskRepeatCfg,
 } from './store/task-repeat-cfg.actions';
-import {Observable} from 'rxjs';
-import {TaskRepeatCfg, TaskRepeatCfgState} from './task-repeat-cfg.model';
-import shortid from 'shortid';
-import {PersistenceService} from '../../core/persistence/persistence.service';
-import {DialogConfirmComponent} from '../../ui/dialog-confirm/dialog-confirm.component';
-import {MatDialog} from '@angular/material/dialog';
-import {T} from '../../t.const';
+import { Observable } from 'rxjs';
+import { TaskRepeatCfg, TaskRepeatCfgCopy, TaskRepeatCfgState } from './task-repeat-cfg.model';
+import * as shortid from 'shortid';
+import { DialogConfirmComponent } from '../../ui/dialog-confirm/dialog-confirm.component';
+import { MatDialog } from '@angular/material/dialog';
+import { T } from '../../t.const';
 
 @Injectable({
   providedIn: 'root',
@@ -25,7 +28,6 @@ export class TaskRepeatCfgService {
 
   constructor(
     private _store$: Store<TaskRepeatCfgState>,
-    private _persistenceService: PersistenceService,
     private _matDialog: MatDialog,
   ) {
   }
@@ -33,8 +35,11 @@ export class TaskRepeatCfgService {
   getTaskRepeatCfgById$(id: string): Observable<TaskRepeatCfg> {
     return this._store$.pipe(select(selectTaskRepeatCfgById, {id}));
   }
+  getTaskRepeatCfgByIdAllowUndefined$(id: string): Observable<TaskRepeatCfg|undefined> {
+    return this._store$.pipe(select(selectTaskRepeatCfgByIdAllowUndefined, {id}));
+  }
 
-  addTaskRepeatCfgToTask(taskId: string, projectId: string, taskRepeatCfg: TaskRepeatCfg) {
+  addTaskRepeatCfgToTask(taskId: string, projectId: string | null, taskRepeatCfg: Omit<TaskRepeatCfgCopy, 'id'>) {
     this._store$.dispatch(new AddTaskRepeatCfgToTask({
       taskRepeatCfg: {
         ...taskRepeatCfg,

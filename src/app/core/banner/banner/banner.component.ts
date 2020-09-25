@@ -1,10 +1,10 @@
-import {ChangeDetectionStrategy, Component, ElementRef, ViewChild} from '@angular/core';
-import {BannerService} from '../banner.service';
-import {Banner, BannerAction} from '../banner.model';
-import {concatMap, mapTo} from 'rxjs/operators';
-import {merge, Observable, of, timer} from 'rxjs';
-import {slideAnimation} from '../../../ui/animations/slide.ani';
-import {T} from '../../../t.const';
+import { ChangeDetectionStrategy, Component, ElementRef, ViewChild } from '@angular/core';
+import { BannerService } from '../banner.service';
+import { Banner, BannerAction, BannerId } from '../banner.model';
+import { concatMap, mapTo } from 'rxjs/operators';
+import { merge, Observable, of, timer } from 'rxjs';
+import { slideAnimation } from '../../../ui/animations/slide.ani';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'banner',
@@ -14,11 +14,11 @@ import {T} from '../../../t.const';
   animations: [slideAnimation]
 })
 export class BannerComponent {
-  T = T;
-  height = 120;
-  private _dirtyReference: string;
+  T: typeof T = T;
+  height: number = 120;
+  private _dirtyReference?: string | null;
   // TODO maybe improve if initial delay is annoying
-  activeBanner$: Observable<Banner> = this.bannerService.activeBanner$.pipe(
+  activeBanner$: Observable<Banner | null> = this.bannerService.activeBanner$.pipe(
     concatMap((activeBanner) => {
       if (activeBanner) {
         if (!this._dirtyReference || this._dirtyReference === activeBanner.id) {
@@ -50,9 +50,9 @@ export class BannerComponent {
     }
   }
 
-  dismiss(bannerId) {
+  dismiss(bannerId: string) {
     this._updateHeight();
-    this.bannerService.dismiss(bannerId);
+    this.bannerService.dismiss(bannerId as BannerId);
   }
 
   action(bannerId: string, bannerAction: BannerAction) {

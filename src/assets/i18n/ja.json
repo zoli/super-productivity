@@ -14,10 +14,7 @@
     "UPDATE_WEB_APP": "新しいバージョンがあります。新しいバージョンをロードしますか？"
   },
   "BL": {
-    "FROM_OTHER_PROJECTS": "他のプロジェクトから",
-    "NO_TASKS": "現在、バックログにタスクはありません",
-    "SCHEDULED": "予定",
-    "TITLE": "バックログ"
+    "NO_TASKS": "現在、バックログにタスクはありません"
   },
   "DATETIME_INPUT": {
     "IN": " {{time}}に",
@@ -80,6 +77,13 @@
       }
     },
     "DROPBOX": {
+      "C": {
+        "EMPTY_SYNC": "空のデータオブジェクトを同期しようとしています。これは（ほぼ）未使用のアプリの最初の同期ですか？",
+        "FORCE_IMPORT": "とにかくリモートデータをインポートしますか？",
+        "FORCE_UPLOAD": "とにかくローカルデータをアップロードしますか？",
+        "FORCE_UPLOAD_AFTER_ERROR": "ローカルデータのアップロード中にエラーが発生しました。強制的に更新しますか？",
+        "TRY_LOAD_REMOTE_AGAIN": "リモートからもう一度データを再ロードしてみますか？"
+      },
       "D_CONFLICT": {
         "LAST_CHANGE": "最終変更：",
         "LAST_SYNC": "最終同期：",
@@ -122,7 +126,7 @@
         "TOKEN": "アクセストークン"
       },
       "FORM_SECTION": {
-        "HELP": "<p>ここでは、毎日の計画ビューのタスク作成パネルに、特定のリポジトリの未解決のGithHub issueを一覧表示するようにSuperProductivityを設定できます。それらは提案としてリストされ、問題へのリンクとそれに関する詳細情報を提供します。</p> <p>さらに、未解決の課題をすべて自動的にタスクバックログに追加して同期することができます。</p>",
+        "HELP": "<p>ここでは、毎日の計画ビューのタスク作成パネルに、特定のリポジトリの未解決のGitHub issueを一覧表示するようにSuperProductivityを設定できます。それらは提案としてリストされ、問題へのリンクとそれに関する詳細情報を提供します。</p> <p>さらに、未解決の課題をすべて自動的にタスクバックログに追加して同期することができます。</p>",
         "TITLE": "Github"
       },
       "ISSUE_CONTENT": {
@@ -160,11 +164,11 @@
         "IS_AUTO_ADD_TO_BACKLOG": "未解決の問題をGitlabからバックログに自動的に追加",
         "IS_AUTO_POLL": "変更についてインポートされたGitの問題を自動的にポーリングします",
         "IS_SEARCH_ISSUES_FROM_GITLAB": "新しいタスクを追加するときにgitからの問題を提案として表示する",
-        "PROJECT": "追跡するgitlabプロジェクトの「username%2FProjectName」",
+        "PROJECT": "フルパスまたはユーザー名/プロジェクト",
         "TOKEN": "アクセストークン"
       },
       "FORM_SECTION": {
-        "HELP": "<p>ここでは、毎日の計画ビューのタスク作成パネルに、特定のリポジトリの未解決のGitlab issueを一覧表示するようにSuperProductivityを設定できます。それらは提案としてリストされ、問題へのリンクとそれに関する詳細情報を提供します。</p> <p>さらに、未解決の課題をすべて自動的にタスクバックログに追加して同期することができます。</p>",
+        "HELP": "<p>ここでは、SuperProductivityを構成して、特定のプロジェクトの開いているGitlab（オンラインバージョンまたはセルフホストインスタンス）の問題を日次計画ビューのタスク作成パネルに一覧表示できます。それらは提案としてリストされ、問題へのリンクとそれに関する詳細情報を提供します。</p> <p>さらに、すべての未解決の問題をタスクバックログに自動的に追加して同期できます。</p>",
         "TITLE": "Gitlab"
       },
       "ISSUE_CONTENT": {
@@ -315,7 +319,8 @@
         "ALLOW_SELF_SIGNED": "自己署名証明書を許可する",
         "HOST": "ホスト（例：http://my-host.de:1234）",
         "PASSWORD": "トークン/パスワード",
-        "USER_NAME": "電子メール/ユーザー名"
+        "USER_NAME": "電子メール/ユーザー名",
+        "WONKY_COOKIE_MODE": "Wonky Cookieフォールバック認証（デスクトップアプリのみ）"
       },
       "FORM_SECTION": {
         "ADV_CFG": "詳細設定",
@@ -609,8 +614,12 @@
         "TIME": "時間"
       },
       "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "既存のタスク「{{taskTitle}}」を追加",
+        "ADD_ISSUE_TASK": " {{issueType}}から問題番号{{issueNr}} を追加",
         "ADD_TASK": "タスクを追加",
         "ADD_TASK_TO_BACKLOG": "バックログにタスクを追加",
+        "CREATE_TASK": "新しいタスクを作成する",
+        "EXAMPLE": "例：「Some task title + projectName #some tag #some other tag 10m / 3h」",
         "START": "もう一度Enterキーを押して開始します"
       },
       "B": {
@@ -831,12 +840,14 @@
     "SAVE": "保存する",
     "TITLE": "タイトル",
     "UNDO": "元に戻す",
-    "UPDATE": "更新"
+    "UPDATE": "更新",
+    "WITHOUT_PROJECT": "プロジェクトなし"
   },
   "GCF": {
     "AUTO_BACKUPS": {
       "HELP": "問題が発生した場合に備えて、すべてのデータをアプリフォルダに自動保存して準備します。",
       "LABEL_IS_ENABLED": "自動バックアップを有効にする",
+      "LOCATION_INFO": "バックアップは次の場所に保存されます：",
       "TITLE": "自動バックアップ"
     },
     "EVALUATION": {
@@ -926,6 +937,7 @@
       "IS_AUTO_START_NEXT_TASK": "現在の完了マークを付けたときに次のタスクの追跡を開始する",
       "IS_CONFIRM_BEFORE_EXIT": "アプリを終了する前に確認してください",
       "IS_DARK_MODE": "ダークモード",
+      "IS_DISABLE_INITIAL_DIALOG": "初期情報ダイアログを無効にする（重要な更新を見逃す可能性があります！）",
       "IS_HIDE_NAV": "メインヘッダーが表示されるまでナビゲーションを非表示にする（デスクトップのみ）",
       "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "見積もり時間を超えたときに通知する",
       "IS_TURN_OFF_MARKDOWN": "ノートのマークダウン解析をオフにする",
@@ -945,6 +957,13 @@
       "LONGER_BREAK_DURATION": "長い休憩時間",
       "TITLE": "ポモドーロタイマー"
     },
+    "SOUND": {
+      "DONE_SOUND": "タスク完了音",
+      "IS_INCREASE_DONE_PITCH": "実行するすべてのタスクのピッチを上げる",
+      "IS_PLAY_DONE_SOUND": "タスクが完了とマークされたときに音を鳴らす",
+      "TITLE": "音",
+      "VOLUME": "ボリューム"
+    },
     "TAKE_A_BREAK": {
       "HELP": "<div> <p>休憩せずに指定した時間作業したときに繰り返し発生するアラームを設定できます。</p> <p>表示されたメッセージを変更できます。 ${duration} は中断せずに費やした時間に置き換えられます。</p> </div>",
       "IS_ENABLED": "休憩のお知らせを有効にする",
@@ -960,7 +979,9 @@
     "COPY_TO_CLIPPBOARD": "クリップボードにコピー",
     "ERR_COMPRESSION": "圧縮インターフェースのエラー",
     "PERSISTENCE_DISALLOWED": "データは永続的に保持されません。これはデータの損失につながる可能性があることに注意してください!!",
-    "RUNNING_X": "\"{{str}}\"を実行しています。"
+    "RUNNING_X": "\"{{str}}\"を実行しています。",
+    "SHORTCUT_WARN_OPEN_BOOKMARKS_FROM_TAG": "{{keyCombo}} が押されましたが、ブックマークを開くショートカットはプロジェクトコンテキストでのみ使用できます。",
+    "SHORTCUT_WARN_OPEN_NOTES_FROM_TAG": "{{keyCombo}} が押されましたが、メモを開くショートカットはプロジェクトコンテキストでのみ使用できます。"
   },
   "GPB": {
     "ASSETS": "アセットを読み込んでいます...",
@@ -1078,7 +1099,6 @@
     }
   },
   "SCHEDULE": {
-    "ADD_TO_TODAY": "今日に追加してリマインダーを削除",
     "NO_SCHEDULED": "現在スケジュールされているタスクはありません。タスクのコンテキストメニューで[タスクのスケジュール]を選択してタスクをスケジュールできます。開くには、タスクの右側にある3つの小さな点をクリックします。",
     "START_TASK": "今すぐタスクを開始してリマインダーを削除"
   },

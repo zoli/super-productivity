@@ -17,36 +17,35 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InlineInputComponent implements AfterViewInit {
-  @Input() type = 'text';
-  @Input() value: string | number;
-  @Input() displayValue: string;
-  @Input() newValue: string | number;
+  @Input() type: 'text' | 'duration' = 'text';
+  @Input() value?: string | number;
+  @Input() displayValue?: string;
+  @Input() newValue?: string | number;
 
-  @Output() changed = new EventEmitter<string | number>();
-  @ViewChild('inputEl') inputEl: ElementRef;
-  @ViewChild('inputElDuration') inputElDuration: ElementRef;
+  @Output() changed: EventEmitter<string | number> = new EventEmitter();
+  @ViewChild('inputEl') inputEl?: ElementRef;
+  @ViewChild('inputElDuration') inputElDuration?: ElementRef;
 
-  @HostBinding('class.isFocused') isFocused = false;
+  @HostBinding('class.isFocused') isFocused: boolean = false;
 
-  activeInputEl: HTMLInputElement;
+  activeInputEl?: HTMLInputElement;
 
   constructor() {
   }
 
   ngAfterViewInit() {
     this.activeInputEl = (this.type === 'duration')
-      ? this.inputElDuration.nativeElement
-      : this.inputEl.nativeElement;
+      ? (this.inputElDuration as ElementRef).nativeElement
+      : (this.inputEl as ElementRef).nativeElement;
   }
 
   focusInput() {
     this.activeInputEl = (this.type === 'duration')
-      ? this.inputElDuration.nativeElement
-      : this.inputEl.nativeElement;
-
+      ? (this.inputElDuration as ElementRef).nativeElement
+      : (this.inputEl as ElementRef).nativeElement;
 
     this.isFocused = true;
-    this.activeInputEl.focus();
+    (this.activeInputEl as HTMLElement).focus();
 
     // if (this.type === 'text' || this.type === 'duration') {
     // this.activeInputEl.setSelectionRange(0, this.activeInputEl.value.length);
@@ -61,18 +60,18 @@ export class InlineInputComponent implements AfterViewInit {
     }
   }
 
-  onChange(v) {
+  onChange(v: string | number) {
     this.newValue = v;
   }
 
-  keypressHandler(ev) {
+  keypressHandler(ev: KeyboardEvent) {
     if (ev.key === 'Escape') {
-      this.newValue = null;
-      this.activeInputEl.blur();
+      this.newValue = undefined;
+      (this.activeInputEl as HTMLElement).blur();
     }
 
     if (ev.key === 'Enter') {
-      this.activeInputEl.blur();
+      (this.activeInputEl as HTMLElement).blur();
     }
   }
 }

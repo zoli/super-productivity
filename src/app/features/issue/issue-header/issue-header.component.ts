@@ -1,6 +1,6 @@
-import {ChangeDetectionStrategy, Component, Input, OnInit} from '@angular/core';
-import {TaskWithSubTasks} from '../../tasks/task.model';
-import {GITHUB_TYPE, JIRA_TYPE, GITLAB_TYPE} from '../issue.const';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { TaskWithSubTasks } from '../../tasks/task.model';
+import { GITHUB_TYPE, GITLAB_TYPE, JIRA_TYPE } from '../issue.const';
 
 @Component({
   selector: 'issue-header',
@@ -8,17 +8,13 @@ import {GITHUB_TYPE, JIRA_TYPE, GITLAB_TYPE} from '../issue.const';
   styleUrls: ['./issue-header.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class IssueHeaderComponent implements OnInit {
-  @Input() task: TaskWithSubTasks;
+export class IssueHeaderComponent {
+  @Input() task?: TaskWithSubTasks;
 
-  GITLAB_TYPE = GITLAB_TYPE;
-  GITHUB_TYPE = GITHUB_TYPE;
-  JIRA_TYPE = JIRA_TYPE;
+  readonly GITLAB_TYPE: string = GITLAB_TYPE;
+  readonly GITHUB_TYPE: string = GITHUB_TYPE;
+  readonly JIRA_TYPE: string = JIRA_TYPE;
 
   constructor() {
   }
-
-  ngOnInit() {
-  }
-
 }

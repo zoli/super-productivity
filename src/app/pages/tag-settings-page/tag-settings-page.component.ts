@@ -1,16 +1,20 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
-import {T} from '../../t.const';
-import {ConfigFormConfig, ConfigFormSection, GlobalConfigSectionKey} from '../../features/config/global-config.model';
-import {Subscription} from 'rxjs';
-import {GLOBAL_CONFIG_FORM_CONFIG} from '../../features/config/global-config-form-config.const';
-import {IS_ELECTRON} from '../../app.constants';
-import {WorkContext, WorkContextAdvancedCfg, WorkContextThemeCfg} from '../../features/work-context/work-context.model';
-import {WorkContextService} from '../../features/work-context/work-context.service';
-import {Tag, TagCfgFormKey} from '../../features/tag/tag.model';
-import {TagService} from '../../features/tag/tag.service';
-import {ProjectCfgFormKey} from '../../features/project/project.model';
-import {WORK_CONTEXT_THEME_CONFIG_FORM_CONFIG} from '../../features/work-context/work-context.const';
-import {BASIC_TAG_CONFIG_FORM_CONFIG} from '../../features/tag/tag-form-cfg.const';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { T } from '../../t.const';
+import { ConfigFormConfig, ConfigFormSection, GlobalConfigSectionKey } from '../../features/config/global-config.model';
+import { Subscription } from 'rxjs';
+import { GLOBAL_CONFIG_FORM_CONFIG } from '../../features/config/global-config-form-config.const';
+import { IS_ELECTRON } from '../../app.constants';
+import {
+  WorkContext,
+  WorkContextAdvancedCfg,
+  WorkContextThemeCfg
+} from '../../features/work-context/work-context.model';
+import { WorkContextService } from '../../features/work-context/work-context.service';
+import { Tag, TagCfgFormKey } from '../../features/tag/tag.model';
+import { TagService } from '../../features/tag/tag.service';
+import { ProjectCfgFormKey } from '../../features/project/project.model';
+import { WORK_CONTEXT_THEME_CONFIG_FORM_CONFIG } from '../../features/work-context/work-context.const';
+import { BASIC_TAG_CONFIG_FORM_CONFIG } from '../../features/tag/tag-form-cfg.const';
 
 @Component({
   selector: 'project-settings',
@@ -19,16 +23,16 @@ import {BASIC_TAG_CONFIG_FORM_CONFIG} from '../../features/tag/tag-form-cfg.cons
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TagSettingsPageComponent implements OnInit, OnDestroy {
-  T = T;
+  T: typeof T = T;
   tagThemeSettingsFormCfg: ConfigFormSection<WorkContextThemeCfg>;
   globalConfigFormCfg: ConfigFormConfig;
   basicFormCfg: ConfigFormSection<Tag>;
 
-  activeWorkContext: WorkContext;
-  workContextAdvCfg: WorkContextAdvancedCfg;
-  currentWorkContextTheme: WorkContextThemeCfg;
+  activeWorkContext: WorkContext | null = null;
+  workContextAdvCfg: WorkContextAdvancedCfg | null = null;
+  currentWorkContextTheme?: WorkContextThemeCfg;
 
-  private _subs = new Subscription();
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public readonly tagService: TagService,
@@ -55,7 +59,7 @@ export class TagSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   saveTagThemCfg($event: { sectionKey: GlobalConfigSectionKey | ProjectCfgFormKey | TagCfgFormKey, config: WorkContextThemeCfg }) {
-    if (!$event.config) {
+    if (!$event.config || this.activeWorkContext === null) {
       throw new Error('Not enough data');
     } else {
       this.tagService.updateTag(this.activeWorkContext.id, {
@@ -67,7 +71,7 @@ export class TagSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   saveBasicSettings($event: { sectionKey: GlobalConfigSectionKey | ProjectCfgFormKey | TagCfgFormKey, config: Tag }) {
-    if (!$event.config) {
+    if (!$event.config || this.activeWorkContext === null) {
       throw new Error('Not enough data');
     } else {
       const {title, icon, color} = $event.config;

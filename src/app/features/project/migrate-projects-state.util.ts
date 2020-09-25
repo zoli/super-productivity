@@ -1,30 +1,30 @@
-import {ProjectState} from './store/project.reducer';
-import {Dictionary} from '@ngrx/entity';
-import {Project} from './project.model';
-import {DEFAULT_PROJECT, PROJECT_MODEL_VERSION} from './project.const';
-import {DEFAULT_ISSUE_PROVIDER_CFGS} from '../issue/issue.const';
-import {MODEL_VERSION_KEY, THEME_COLOR_MAP, WORKLOG_DATE_STR_FORMAT} from '../../app.constants';
-import {isMigrateModel} from '../../util/model-version';
+import { ProjectState } from './store/project.reducer';
+import { Dictionary } from '@ngrx/entity';
+import { Project } from './project.model';
+import { DEFAULT_PROJECT, PROJECT_MODEL_VERSION } from './project.const';
+import { DEFAULT_ISSUE_PROVIDER_CFGS } from '../issue/issue.const';
+import { MODEL_VERSION_KEY, THEME_COLOR_MAP, WORKLOG_DATE_STR_FORMAT } from '../../app.constants';
+import { isMigrateModel } from '../../util/model-version';
 import * as moment from 'moment';
-import {convertToWesternArabic} from '../../util/numeric-converter';
-import {WORK_CONTEXT_DEFAULT_THEME} from '../work-context/work-context.const';
-import {dirtyDeepCopy} from '../../util/dirtyDeepCopy';
+import { convertToWesternArabic } from '../../util/numeric-converter';
+import { WORK_CONTEXT_DEFAULT_THEME } from '../work-context/work-context.const';
+import { dirtyDeepCopy } from '../../util/dirtyDeepCopy';
 
 const MODEL_VERSION = PROJECT_MODEL_VERSION;
 
 export const migrateProjectState = (projectState: ProjectState): ProjectState => {
-  if (!isMigrateModel(projectState, MODEL_VERSION)) {
+  if (!isMigrateModel(projectState, MODEL_VERSION, 'Project')) {
     return projectState;
   }
 
   const projectEntities: Dictionary<Project> = {...projectState.entities};
   Object.keys(projectEntities).forEach((key) => {
-    projectEntities[key] = _updateThemeModel(projectEntities[key]);
-    projectEntities[key] = _convertToWesternArabicDateKeys(projectEntities[key]);
+    projectEntities[key] = _updateThemeModel(projectEntities[key] as Project);
+    projectEntities[key] = _convertToWesternArabicDateKeys(projectEntities[key] as Project);
 
     // NOTE: absolutely needs to come last as otherwise the previous defaults won't work
-    projectEntities[key] = _extendProjectDefaults(projectEntities[key]);
-    projectEntities[key] = _removeOutdatedData(projectEntities[key]);
+    projectEntities[key] = _extendProjectDefaults(projectEntities[key] as Project);
+    projectEntities[key] = _removeOutdatedData(projectEntities[key] as Project);
   });
 
   return {
@@ -34,7 +34,6 @@ export const migrateProjectState = (projectState: ProjectState): ProjectState =>
     [MODEL_VERSION_KEY]: MODEL_VERSION,
   };
 };
-
 
 const _extendProjectDefaults = (project: Project): Project => {
   return {
@@ -55,7 +54,6 @@ const _removeOutdatedData = (project: Project): Project => {
   delete copy.timeWorkedWithoutBreak;
   return copy;
 };
-
 
 const ___convertToWesternArabicDateKeys = (workStartEnd: {
   [key: string]: any;
@@ -87,7 +85,6 @@ const _convertToWesternArabicDateKeys = (project: Project) => {
   };
 };
 
-
 const _updateThemeModel = (project: Project): Project => {
     return (project.hasOwnProperty('theme') && project.theme.primary)
       ? project
@@ -98,7 +95,7 @@ const _updateThemeModel = (project: Project): Project => {
           // tslint:disable-next-line
           primary: (project.themeColor)
             // tslint:disable-next-line
-            ? THEME_COLOR_MAP[project.themeColor]
+            ? (THEME_COLOR_MAP as any)[project.themeColor]
             : WORK_CONTEXT_DEFAULT_THEME.primary,
           // tslint:disable-next-line
         }
@@ -121,13 +118,16 @@ const _fixIds = (projectState: ProjectState): ProjectState => {
     };
   }
 
-
   if (allIds.length !== currentIds.length) {
     let newIds;
     const allP = allIds.map(id => projectState.entities[id]);
 
-    const archivedIds = allP.filter(p => p.isArchived).map(p => p.id);
-    const unarchivedIds = allP.filter(p => !p.isArchived).map(p => p.id);
+    const archivedIds = allP
+      .filter((p) => (p as Project).isArchived)
+      .map(p => (p as Project).id);
+    const unarchivedIds = allP
+      .filter(p => !(p as Project).isArchived)
+      .map(p => (p as Project).id);
     if (currentIds.length === unarchivedIds.length) {
       newIds = [...currentIds, ...archivedIds];
     } else if (currentIds.length === unarchivedIds.length) {

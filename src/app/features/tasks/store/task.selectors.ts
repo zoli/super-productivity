@@ -1,32 +1,33 @@
-import {createFeatureSelector, createSelector} from '@ngrx/store';
-import {TASK_FEATURE_NAME} from './task.reducer';
-import {Task, TaskState, TaskWithSubTasks} from '../task.model';
-import {taskAdapter} from './task.adapter';
-import {GITHUB_TYPE, GITLAB_TYPE, JIRA_TYPE} from '../../issue/issue.const';
-import {devError} from '../../../util/dev-error';
+import { createFeatureSelector, createSelector } from '@ngrx/store';
+import { TASK_FEATURE_NAME } from './task.reducer';
+import { Task, TaskState, TaskWithSubTasks } from '../task.model';
+import { taskAdapter } from './task.adapter';
+import { devError } from '../../../util/dev-error';
 
-const mapSubTasksToTasks = (tasksIN): TaskWithSubTasks[] => {
+// TODO fix null stuff here
+
+const mapSubTasksToTasks = (tasksIN: any[]): TaskWithSubTasks[] => {
   return tasksIN.filter((task) => !task.parentId)
     .map((task) => {
       if (task.subTaskIds && task.subTaskIds.length > 0) {
         return {
           ...task,
           subTasks: task.subTaskIds
-            .map((subTaskId) => tasksIN.find((taskIN) => taskIN.id === subTaskId))
+            .map((subTaskId: string) => tasksIN.find((taskIN) => taskIN.id === subTaskId))
         };
       } else {
         return task;
       }
     });
 };
-const mapSubTasksToTask = (task: Task, s: TaskState): TaskWithSubTasks => {
+const mapSubTasksToTask = (task: Task | null, s: TaskState): TaskWithSubTasks | null => {
   if (!task) {
     return null;
   }
   return {
     ...task,
     subTasks: task.subTaskIds.map(id => {
-      const subTask = s.entities[id];
+      const subTask = s.entities[id] as Task;
       if (!subTask) {
         devError('Task data not found for ' + id);
       }
@@ -35,9 +36,8 @@ const mapSubTasksToTask = (task: Task, s: TaskState): TaskWithSubTasks => {
   };
 };
 
-
-export const flattenTasks = (tasksIN): TaskWithSubTasks[] => {
-  let flatTasks = [];
+export const flattenTasks = (tasksIN: TaskWithSubTasks[]): TaskWithSubTasks[] => {
+  let flatTasks: TaskWithSubTasks[] = [];
   tasksIN.forEach(task => {
     flatTasks.push(task);
     if (task.subTasks) {
@@ -49,101 +49,108 @@ export const flattenTasks = (tasksIN): TaskWithSubTasks[] => {
 
 // SELECTORS
 // ---------
-const {selectIds, selectEntities, selectAll, selectTotal} = taskAdapter.getSelectors();
+const {selectEntities, selectAll} = taskAdapter.getSelectors();
 export const selectTaskFeatureState = createFeatureSelector<TaskState>(TASK_FEATURE_NAME);
 export const selectTaskEntities = createSelector(selectTaskFeatureState, selectEntities);
 export const selectCurrentTaskId = createSelector(selectTaskFeatureState, state => state.currentTaskId);
 export const selectIsTaskDataLoaded = createSelector(selectTaskFeatureState, state => state.isDataLoaded);
-export const selectCurrentTask = createSelector(selectTaskFeatureState, s => s.currentTaskId && s.entities[s.currentTaskId]);
+export const selectCurrentTask = createSelector(selectTaskFeatureState,
+  s => s.currentTaskId ? s.entities[s.currentTaskId] as Task : null);
 
 export const selectCurrentTaskOrParentWithData = createSelector(
   selectTaskFeatureState,
-  (s): TaskWithSubTasks => {
+  (s): TaskWithSubTasks | null => {
     const t = s.currentTaskId
-      && s.entities[s.currentTaskId] && s.entities[s.currentTaskId].parentId
+      && s.entities[s.currentTaskId]
+      // @ts-ignore
+      && s.entities[s.currentTaskId].parentId
+      // @ts-ignore
       && s.entities[s.entities[s.currentTaskId].parentId] || s.entities[s.currentTaskId];
-    return mapSubTasksToTask(t, s);
+    return mapSubTasksToTask(t as Task, s);
   });
 
-export const selectJiraTasks = createSelector(
-  selectTaskFeatureState,
-  (s): Task[] => {
-    return s.ids
-      .map(id => s.entities[id])
-      .filter((task: Task) => task.issueType === JIRA_TYPE);
-  });
-
-export const selectGithubTasks = createSelector(
-  selectTaskFeatureState,
-  (s): Task[] => {
-    return s.ids
-      .map(id => s.entities[id])
-      .filter((task: Task) => task.issueType === GITHUB_TYPE);
-  });
-
-export const selectGitlabTasks = createSelector(
-  selectTaskFeatureState,
-  (s): Task[] => {
-    return s.ids
-      .map(id => s.entities[id])
-      .filter((task: Task) => task.issueType === GITLAB_TYPE);
-  });
+// export const selectJiraTasks = createSelector(
+//   selectTaskFeatureState,
+//   (s): Task[] => {
+//     return s.ids
+//       .map(id => s.entities[id])
+//       .filter((task: Task) => task.issueType === JIRA_TYPE);
+//   });
+//
+// export const selectGithubTasks = createSelector(
+//   selectTaskFeatureState,
+//   (s): Task[] => {
+//     return s.ids
+//       .map(id => s.entities[id])
+//       .filter((task: Task) => task.issueType === GITHUB_TYPE);
+//   });
+//
+// export const selectGitlabTasks = createSelector(
+//   selectTaskFeatureState,
+//   (s): Task[] => {
+//     return s.ids
+//       .map(id => s.entities[id])
+//       .filter((task: Task) => task.issueType === GITLAB_TYPE);
+//   });
 
 export const selectSelectedTaskId = createSelector(selectTaskFeatureState, (state) => state.selectedTaskId);
-export const selectTaskAdditionalInfoTargetPanel = createSelector(selectTaskFeatureState, (state) => state.taskAdditionalInfoTargetPanel);
+export const selectTaskAdditionalInfoTargetPanel = createSelector(selectTaskFeatureState, (state: TaskState) => state.taskAdditionalInfoTargetPanel);
 export const selectSelectedTask = createSelector(
   selectTaskFeatureState,
-  (s): TaskWithSubTasks => {
+  (s): TaskWithSubTasks => {      // @ts-ignore
+    // @ts-ignore
     return s.selectedTaskId && mapSubTasksToTask(s.entities[s.selectedTaskId], s);
   });
 
 export const selectCurrentTaskParentOrCurrent = createSelector(selectTaskFeatureState, (s): Task =>
   s.currentTaskId
+  // @ts-ignore
   && s.entities[s.currentTaskId] && s.entities[s.currentTaskId].parentId
+  // @ts-ignore
   && s.entities[s.entities[s.currentTaskId].parentId]
+  // @ts-ignore
   || s.entities[s.currentTaskId]
 );
-
 
 export const selectAllTasks = createSelector(selectTaskFeatureState, selectAll);
 export const selectScheduledTasks = createSelector(selectAllTasks, (tasks) => tasks.filter(task => task.reminderId));
 
 export const selectAllTasksWithSubTasks = createSelector(selectAllTasks, mapSubTasksToTasks);
 
-
 // DYNAMIC SELECTORS
 // -----------------
 export const selectTaskById = createSelector(
   selectTaskFeatureState,
-  (state, props: { id: string }): Task => state.entities[props.id]
+  (state: TaskState, props: { id: string }): Task => state.entities[props.id] as Task
 );
 
 export const selectTasksById = createSelector(
   selectTaskFeatureState,
-  (state, props: { ids }) => props.ids ? props.ids.map(
-    id => state.entities[id]) : []
+  (state: TaskState, props: { ids: string[] }): Task[] => props.ids
+    ? props.ids.map(id => state.entities[id]) as Task[]
+    : []
 );
 
 export const selectTasksWithSubTasksByIds = createSelector(
   selectTaskFeatureState,
-  (state, props: { ids: string[] }): TaskWithSubTasks[] =>
-    props.ids.map(id => {
+  (state: TaskState, props: { ids: string[] }): TaskWithSubTasks[] =>
+    props.ids.map((id: string) => {
       const task = state.entities[id];
       if (!task) {
         devError('Task data not found for ' + id);
       }
-      return mapSubTasksToTask(task, state);
+      return mapSubTasksToTask(task as Task, state) as TaskWithSubTasks;
     })
 );
 
 export const selectTaskByIdWithSubTaskData = createSelector(
   selectTaskFeatureState,
-  (state, props: { id: string }): TaskWithSubTasks => {
+  (state: TaskState, props: { id: string }): TaskWithSubTasks => {
     const task = state.entities[props.id];
     if (!task) {
       devError('Task data not found for ' + props.id);
     }
-    return mapSubTasksToTask(task, state);
+    return mapSubTasksToTask(task as Task, state) as TaskWithSubTasks;
   }
 );
 
@@ -154,7 +161,7 @@ export const selectMainTasksWithoutTag = createSelector(
   )
 );
 
-export const selectTasksWorkedOnOrDoneFlat = createSelector(selectAllTasks, (tasks, props: { day: string }) => {
+export const selectTasksWorkedOnOrDoneFlat = createSelector(selectAllTasks, (tasks: Task[], props: { day: string }) => {
   if (!props) {
     return null;
   }
@@ -165,13 +172,12 @@ export const selectTasksWorkedOnOrDoneFlat = createSelector(selectAllTasks, (tas
   );
 });
 
-
 // REPEATABLE TASKS
 // ----------------
 export const selectAllRepeatableTaskWithSubTasks = createSelector(
   selectAllTasksWithSubTasks,
   (tasks: TaskWithSubTasks[]) => {
-    return tasks.filter(task => !!task.repeatCfgId && task.repeatCfgId !== null);
+    return tasks.filter(task => !!task.repeatCfgId);
   }
 );
 export const selectAllRepeatableTaskWithSubTasksFlat = createSelector(
@@ -181,11 +187,13 @@ export const selectAllRepeatableTaskWithSubTasksFlat = createSelector(
 
 export const selectTasksByRepeatConfigId = createSelector(
   selectTaskFeatureState,
-  (state, props: { repeatCfgId: string }): Task[] => {
+  (state: TaskState, props: { repeatCfgId: string }): Task[] => {
     const ids = state.ids as string[];
     const taskIds = ids.filter(idIN => state.entities[idIN]
+      // @ts-ignore
       && state.entities[idIN].repeatCfgId === props.repeatCfgId);
 
+    // @ts-ignore
     return (taskIds && taskIds.length)
       ? taskIds.map(id => state.entities[id])
       : null;

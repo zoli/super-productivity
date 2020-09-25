@@ -1,24 +1,24 @@
 'use strict';
-import {App, app, globalShortcut, ipcMain, powerMonitor, protocol} from 'electron';
+import { App, app, BrowserWindow, globalShortcut, ipcMain, powerMonitor, protocol } from 'electron';
 import * as electronDl from 'electron-dl';
 
-import {info} from 'electron-log';
-import {CONFIG} from './CONFIG';
+import { info } from 'electron-log';
+import { CONFIG } from './CONFIG';
 
-import {initIndicator} from './indicator';
-import {createWindow} from './main-window';
+import { initIndicator } from './indicator';
+import { createWindow } from './main-window';
 
-import {sendJiraRequest, setupRequestHeadersForImages} from './jira';
-import {getGitLog} from './git-log';
-import {initGoogleAuth} from './google-auth';
-import {errorHandler} from './error-handler';
-import {initDebug} from './debug';
-import {IPC} from './ipc-events.const';
-import {backupData} from './backup';
-import {JiraCfg} from '../src/app/features/issue/providers/jira/jira.model';
-import {KeyboardConfig} from '../src/app/features/config/global-config.model';
+import { sendJiraRequest, setupRequestHeadersForImages } from './jira';
+import { getGitLog } from './git-log';
+import { initGoogleAuth } from './google-auth';
+import { errorHandler } from './error-handler';
+import { initDebug } from './debug';
+import { IPC } from './ipc-events.const';
+import { backupData } from './backup';
+import { JiraCfg } from '../src/app/features/issue/providers/jira/jira.model';
+import { KeyboardConfig } from '../src/app/features/config/global-config.model';
 import lockscreen from './lockscreen';
-import BrowserWindow = Electron.BrowserWindow;
+import { lazySetInterval } from './lazy-set-interval';
 
 const ICONS_FOLDER = __dirname + '/assets/icons/';
 const IS_MAC = process.platform === 'darwin';
@@ -26,6 +26,10 @@ const IS_LINUX = process.platform === 'linux';
 const DESKTOP_ENV = process.env.DESKTOP_SESSION;
 const IS_GNOME = (DESKTOP_ENV === 'gnome' || DESKTOP_ENV === 'gnome-xorg');
 const IS_DEV = process.env.NODE_ENV === 'DEV';
+
+let isShowDevTools: boolean = IS_DEV;
+let customUrl: string;
+
 if (IS_DEV) {
   console.log('Starting in DEV Mode!!!');
 }
@@ -37,6 +41,15 @@ process.argv.forEach((val) => {
     console.log('Using custom directory for user data', customUserDir);
     app.setPath('userData', customUserDir);
   }
+
+  if (val && val.includes('--custom-url=')) {
+    customUrl = val.replace('--custom-url=', '').trim();
+    console.log('Using custom url', customUrl);
+  }
+
+  if (val && val.includes('--dev-tools')) {
+    isShowDevTools = true;
+  }
 });
 
 interface MyApp extends App {
@@ -47,7 +60,7 @@ const appIN: MyApp = app;
 // NOTE: to get rid of the warning => https://github.com/electron/electron/issues/18397
 appIN.allowRendererProcessReuse = true;
 
-initDebug({showDevTools: IS_DEV}, IS_DEV);
+initDebug({showDevTools: isShowDevTools}, IS_DEV);
 
 // NOTE: opening the folder crashes the mas build
 if (!IS_MAC) {
@@ -120,29 +133,32 @@ appIN.on('ready', () => {
   const checkIdle = () => sendIdleMsgIfOverMin(powerMonitor.getSystemIdleTime() * 1000);
 
   // init time tracking interval
-  setInterval(checkIdle, CONFIG.IDLE_PING_INTERVAL);
+  lazySetInterval(checkIdle, CONFIG.IDLE_PING_INTERVAL);
 
   powerMonitor.on('suspend', () => {
     isLocked = true;
     suspendStart = Date.now();
+    mainWin.webContents.send(IPC.SUSPEND);
   });
 
   powerMonitor.on('lock-screen', () => {
     isLocked = true;
     suspendStart = Date.now();
+    mainWin.webContents.send(IPC.SUSPEND);
   });
 
   powerMonitor.on('resume', () => {
     isLocked = false;
     sendIdleMsgIfOverMin(Date.now() - suspendStart);
+    mainWin.webContents.send(IPC.RESUME);
   });
 
   powerMonitor.on('unlock-screen', () => {
     isLocked = false;
     sendIdleMsgIfOverMin(Date.now() - suspendStart);
+    mainWin.webContents.send(IPC.RESUME);
   });
 });
-
 
 appIN.on('will-quit', () => {
   // un-register all shortcuts.
@@ -196,13 +212,12 @@ ipcMain.on(IPC.SET_PROGRESS_BAR, (ev, {progress, mode}) => {
   }
 });
 
-
 ipcMain.on(IPC.REGISTER_GLOBAL_SHORTCUTS_EVENT, (ev, cfg) => {
   registerShowAppShortCuts(cfg);
 });
 
-ipcMain.on(IPC.JIRA_SETUP_IMG_HEADERS, (ev, jiraCfg: JiraCfg) => {
-  setupRequestHeadersForImages(jiraCfg);
+ipcMain.on(IPC.JIRA_SETUP_IMG_HEADERS, (ev, {jiraCfg, wonkyCookie}: { jiraCfg: JiraCfg, wonkyCookie?: string }) => {
+  setupRequestHeadersForImages(jiraCfg, wonkyCookie);
 });
 
 ipcMain.on(IPC.JIRA_MAKE_REQUEST_EVENT, (ev, request) => {
@@ -238,8 +253,7 @@ function createMainWin() {
     ICONS_FOLDER,
     IS_MAC,
     quitApp,
-    // TODO fix
-    // indicatorMod,
+    customUrl,
   });
   initGoogleAuth();
 }
@@ -294,6 +308,9 @@ function registerShowAppShortCuts(cfg: KeyboardConfig) {
               mainWin.webContents.send(IPC.ADD_TASK);
             };
             break;
+
+          default:
+            actionFn = () => undefined;
         }
 
         if (shortcut && shortcut.length > 0) {
@@ -321,7 +338,7 @@ function quitAppNow() {
 }
 
 function showOrFocus(passedWin) {
-  // default to main win
+  // default to main winpc
   const win = passedWin || mainWin;
 
   // sometimes when starting a second instance we get here although we don't want to

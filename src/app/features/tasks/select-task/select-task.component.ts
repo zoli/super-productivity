@@ -1,10 +1,10 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {FormControl} from '@angular/forms';
-import {Task} from '../task.model';
-import {map, startWith, takeUntil, withLatestFrom} from 'rxjs/operators';
-import {Subject} from 'rxjs';
-import {T} from '../../../t.const';
-import {WorkContextService} from '../../work-context/work-context.service';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { FormControl } from '@angular/forms';
+import { Task } from '../task.model';
+import { map, startWith, takeUntil, withLatestFrom } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { T } from '../../../t.const';
+import { WorkContextService } from '../../work-context/work-context.service';
 
 @Component({
   selector: 'select-task',
@@ -13,11 +13,11 @@ import {WorkContextService} from '../../work-context/work-context.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class SelectTaskComponent implements OnInit, OnDestroy {
-  T = T;
+  T: typeof T = T;
   taskSelectCtrl: FormControl = new FormControl();
-  filteredTasks: Task[];
-  isCreate = false;
-  @Output() taskChange = new EventEmitter<Task | string>();
+  filteredTasks: Task[] = [];
+  isCreate: boolean = false;
+  @Output() taskChange: EventEmitter<Task | string> = new EventEmitter();
   private _destroy$: Subject<boolean> = new Subject<boolean>();
 
   constructor(

@@ -1,10 +1,10 @@
-import {ChangeDetectionStrategy, Component, Input, ViewChild} from '@angular/core';
-import {Note} from '../note.model';
-import {NoteService} from '../note.service';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogAddNoteReminderComponent} from '../dialog-add-note-reminder/dialog-add-note-reminder.component';
-import {T} from '../../../t.const';
-import {DialogFullscreenMarkdownComponent} from '../../../ui/dialog-fullscreen-markdown/dialog-fullscreen-markdown.component';
+import { ChangeDetectionStrategy, Component, Input, ViewChild } from '@angular/core';
+import { Note } from '../note.model';
+import { NoteService } from '../note.service';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogAddNoteReminderComponent } from '../dialog-add-note-reminder/dialog-add-note-reminder.component';
+import { T } from '../../../t.const';
+import { DialogFullscreenMarkdownComponent } from '../../../ui/dialog-fullscreen-markdown/dialog-fullscreen-markdown.component';
 
 @Component({
   selector: 'note',
@@ -13,12 +13,12 @@ import {DialogFullscreenMarkdownComponent} from '../../../ui/dialog-fullscreen-m
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NoteComponent {
-  @Input() note: Note;
-  @Input() isFocus: boolean;
+  @Input() note?: Note;
+  @Input() isFocus?: boolean;
 
-  @ViewChild('markdownEl') markdownEl: HTMLElement;
+  @ViewChild('markdownEl') markdownEl?: HTMLElement;
 
-  T = T;
+  T: typeof T = T;
 
   constructor(
     private readonly _matDialog: MatDialog,
@@ -27,14 +27,23 @@ export class NoteComponent {
   }
 
   toggleLock() {
+    if (!this.note) {
+      throw new Error('No note');
+    }
     this._noteService.update(this.note.id, {isLock: !this.note.isLock});
   }
 
-  updateContent(newVal) {
+  updateContent(newVal: any) {
+    if (!this.note) {
+      throw new Error('No note');
+    }
     this._noteService.update(this.note.id, {content: newVal});
   }
 
   removeNote() {
+    if (!this.note) {
+      throw new Error('No note');
+    }
     this._noteService.remove(this.note.id);
   }
 
@@ -48,10 +57,19 @@ export class NoteComponent {
   }
 
   removeReminder() {
+    if (!this.note) {
+      throw new Error('No note');
+    }
+    if (!this.note.reminderId) {
+      throw new Error('No note reminder');
+    }
     this._noteService.removeReminder(this.note.id, this.note.reminderId);
   }
 
   editFullscreen() {
+    if (!this.note) {
+      throw new Error('No note');
+    }
     this._matDialog.open(DialogFullscreenMarkdownComponent, {
       minWidth: '100vw',
       height: '100vh',
@@ -60,6 +78,9 @@ export class NoteComponent {
         content: this.note.content,
       }
     }).afterClosed().subscribe((content) => {
+      if (!this.note) {
+        throw new Error('No note');
+      }
       if (typeof content === 'string') {
         this._noteService.update(this.note.id, {content});
       }

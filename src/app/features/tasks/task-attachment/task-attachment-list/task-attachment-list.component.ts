@@ -1,10 +1,10 @@
-import {ChangeDetectionStrategy, Component, Input, OnInit} from '@angular/core';
-import {TaskAttachment} from '../task-attachment.model';
-import {TaskAttachmentService} from '../task-attachment.service';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogEditTaskAttachmentComponent} from '../dialog-edit-attachment/dialog-edit-task-attachment.component';
-import {standardListAnimation} from '../../../../ui/animations/standard-list.ani';
-import {T} from '../../../../t.const';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { TaskAttachment } from '../task-attachment.model';
+import { TaskAttachmentService } from '../task-attachment.service';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogEditTaskAttachmentComponent } from '../dialog-edit-attachment/dialog-edit-task-attachment.component';
+import { standardListAnimation } from '../../../../ui/animations/standard-list.ani';
+import { T } from '../../../../t.const';
 
 @Component({
   selector: 'task-attachment-list',
@@ -13,21 +13,18 @@ import {T} from '../../../../t.const';
   changeDetection: ChangeDetectionStrategy.OnPush,
   animations: [standardListAnimation]
 })
-export class TaskAttachmentListComponent implements OnInit {
-  @Input() taskId: string;
-  @Input() attachments: TaskAttachment[];
-  @Input() isDisableControls = false;
+export class TaskAttachmentListComponent {
+  @Input() taskId?: string;
+  @Input() attachments?: TaskAttachment[];
+  @Input() isDisableControls: boolean = false;
 
-  T = T;
+  T: typeof T = T;
   isError: boolean[] = [];
 
   constructor(
     public readonly attachmentService: TaskAttachmentService,
     private readonly _matDialog: MatDialog,
   ) {
-  }
-
-  ngOnInit() {
   }
 
   openEditDialog(attachment?: TaskAttachment) {
@@ -42,6 +39,9 @@ export class TaskAttachmentListComponent implements OnInit {
       },
     }).afterClosed()
       .subscribe((attachmentIN) => {
+        if (!this.taskId) {
+          throw new Error('No taskId');
+        }
         if (attachmentIN) {
           if (attachmentIN.id) {
             this.attachmentService.updateAttachment(this.taskId, attachmentIN.id, attachmentIN);
@@ -52,7 +52,10 @@ export class TaskAttachmentListComponent implements OnInit {
       });
   }
 
-  remove(id) {
+  remove(id: string) {
+    if (!this.taskId) {
+      throw new Error('No taskId');
+    }
     this.attachmentService.deleteAttachment(this.taskId, id);
   }
 

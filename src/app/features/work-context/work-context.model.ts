@@ -1,4 +1,4 @@
-import {WorklogExportSettings} from '../worklog/worklog.model';
+import { WorklogExportSettings } from '../worklog/worklog.model';
 
 // normally imported from here, but this includes non type files as well..
 // import {HueValue} from 'angular-material-css-vars';
@@ -67,11 +67,10 @@ export interface WorkContextCommon {
 
 export type WorkContextAdvancedCfgKey = keyof WorkContextAdvancedCfg;
 
-
 export interface WorkContextCopy extends WorkContextCommon {
   id: string;
   title: string;
-  icon: string;
+  icon: string | null;
   routerLink: string;
   taskIds: string[];
   backlogTaskIds?: string[];
@@ -81,7 +80,7 @@ export interface WorkContextCopy extends WorkContextCommon {
 export type WorkContext = Readonly<WorkContextCopy>;
 
 export interface WorkContextState {
-  activeId: string;
-  activeType: WorkContextType;
+  activeId: string | null;
+  activeType: WorkContextType | null;
   // additional entities state properties
 }

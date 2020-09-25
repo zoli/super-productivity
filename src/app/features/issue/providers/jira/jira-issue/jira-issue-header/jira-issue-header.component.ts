@@ -1,6 +1,7 @@
-import {ChangeDetectionStrategy, Component, Input} from '@angular/core';
-import {TaskWithSubTasks} from '../../../../../tasks/task.model';
-import {isOnline$} from 'src/app/util/is-online';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { TaskWithSubTasks } from '../../../../../tasks/task.model';
+import { isOnline$ } from 'src/app/util/is-online';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'jira-issue-header',
@@ -9,8 +10,8 @@ import {isOnline$} from 'src/app/util/is-online';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class JiraIssueHeaderComponent {
-  @Input() public task: TaskWithSubTasks;
-  isOnline$ = isOnline$;
+  @Input() task?: TaskWithSubTasks;
+  isOnline$: Observable<boolean> = isOnline$;
 
   constructor() {
   }

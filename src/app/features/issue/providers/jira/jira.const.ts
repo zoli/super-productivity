@@ -1,8 +1,8 @@
 // TODO use as a checklist
-import {JiraCfg} from './jira.model';
-import {GITHUB_INITIAL_POLL_DELAY} from '../github/github.const';
-import {T} from '../../../../t.const';
-import {ConfigFormSection, LimitedFormlyFieldConfig} from '../../../config/global-config.model';
+import { JiraCfg } from './jira.model';
+import { GITHUB_INITIAL_POLL_DELAY } from '../github/github.const';
+import { T } from '../../../../t.const';
+import { ConfigFormSection, LimitedFormlyFieldConfig } from '../../../config/global-config.model';
 
 export const JIRA_DATETIME_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSZZ';
 
@@ -12,6 +12,7 @@ export const DEFAULT_JIRA_CFG: JiraCfg = {
   host: null,
   userName: null,
   password: null,
+  isWonkyCookieMode: false,
 
   isAutoPollTickets: true,
   searchJqlQuery: '',
@@ -35,7 +36,7 @@ export const DEFAULT_JIRA_CFG: JiraCfg = {
 
   availableTransitions: [],
   transitionConfig: {
-    // OPEN: 'DO_NOT',
+    OPEN: 'DO_NOT',
     IN_PROGRESS: 'ALWAYS_ASK',
     DONE: 'ALWAYS_ASK'
   },
@@ -113,8 +114,14 @@ export const JIRA_CREDENTIALS_FORM_CFG: LimitedFormlyFieldConfig<JiraCfg>[] = [
       label: T.F.JIRA.FORM_CRED.ALLOW_SELF_SIGNED
     },
   },
+  {
+    key: 'isWonkyCookieMode',
+    type: 'checkbox',
+    templateOptions: {
+      label: T.F.JIRA.FORM_CRED.WONKY_COOKIE_MODE
+    },
+  },
 ];
-
 
 export const JIRA_ADVANCED_FORM_CFG: LimitedFormlyFieldConfig<JiraCfg>[] = [
   {

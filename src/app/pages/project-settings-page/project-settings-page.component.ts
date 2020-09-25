@@ -1,20 +1,20 @@
-import {ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit} from '@angular/core';
-import {T} from '../../t.const';
-import {ConfigFormConfig, ConfigFormSection, GlobalConfigSectionKey} from '../../features/config/global-config.model';
-import {Project, ProjectCfgFormKey} from '../../features/project/project.model';
-import {IssueIntegrationCfg, IssueIntegrationCfgs, IssueProviderKey} from '../../features/issue/issue.model';
-import {Subscription} from 'rxjs';
-import {ProjectService} from '../../features/project/project.service';
-import {BASIC_PROJECT_CONFIG_FORM_CONFIG} from '../../features/project/project-form-cfg.const';
-import {ISSUE_PROVIDER_FORM_CFGS} from '../../features/issue/issue.const';
-import {GLOBAL_CONFIG_FORM_CONFIG} from '../../features/config/global-config-form-config.const';
-import {IS_ELECTRON} from '../../app.constants';
-import {DEFAULT_JIRA_CFG} from '../../features/issue/providers/jira/jira.const';
-import {DEFAULT_GITHUB_CFG} from '../../features/issue/providers/github/github.const';
-import {WorkContextAdvancedCfg, WorkContextThemeCfg} from '../../features/work-context/work-context.model';
-import {WORK_CONTEXT_THEME_CONFIG_FORM_CONFIG} from '../../features/work-context/work-context.const';
-import {WorkContextService} from '../../features/work-context/work-context.service';
-import {DEFAULT_GITLAB_CFG} from 'src/app/features/issue/providers/gitlab/gitlab.const';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { T } from '../../t.const';
+import { ConfigFormConfig, ConfigFormSection, GlobalConfigSectionKey } from '../../features/config/global-config.model';
+import { Project, ProjectCfgFormKey } from '../../features/project/project.model';
+import { IssueIntegrationCfg, IssueIntegrationCfgs, IssueProviderKey } from '../../features/issue/issue.model';
+import { Subscription } from 'rxjs';
+import { ProjectService } from '../../features/project/project.service';
+import { BASIC_PROJECT_CONFIG_FORM_CONFIG } from '../../features/project/project-form-cfg.const';
+import { ISSUE_PROVIDER_FORM_CFGS } from '../../features/issue/issue.const';
+import { GLOBAL_CONFIG_FORM_CONFIG } from '../../features/config/global-config-form-config.const';
+import { IS_ELECTRON } from '../../app.constants';
+import { DEFAULT_JIRA_CFG } from '../../features/issue/providers/jira/jira.const';
+import { DEFAULT_GITHUB_CFG } from '../../features/issue/providers/github/github.const';
+import { WorkContextAdvancedCfg, WorkContextThemeCfg } from '../../features/work-context/work-context.model';
+import { WORK_CONTEXT_THEME_CONFIG_FORM_CONFIG } from '../../features/work-context/work-context.const';
+import { WorkContextService } from '../../features/work-context/work-context.service';
+import { DEFAULT_GITLAB_CFG } from 'src/app/features/issue/providers/gitlab/gitlab.const';
 
 @Component({
   selector: 'project-settings',
@@ -23,18 +23,18 @@ import {DEFAULT_GITLAB_CFG} from 'src/app/features/issue/providers/gitlab/gitlab
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ProjectSettingsPageComponent implements OnInit, OnDestroy {
-  T = T;
+  T: typeof T = T;
   projectThemeSettingsFormCfg: ConfigFormSection<WorkContextThemeCfg>;
   issueIntegrationFormCfg: ConfigFormConfig;
   globalConfigFormCfg: ConfigFormConfig;
   basicFormCfg: ConfigFormSection<Project>;
 
-  currentProject: Project;
-  currentProjectTheme: WorkContextThemeCfg;
-  projectCfg: WorkContextAdvancedCfg;
-  issueIntegrationCfgs: IssueIntegrationCfgs;
+  currentProject?: Project | null;
+  currentProjectTheme?: WorkContextThemeCfg;
+  projectCfg?: WorkContextAdvancedCfg;
+  issueIntegrationCfgs?: IssueIntegrationCfgs;
 
-  private _subs = new Subscription();
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public readonly workContextService: WorkContextService,
@@ -49,14 +49,17 @@ export class ProjectSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this._subs.add(this.projectService.currentProject$.subscribe((project) => {
-      this.currentProject = project;
+    this._subs.add(this.projectService.currentProject$.subscribe((project: Project | null) => {
+      if (!project) {
+        throw new Error();
+      }
+
+      this.currentProject = project as Project;
       this.projectCfg = project.advancedCfg;
       this.currentProjectTheme = project.theme;
 
       // in case there are new ones...
       this.issueIntegrationCfgs = {...project.issueIntegrationCfgs};
-
 
       // Unfortunately needed, to make sure we have no empty configs
       // TODO maybe think of a better solution for the defaults
@@ -82,7 +85,7 @@ export class ProjectSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   saveProjectThemCfg($event: { sectionKey: GlobalConfigSectionKey | ProjectCfgFormKey, config: WorkContextThemeCfg }) {
-    if (!$event.config) {
+    if (!$event.config || !this.currentProject) {
       throw new Error('Not enough data');
     } else {
       this.projectService.update(this.currentProject.id, {
@@ -94,7 +97,7 @@ export class ProjectSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   saveBasicSettings($event: { sectionKey: GlobalConfigSectionKey | ProjectCfgFormKey, config: Project }) {
-    if (!$event.config) {
+    if (!$event.config || !this.currentProject) {
       throw new Error('Not enough data');
     } else {
       this.projectService.update(this.currentProject.id, {
@@ -104,10 +107,20 @@ export class ProjectSettingsPageComponent implements OnInit, OnDestroy {
   }
 
   saveIssueProviderCfg($event: { sectionKey: GlobalConfigSectionKey | ProjectCfgFormKey, config: IssueIntegrationCfg }) {
+    if (!$event.config || !this.currentProject) {
+      throw new Error('Not enough data');
+    }
     const {sectionKey, config} = $event;
     const sectionKeyIN = sectionKey as IssueProviderKey;
     this.projectService.updateIssueProviderConfig(this.currentProject.id, sectionKeyIN, {
       ...config,
     }, true);
+  }
+
+  getIssueIntegrationCfg(key: IssueProviderKey): IssueIntegrationCfg {
+    if (!(this.issueIntegrationCfgs as any)[key]) {
+      throw new Error('Invalid issue integration cfg');
+    }
+    return (this.issueIntegrationCfgs as any)[key];
   }
 }

@@ -1,16 +1,14 @@
-import {EntityState} from '@ngrx/entity';
-import {WorkContextAdvancedCfgKey, WorkContextCommon} from '../work-context/work-context.model';
-import {IssueProviderKey} from '../issue/issue.model';
-import {MODEL_VERSION_KEY} from '../../app.constants';
-
+import { EntityState } from '@ngrx/entity';
+import { WorkContextAdvancedCfgKey, WorkContextCommon } from '../work-context/work-context.model';
+import { MODEL_VERSION_KEY } from '../../app.constants';
 
 export interface TagCopy extends WorkContextCommon {
   id: string;
-  icon: string;
+  icon: string | null;
   title: string;
   created: number;
   modified: number;
-  color: string;
+  color: string | null;
   taskIds: string[];
 }
 

@@ -1,29 +1,27 @@
-import {Injectable} from '@angular/core';
-import {select, Store} from '@ngrx/store';
-import {selectAllSimpleCounters, selectSimpleCounterById} from './store/simple-counter.reducer';
+import { Injectable } from '@angular/core';
+import { select, Store } from '@ngrx/store';
+import { selectAllSimpleCounters } from './store/simple-counter.reducer';
 import {
   addSimpleCounter,
   deleteSimpleCounter,
   deleteSimpleCounters,
   increaseSimpleCounterCounterToday,
   setSimpleCounterCounterToday,
-  toggleSimpleCounterCounter,
+  toggleSimpleCounterCounter, turnOffAllSimpleCounterCounters,
   updateAllSimpleCounters,
   updateSimpleCounter,
   upsertSimpleCounter,
 } from './store/simple-counter.actions';
-import {Observable} from 'rxjs';
-import {SimpleCounter, SimpleCounterCfgFields, SimpleCounterState} from './simple-counter.model';
-import shortid from 'shortid';
-import {PersistenceService} from '../../core/persistence/persistence.service';
-import {distinctUntilChanged, map} from 'rxjs/operators';
-
+import { Observable } from 'rxjs';
+import { SimpleCounter, SimpleCounterCfgFields, SimpleCounterState } from './simple-counter.model';
+import * as shortid from 'shortid';
+import { distinctUntilChanged, map } from 'rxjs/operators';
 
 const FIELDS_TO_COMPARE: (keyof SimpleCounterCfgFields)[] = [
   'id', 'title', 'isEnabled', 'icon', 'iconOn', 'type', 'triggerOnActions', 'triggerOffActions'
 ];
 
-const isEqualSimpleCounterCfg = (a, b): boolean => {
+const isEqualSimpleCounterCfg = (a: any, b: any): boolean => {
   if ((Array.isArray(a) && Array.isArray(b))) {
     if (a.length !== b.length) {
       return false;
@@ -32,7 +30,7 @@ const isEqualSimpleCounterCfg = (a, b): boolean => {
       if (a[i] !== b[i]) {
         // tslint:disable-next-line:prefer-for-of
         for (let j = 0; j < FIELDS_TO_COMPARE.length; j++) {
-          const field = FIELDS_TO_COMPARE[j];
+          const field: any = FIELDS_TO_COMPARE[j];
           if (a[field] !== b[field]) {
             return false;
           }
@@ -67,12 +65,7 @@ export class SimpleCounterService {
 
   constructor(
     private _store$: Store<SimpleCounterState>,
-    private _persistenceService: PersistenceService,
   ) {
-  }
-
-  getSimpleCounterById$(id: string): Observable<SimpleCounter> {
-    return this._store$.pipe(select(selectSimpleCounterById, {id}));
   }
 
   updateAll(items: SimpleCounter[]) {
@@ -91,6 +84,9 @@ export class SimpleCounterService {
     this._store$.dispatch(toggleSimpleCounterCounter({id}));
   }
 
+  turnOffAll() {
+    this._store$.dispatch(turnOffAllSimpleCounterCounters());
+  }
 
   addSimpleCounter(simpleCounter: SimpleCounter) {
     this._store$.dispatch(addSimpleCounter({

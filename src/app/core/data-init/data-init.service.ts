@@ -1,24 +1,18 @@
-import {Injectable} from '@angular/core';
-import {from, Observable, of} from 'rxjs';
-import {concatMap, filter, shareReplay, switchMap, take} from 'rxjs/operators';
-import {ProjectService} from '../../features/project/project.service';
-import {TagService} from '../../features/tag/tag.service';
-import {TaskRepeatCfgService} from '../../features/task-repeat-cfg/task-repeat-cfg.service';
-import {TaskService} from '../../features/tasks/task.service';
-import {GlobalConfigService} from '../../features/config/global-config.service';
-import {WorkContextService} from '../../features/work-context/work-context.service';
-import {Store} from '@ngrx/store';
-import {allDataWasLoaded} from '../../root-store/meta/all-data-was-loaded.actions';
-import {PersistenceService} from '../persistence/persistence.service';
-import {ProjectState} from '../../features/project/store/project.reducer';
-import {MigrationService} from '../migration/migration.service';
-import {loadAllData} from '../../root-store/meta/load-all-data.action';
-import {isValidAppData} from '../../imex/sync/is-valid-app-data.util';
-import {environment} from '../../../environments/environment';
+import { Injectable } from '@angular/core';
+import { from, Observable, of } from 'rxjs';
+import { concatMap, filter, shareReplay, switchMap, take } from 'rxjs/operators';
+import { ProjectService } from '../../features/project/project.service';
+import { WorkContextService } from '../../features/work-context/work-context.service';
+import { Store } from '@ngrx/store';
+import { allDataWasLoaded } from '../../root-store/meta/all-data-was-loaded.actions';
+import { PersistenceService } from '../persistence/persistence.service';
+import { ProjectState } from '../../features/project/store/project.reducer';
+import { MigrationService } from '../migration/migration.service';
+import { loadAllData } from '../../root-store/meta/load-all-data.action';
+import { isValidAppData } from '../../imex/sync/is-valid-app-data.util';
+import { DataRepairService } from '../data-repair/data-repair.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class DataInitService {
   isAllDataLoadedInitially$: Observable<boolean> = from(this._persistenceService.project.loadState(true)).pipe(
     concatMap((projectState: ProjectState) => this._migrationService.migrateIfNecessaryToProjectState$(projectState)),
@@ -39,12 +33,9 @@ export class DataInitService {
     private _persistenceService: PersistenceService,
     private _migrationService: MigrationService,
     private _projectService: ProjectService,
-    private _tagService: TagService,
-    private _taskRepeatCfgService: TaskRepeatCfgService,
-    private _taskService: TaskService,
-    private _configService: GlobalConfigService,
     private _workContextService: WorkContextService,
     private _store$: Store<any>,
+    private _dataRepairService: DataRepairService,
   ) {
     // TODO better construction than this
     this.isAllDataLoadedInitially$.pipe(
@@ -57,11 +48,19 @@ export class DataInitService {
 
   // NOTE: it's important to remember that this doesn't mean that no changes are occurring any more
   // because the data load is triggered, but not necessarily already reflected inside the store
-  async reInit(isOmitTokens = false): Promise<any> {
+  async reInit(isOmitTokens: boolean = false): Promise<void> {
     const appDataComplete = await this._persistenceService.loadComplete();
-    if (!environment.production) {
-      const isValid = isValidAppData(appDataComplete);
+    const isValid = isValidAppData(appDataComplete);
+    if (isValid) {
+      this._store$.dispatch(loadAllData({appDataComplete, isOmitTokens}));
+    } else {
+      if (this._dataRepairService.isRepairConfirmed()) {
+        const fixedData = this._dataRepairService.repairData(appDataComplete);
+        this._store$.dispatch(loadAllData({
+          appDataComplete: fixedData,
+          isOmitTokens,
+        }));
+      }
     }
-    this._store$.dispatch(loadAllData({appDataComplete, isOmitTokens}));
   }
 }

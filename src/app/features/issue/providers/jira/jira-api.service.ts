@@ -1,13 +1,12 @@
-import {Injectable} from '@angular/core';
-import shortid from 'shortid';
-import {ChromeExtensionInterfaceService} from '../../../../core/chrome-extension-interface/chrome-extension-interface.service';
+import { Injectable } from '@angular/core';
+import * as shortid from 'shortid';
+import { ChromeExtensionInterfaceService } from '../../../../core/chrome-extension-interface/chrome-extension-interface.service';
 import {
   JIRA_ADDITIONAL_ISSUE_FIELDS,
   JIRA_DATETIME_FORMAT,
   JIRA_MAX_RESULTS,
   JIRA_REQUEST_TIMEOUT_DURATION
 } from './jira.const';
-import {ProjectService} from '../../../project/project.service';
 import {
   mapIssueResponse,
   mapIssuesResponse,
@@ -15,26 +14,29 @@ import {
   mapToSearchResults,
   mapTransitionResponse
 } from './jira-issue/jira-issue-map.util';
-import {JiraOriginalStatus, JiraOriginalTransition, JiraOriginalUser} from './jira-api-responses';
-import {JiraCfg} from './jira.model';
-import {IPC} from '../../../../../../electron/ipc-events.const';
-import {SnackService} from '../../../../core/snack/snack.service';
-import {HANDLED_ERROR_PROP_STR, IS_ELECTRON} from '../../../../app.constants';
-import {loadFromSessionStorage, saveToSessionStorage} from '../../../../core/persistence/local-storage';
-import {Observable, of, throwError} from 'rxjs';
-import {SearchResultItem} from '../../issue.model';
-import {catchError, concatMap, finalize, first, mapTo, shareReplay, take} from 'rxjs/operators';
-import {JiraIssue, JiraIssueReduced} from './jira-issue/jira-issue.model';
+import { JiraOriginalStatus, JiraOriginalTransition, JiraOriginalUser } from './jira-api-responses';
+import { JiraCfg } from './jira.model';
+import { IPC } from '../../../../../../electron/ipc-events.const';
+import { SnackService } from '../../../../core/snack/snack.service';
+import { HANDLED_ERROR_PROP_STR, IS_ELECTRON } from '../../../../app.constants';
+import { Observable, of, throwError } from 'rxjs';
+import { SearchResultItem } from '../../issue.model';
+import { catchError, concatMap, finalize, first, mapTo, shareReplay, take } from 'rxjs/operators';
+import { JiraIssue, JiraIssueReduced } from './jira-issue/jira-issue.model';
 import * as moment from 'moment';
-import {BannerService} from '../../../../core/banner/banner.service';
-import {BannerId} from '../../../../core/banner/banner.model';
-import {T} from '../../../../t.const';
-import {ElectronService} from '../../../../core/electron/electron.service';
-import {stringify} from 'query-string';
-import {fromPromise} from 'rxjs/internal-compatibility';
-import {getJiraResponseErrorTxt} from '../../../../util/get-jira-response-error-text';
-import {isOnline} from '../../../../util/is-online';
-import {GlobalProgressBarService} from '../../../../core-ui/global-progress-bar/global-progress-bar.service';
+import { BannerService } from '../../../../core/banner/banner.service';
+import { BannerId } from '../../../../core/banner/banner.model';
+import { T } from '../../../../t.const';
+import { ElectronService } from '../../../../core/electron/electron.service';
+import { stringify } from 'query-string';
+import { fromPromise } from 'rxjs/internal-compatibility';
+import { getErrorTxt } from '../../../../util/get-error-text';
+import { isOnline } from '../../../../util/is-online';
+import { GlobalProgressBarService } from '../../../../core-ui/global-progress-bar/global-progress-bar.service';
+import { ipcRenderer, IpcRendererEvent } from 'electron';
+import { SS_JIRA_WONKY_COOKIE } from '../../../../core/persistence/ls-keys.const';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogPromptComponent } from '../../../../ui/dialog-prompt/dialog-prompt.component';
 
 const BLOCK_ACCESS_KEY = 'SUP_BLOCK_JIRA_ACCESS';
 const API_VERSION = 'latest';
@@ -61,14 +63,13 @@ interface JiraRequestCfg {
   body?: {};
 }
 
-
 @Injectable({
   providedIn: 'root',
 })
 export class JiraApiService {
   private _requestsLog: { [key: string]: JiraRequestLogItem } = {};
-  private _isBlockAccess = loadFromSessionStorage(BLOCK_ACCESS_KEY);
-  private _isExtension = false;
+  private _isBlockAccess: boolean = !!sessionStorage.getItem(BLOCK_ACCESS_KEY);
+  private _isExtension: boolean = false;
   private _isInterfacesReadyIfNeeded$: Observable<boolean> = IS_ELECTRON
     ? of(true).pipe()
     : this._chromeExtensionInterfaceService.onReady$.pipe(
@@ -78,15 +79,16 @@ export class JiraApiService {
 
   constructor(
     private _chromeExtensionInterfaceService: ChromeExtensionInterfaceService,
-    private _projectService: ProjectService,
     private _electronService: ElectronService,
     private _globalProgressBarService: GlobalProgressBarService,
     private _snackService: SnackService,
     private _bannerService: BannerService,
+    private _matDialog: MatDialog,
   ) {
     // set up callback listener for electron
-    if (this._electronService.isElectronApp) {
-      this._electronService.ipcRenderer.on(IPC.JIRA_CB_EVENT, (ev, res) => {
+    if (IS_ELECTRON) {
+      (this._electronService.ipcRenderer as typeof ipcRenderer).on(IPC.JIRA_CB_EVENT, (ev: IpcRendererEvent,
+        res: any) => {
         this._handleResponse(res);
       });
     }
@@ -94,7 +96,7 @@ export class JiraApiService {
     this._chromeExtensionInterfaceService.onReady$
       .subscribe(() => {
         this._isExtension = true;
-        this._chromeExtensionInterfaceService.addEventListener('SP_JIRA_RESPONSE', (ev, data) => {
+        this._chromeExtensionInterfaceService.addEventListener('SP_JIRA_RESPONSE', (ev: unknown, data: any) => {
           this._handleResponse(data);
         });
       });
@@ -102,34 +104,41 @@ export class JiraApiService {
 
   unblockAccess() {
     this._isBlockAccess = false;
-    saveToSessionStorage(BLOCK_ACCESS_KEY, false);
+    sessionStorage.removeItem(BLOCK_ACCESS_KEY);
   }
 
   issuePicker$(searchTerm: string, cfg: JiraCfg): Observable<SearchResultItem[]> {
     const searchStr = `${searchTerm}`;
-    const jql = (cfg.searchJqlQuery ? `${encodeURI(cfg.searchJqlQuery)}` : '');
+    const jql = (cfg.searchJqlQuery ? `${encodeURIComponent(cfg.searchJqlQuery)}` : '');
 
     return this._sendRequest$({
-      pathname: 'issue/picker',
-      followAllRedirects: true,
-      query: {
-        showSubTasks: true,
-        showSubTaskParent: true,
-        query: searchStr,
-        currentJQL: jql
+      jiraReqCfg: {
+        pathname: 'issue/picker',
+        followAllRedirects: true,
+        query: {
+          showSubTasks: true,
+          showSubTaskParent: true,
+          query: searchStr,
+          currentJQL: jql
+        },
+        transform: mapToSearchResults
+        // NOTE: we pass the cfg as well to avoid race conditions
       },
-      transform: mapToSearchResults
-      // NOTE: we pass the cfg as well to avoid race conditions
-    }, cfg);
+      cfg
+    });
   }
 
   listFields$(cfg: JiraCfg): Observable<any> {
     return this._sendRequest$({
-      pathname: 'field',
-    }, cfg);
+      jiraReqCfg: {
+        pathname: 'field',
+      },
+      cfg
+    });
   }
 
-  findAutoImportIssues$(cfg: JiraCfg, isFetchAdditional?: boolean, maxResults: number = JIRA_MAX_RESULTS): Observable<JiraIssueReduced[]> {
+  findAutoImportIssues$(cfg: JiraCfg, isFetchAdditional?: boolean,
+    maxResults: number = JIRA_MAX_RESULTS): Observable<JiraIssueReduced[]> {
     const options = {
       maxResults,
       fields: [
@@ -148,80 +157,98 @@ export class JiraApiService {
     }
 
     return this._sendRequest$({
-      transform: mapIssuesResponse,
-      pathname: 'search',
-      method: 'POST',
-      body: {
-        ...options,
-        jql: searchQuery
+      jiraReqCfg: {
+        transform: mapIssuesResponse as (res: any, cfg?: JiraCfg) => any,
+        pathname: 'search',
+        method: 'POST',
+        body: {
+          ...options,
+          jql: searchQuery
+        },
       },
-    }, cfg);
+      cfg
+    });
   }
 
-  getIssueById$(issueId, cfg: JiraCfg): Observable<JiraIssue> {
+  getIssueById$(issueId: string, cfg: JiraCfg): Observable<JiraIssue> {
     return this._getIssueById$(issueId, cfg, true);
   }
 
-  getReducedIssueById$(issueId, cfg: JiraCfg): Observable<JiraIssueReduced> {
+  getReducedIssueById$(issueId: string, cfg: JiraCfg): Observable<JiraIssueReduced> {
     return this._getIssueById$(issueId, cfg, false);
   }
 
-  getCurrentUser$(cfg: JiraCfg, isForce = false): Observable<JiraOriginalUser> {
+  getCurrentUser$(cfg: JiraCfg, isForce: boolean = false): Observable<JiraOriginalUser> {
     return this._sendRequest$({
-      pathname: `myself`,
-      transform: mapResponse,
-    }, cfg, isForce);
+      jiraReqCfg: {
+        pathname: `myself`,
+        transform: mapResponse,
+      },
+      cfg,
+      isForce
+    });
   }
 
   listStatus$(cfg: JiraCfg): Observable<JiraOriginalStatus[]> {
     return this._sendRequest$({
-      pathname: `status`,
-      transform: mapResponse,
-    }, cfg);
+      jiraReqCfg: {
+        pathname: `status`,
+        transform: mapResponse,
+      },
+      cfg
+    });
   }
-
 
   getTransitionsForIssue$(issueId: string, cfg: JiraCfg): Observable<JiraOriginalTransition[]> {
     return this._sendRequest$({
-      pathname: `issue/${issueId}/transitions`,
-      method: 'GET',
-      query: {
-        expand: 'transitions.fields'
+      jiraReqCfg: {
+        pathname: `issue/${issueId}/transitions`,
+        method: 'GET',
+        query: {
+          expand: 'transitions.fields'
+        },
+        transform: mapTransitionResponse,
       },
-      transform: mapTransitionResponse,
-    }, cfg);
+      cfg
+    });
   }
 
   transitionIssue$(issueId: string, transitionId: string, cfg: JiraCfg): Observable<any> {
     return this._sendRequest$({
-      pathname: `issue/${issueId}/transitions`,
-      method: 'POST',
-      body: {
-        transition: {
-          id: transitionId,
-        }
+      jiraReqCfg: {
+        pathname: `issue/${issueId}/transitions`,
+        method: 'POST',
+        body: {
+          transition: {
+            id: transitionId,
+          }
+        },
+        transform: mapResponse,
       },
-      transform: mapResponse,
-    }, cfg);
+      cfg
+    });
   }
 
   updateAssignee$(issueId: string, accountId: string, cfg: JiraCfg): Observable<any> {
     return this._sendRequest$({
-      pathname: `issue/${issueId}/assignee`,
-      method: 'PUT',
-      body: {
-        accountId,
+      jiraReqCfg: {
+        pathname: `issue/${issueId}/assignee`,
+        method: 'PUT',
+        body: {
+          accountId,
+        },
       },
-    }, cfg);
+      cfg
+    });
   }
 
   addWorklog$({
-                issueId,
-                started,
-                timeSpent,
-                comment,
-                cfg
-              }: {
+    issueId,
+    started,
+    timeSpent,
+    comment,
+    cfg
+  }: {
     issueId: string,
     started: string,
     timeSpent: number,
@@ -234,25 +261,30 @@ export class JiraApiService {
       comment,
     };
     return this._sendRequest$({
-      pathname: `issue/${issueId}/worklog`,
-      method: 'POST',
-      body: worklog,
-      transform: mapResponse,
-    }, cfg);
+      jiraReqCfg: {
+        pathname: `issue/${issueId}/worklog`,
+        method: 'POST',
+        body: worklog,
+        transform: mapResponse,
+      },
+      cfg
+    });
   }
 
-  private _getIssueById$(issueId, cfg: JiraCfg, isGetChangelog = false): Observable<JiraIssue> {
+  private _getIssueById$(issueId: string, cfg: JiraCfg, isGetChangelog: boolean = false): Observable<JiraIssue> {
     return this._sendRequest$({
-      transform: mapIssueResponse,
-      pathname: `issue/${issueId}`,
-      query: {
-        expand: isGetChangelog ? ['changelog', 'description'] : ['description']
-      }
-    }, cfg);
+      jiraReqCfg: {
+        transform: mapIssueResponse as (res: any, cfg?: JiraCfg) => any,
+        pathname: `issue/${issueId}`,
+        query: {
+          expand: isGetChangelog ? ['changelog', 'description'] : ['description']
+        }
+      },
+      cfg
+    });
   }
 
   // Complex Functions
-
 
   // --------
   private _isMinimalSettings(settings: JiraCfg) {
@@ -260,13 +292,24 @@ export class JiraApiService {
       && (IS_ELECTRON || this._isExtension);
   }
 
-  private _sendRequest$(jiraReqCfg: JiraRequestCfg, cfg: JiraCfg, isForce = false): Observable<any> {
+  private _sendRequest$({
+    jiraReqCfg,
+    cfg,
+    isForce = false,
+  }: {
+    jiraReqCfg: JiraRequestCfg,
+    cfg: JiraCfg,
+    isForce?: boolean
+  }): Observable<any> {
     return this._isInterfacesReadyIfNeeded$.pipe(
       take(1),
+      concatMap(() => (IS_ELECTRON && cfg.isWonkyCookieMode)
+        ? this._checkSetWonkyCookie(cfg)
+        : of(true)
+      ),
       concatMap(() => {
         // assign uuid to request to know which responsive belongs to which promise
         const requestId = `${jiraReqCfg.pathname}__${jiraReqCfg.method || 'GET'}__${shortid()}`;
-
 
         if (!isOnline()) {
           this._snackService.open({
@@ -311,7 +354,6 @@ export class JiraApiService {
         const base = `${cfg.host}/rest/api/${API_VERSION}`;
         const url = `${base}/${jiraReqCfg.pathname}${queryStr}`.trim();
 
-
         return this._sendRequestToExecutor$(requestId, url, requestInit, jiraReqCfg.transform, cfg);
         // NOTE: offline is sexier & easier than cache, but in case we change our mind...
         // const args = [requestId, url, requestInit, jiraReqCfg.transform];
@@ -319,7 +361,8 @@ export class JiraApiService {
       }));
   }
 
-  private _sendRequestToExecutor$(requestId: string, url: string, requestInit: RequestInit, transform, jiraCfg: JiraCfg): Observable<any> {
+  private _sendRequestToExecutor$(requestId: string, url: string, requestInit: RequestInit, transform: any,
+    jiraCfg: JiraCfg): Observable<any> {
     // TODO refactor to observable for request canceling etc
     let promiseResolve;
     let promiseReject;
@@ -340,7 +383,10 @@ export class JiraApiService {
 
     const requestToSend = {requestId, requestInit, url};
     if (this._electronService.isElectronApp) {
-      this._electronService.ipcRenderer.send(IPC.JIRA_MAKE_REQUEST_EVENT, {...requestToSend, jiraCfg});
+      (this._electronService.ipcRenderer as typeof ipcRenderer).send(IPC.JIRA_MAKE_REQUEST_EVENT, {
+        ...requestToSend,
+        jiraCfg
+      });
     } else if (this._isExtension) {
       this._chromeExtensionInterfaceService.dispatchEvent('SP_JIRA_REQUEST', requestToSend);
     }
@@ -350,8 +396,8 @@ export class JiraApiService {
       .pipe(
         catchError((err) => {
           console.log(err);
-          console.log(getJiraResponseErrorTxt(err));
-          const errTxt = `Jira: ${getJiraResponseErrorTxt(err)}`;
+          console.log(getErrorTxt(err));
+          const errTxt = `Jira: ${getErrorTxt(err)}`;
           this._snackService.open({type: 'ERROR', msg: errTxt});
           return throwError({[HANDLED_ERROR_PROP_STR]: errTxt});
         }),
@@ -361,29 +407,66 @@ export class JiraApiService {
   }
 
   private _makeRequestInit(jr: JiraRequestCfg, cfg: JiraCfg): RequestInit {
-    const encoded = this._b64EncodeUnicode(`${cfg.userName}:${cfg.password}`);
-
     return {
       method: jr.method || 'GET',
+
       ...(jr.body ? {body: JSON.stringify(jr.body)} : {}),
-      headers: {
-        authorization: `Basic ${encoded}`,
-        Cookie: '',
-        'Content-Type': 'application/json'
-      }
+
+      headers: (IS_ELECTRON && cfg.isWonkyCookieMode)
+        ? {
+          Cookie: sessionStorage.getItem(SS_JIRA_WONKY_COOKIE) as string,
+        }
+        : {
+          authorization: `Basic ${this._b64EncodeUnicode(`${cfg.userName}:${cfg.password}`)}`,
+          Cookie: '',
+          'Content-Type': 'application/json'
+        }
     };
   }
 
+  private async _checkSetWonkyCookie(cfg: JiraCfg): Promise<string | null> {
+    const ssVal = sessionStorage.getItem(SS_JIRA_WONKY_COOKIE);
+    if (ssVal && ssVal.length > 0) {
+      return ssVal;
+    } else {
+      const loginUrl = `${cfg.host}`;
+      const apiUrl = `${cfg.host}/rest/api/${API_VERSION}/myself`;
+
+      const val = await this._matDialog.open(DialogPromptComponent, {
+        data: {
+          // TODO add message to translations
+          placeholder: 'Insert Cookie String',
+          message: `<h3>Jira Wonky Cookie Authentication</h3>
+<ol>
+  <li><a href="${loginUrl}">Log into Jira from your browser</a></li>
+  <li><a href="${apiUrl}" target="_blank">Go to this api url</a></li>
+  <li>Open up the dev tools</li>
+  <li>Navigate to "network" and reload page</li>
+  <li>Copy all request header cookies from the api request and enter them here</li>
+</ol>`
+        }
+      }).afterClosed().toPromise();
+
+      if (typeof val === 'string') {
+        sessionStorage.setItem(SS_JIRA_WONKY_COOKIE, val);
+        return val;
+      }
+    }
+
+    this._blockAccess();
+    return null;
+  }
+
   private _makeJiraRequestLogItem({
-                                    promiseResolve,
-                                    promiseReject,
-                                    requestId,
-                                    requestInit,
-                                    transform,
-                                    jiraCfg
-                                  }: {
     promiseResolve,
     promiseReject,
+    requestId,
+    requestInit,
+    transform,
+    jiraCfg
+  }: {
+    promiseResolve: any,
+    promiseReject: any,
     requestId: string,
     requestInit: RequestInit,
     transform: any,
@@ -411,8 +494,7 @@ export class JiraApiService {
     };
   }
 
-
-  private _handleResponse(res) {
+  private _handleResponse(res: { requestId?: string; error?: any }) {
     // check if proper id is given in callback and if exists in requestLog
     if (res.requestId && this._requestsLog[res.requestId]) {
       const currentRequest = this._requestsLog[res.requestId];
@@ -423,10 +505,12 @@ export class JiraApiService {
       if (!res || res.error) {
         console.error('JIRA_RESPONSE_ERROR', res, currentRequest);
         // let msg =
-        if (res.error &&
-          (res.error.statusCode && res.error.statusCode === 401)
-          || (res.error && res.error === 401)
-        ) {
+        if (res?.error && (
+          res.error.statusCode === 401
+          || res.error === 401
+          || res.error.message === 'Forbidden'
+          || res.error.message === 'Unauthorized'
+        )) {
           this._blockAccess();
         }
 
@@ -449,11 +533,12 @@ export class JiraApiService {
   private _blockAccess() {
     // TODO also shut down all existing requests
     this._isBlockAccess = true;
-    saveToSessionStorage(BLOCK_ACCESS_KEY, true);
+    sessionStorage.setItem(BLOCK_ACCESS_KEY, 'true');
+    sessionStorage.removeItem(SS_JIRA_WONKY_COOKIE);
   }
 
-  private _b64EncodeUnicode(str) {
-    if (typeof btoa === 'function') {
+  private _b64EncodeUnicode(str: string) {
+    if (typeof (btoa as any) === 'function') {
       return btoa(str);
     }
     throw new Error('Jira: btoo not supported');

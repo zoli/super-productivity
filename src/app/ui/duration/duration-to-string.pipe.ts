@@ -1,10 +1,10 @@
-import {Pipe, PipeTransform} from '@angular/core';
+import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
   name: 'durationToString'
 })
 export class DurationToStringPipe implements PipeTransform {
-  transform = durationToString;
+  transform: (value: any, ...args: any[]) => any = durationToString;
 }
 
 export const durationToString = (momentDuration: any, args?: any): any => {
@@ -25,7 +25,7 @@ export const durationToString = (momentDuration: any, args?: any): any => {
 
       // if moment duration string
     } else if (md.replace) {
-      val = val.replace('PT', '');
+      val = md.replace('PT', '');
       val = val.toLowerCase(val);
       val = val.replace(/(d|h|m|s)/g, '$1 ');
       val = val.trim();

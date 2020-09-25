@@ -2,18 +2,19 @@
      [@taskAdditionalInfoTaskChange]="task.id"
      class="wrapper">
 
-  <header *ngIf="(layoutService.isScreenXs$|async)"
+  <header *ngIf="(layoutService.isNotesOver$|async)"
           class="task-title-wrapper">
-    <button mat-icon-button
-            (click)="close()">
+    <button (click)="close()"
+            *ngIf="layoutService.isScreenXs$|async"
+            mat-icon-button>
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <h2 class="task-title"
-        (editFinished)="updateTaskTitleIfChanged($event.isChanged, $event.newVal)"
-        [value]="task.title"
+    <h2 (editFinished)="updateTaskTitleIfChanged($event.isChanged, $event.newVal)"
         [isResetAfterEdit]="true"
-        contenteditable="true"
+        [value]="task.title"
+        class="task-title"
         contentEditableOnClick
+        contenteditable="true"
         tabindex="2">{{task.title}}</h2>
     <!--    <button mat-icon-button>-->
     <!--      <mat-icon>more_vert</mat-icon>-->
@@ -23,8 +24,8 @@
   <task-additional-info-item
     (collapseParent)="collapseParent()"
     (keyPress)="onItemKeyPress($event)"
-    [type]="'panel'"
-    *ngIf="!task.parentId && (layoutService.isScreenXs$|async)">
+    *ngIf="!task.parentId && (layoutService.isNotesOver$|async)"
+    [type]="'panel'">
     <ng-container panel-header>
       <mat-icon class="panel-header-icon">list</mat-icon>
       <span>{{T.F.TASK.ADDITIONAL_INFO.SUB_TASKS|translate:{nr: task.subTasks?.length} }}</span>
@@ -43,8 +44,8 @@
                    listId="SUB"></task-list>
       </div>
       <div style="text-align: center;">
-        <button mat-button
-                (click)="addSubTask()">
+        <button (click)="addSubTask()"
+                mat-button>
           <mat-icon>add</mat-icon>
           <span>{{T.F.TASK.ADDITIONAL_INFO.ADD_SUB_TASK|translate}}</span>
         </button>
@@ -122,7 +123,7 @@
     (collapseParent)="collapseParent()"
     (keyPress)="onItemKeyPress($event)"
     *ngIf="task.issueId"
-    [expanded]="!!issueData"
+    [expanded]="!IS_MOBILE && (!!issueData)"
     [type]="'panel'">
     <ng-container panel-header>
       <issue-header [task]="task"></issue-header>
@@ -131,10 +132,10 @@
     <ng-container panel-content>
       <mat-progress-bar *ngIf="issueData === null"
                         [mode]="'indeterminate'"></mat-progress-bar>
-      <issue-content [task]="task"
+      <issue-content *ngIf="issueData"
                      [@expandFadeInOnly]
-                     *ngIf="issueData"
                      [issueData]="issueData"
+                     [task]="task"
                      class="panel-content-wrapper issue-content-wrapper"></issue-content>
     </ng-container>
   </task-additional-info-item>
@@ -145,7 +146,7 @@
     (collapseParent)="collapseParent()"
     (editActionTriggered)="isFocusNotes=true"
     (keyPress)="onItemKeyPress($event)"
-    [expanded]="task.notes || (!(task.issueId) && !task.attachments?.length)"
+    [expanded]="!IS_MOBILE && (task.notes || (!(task.issueId) && !task.attachments?.length))"
     [type]="'panel'">
     <ng-container panel-header>
       <mat-icon *ngIf="task.notes">chat</mat-icon>
@@ -170,7 +171,7 @@
     (collapseParent)="collapseParent()"
     (keyPress)="onItemKeyPress($event)"
     *ngIf="issueAttachments?.length || localAttachments?.length"
-    [expanded]="true"
+    [expanded]="!IS_MOBILE"
     [type]="'panel'">
     <ng-container panel-header>
       <mat-icon>attachment</mat-icon>
@@ -182,8 +183,8 @@
            style="padding-bottom: 8px;">
         <ng-container *ngIf="task.issueType">
           <task-attachment-list [attachments]="issueAttachments"
-                                [taskId]="task.id"
-                                [isDisableControls]="true"></task-attachment-list>
+                                [isDisableControls]="true"
+                                [taskId]="task.id"></task-attachment-list>
         </ng-container>
         <h3 *ngIf="issueAttachments?.length && localAttachments?.length"
             class="mat-h3"
@@ -192,8 +193,8 @@
                               [taskId]="task.id"></task-attachment-list>
 
         <div style="text-align: center;">
-          <button mat-button
-                  (click)="addAttachment()">
+          <button (click)="addAttachment()"
+                  mat-button>
             <mat-icon>add</mat-icon>
             <span>{{T.F.TASK.ADDITIONAL_INFO.ADD_ATTACHMENT|translate}}</span>
           </button>
@@ -226,9 +227,7 @@
     [inputIcon]="task.repeatCfgId ? 'edit': 'add'"
     class="input-item">
     <ng-container input-title>
-      <mat-icon
-        style="transform: rotate(45deg);">repeat
-      </mat-icon>
+      <mat-icon svgIcon="repeat"></mat-icon>
       <span>{{T.F.TASK.ADDITIONAL_INFO.REPEAT|translate}}</span>
     </ng-container>
     <ng-container input-value>
@@ -239,5 +238,10 @@
       </div>
     </ng-container>
   </task-additional-info-item>
+</div>
 
+<div *ngIf="isDragOver"
+     class="bgc-accent drag-over-msg">
+  <mat-icon>add</mat-icon>
+  {{T.F.TASK.CMP.DROP_ATTACHMENT|translate:{title: task?.title} }}
 </div>

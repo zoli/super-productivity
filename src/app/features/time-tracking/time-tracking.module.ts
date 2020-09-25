@@ -1,12 +1,12 @@
-import {NgModule} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {TimeTrackingService} from './time-tracking.service';
-import {DialogIdleComponent} from './dialog-idle/dialog-idle.component';
-import {IdleService} from './idle.service';
-import {UiModule} from '../../ui/ui.module';
-import {FormsModule} from '@angular/forms';
-import {TakeABreakModule} from './take-a-break/take-a-break.module';
-import {TasksModule} from '../tasks/tasks.module';
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { DialogIdleComponent } from './dialog-idle/dialog-idle.component';
+import { IdleService } from './idle.service';
+import { UiModule } from '../../ui/ui.module';
+import { FormsModule } from '@angular/forms';
+import { TakeABreakModule } from './take-a-break/take-a-break.module';
+import { TasksModule } from '../tasks/tasks.module';
+import { DialogTrackingReminderComponent } from './tracking-reminder/dialog-tracking-reminder/dialog-tracking-reminder.component';
 
 @NgModule({
   imports: [
@@ -16,10 +16,8 @@ import {TasksModule} from '../tasks/tasks.module';
     TasksModule,
   ],
   declarations: [
-    DialogIdleComponent
-  ],
-  entryComponents: [
     DialogIdleComponent,
+    DialogTrackingReminderComponent
   ],
   exports: [
     TakeABreakModule,
@@ -27,7 +25,6 @@ import {TasksModule} from '../tasks/tasks.module';
 })
 export class TimeTrackingModule {
   constructor(
-    private readonly _timeTrackingService: TimeTrackingService,
     private readonly _idleService: IdleService,
   ) {
     this._idleService.init();

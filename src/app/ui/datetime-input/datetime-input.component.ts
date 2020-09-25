@@ -1,7 +1,7 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, Input, Output} from '@angular/core';
-import {T} from '../../t.const';
-import {LS_LAST_REMINDER_DATE} from '../../core/persistence/ls-keys.const';
-import {timestampToDatetimeInputString} from '../../util/timestamp-to-datetime-input-string';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { T } from '../../t.const';
+import { LS_LAST_REMINDER_DATE } from '../../core/persistence/ls-keys.const';
+import { timestampToDatetimeInputString } from '../../util/timestamp-to-datetime-input-string';
 
 @Component({
   selector: 'datetime-input',
@@ -10,25 +10,24 @@ import {timestampToDatetimeInputString} from '../../util/timestamp-to-datetime-i
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DatetimeInputComponent {
-  @Input() name: string;
-  @Input() placeholder: string;
-  @Input() required: boolean;
-  @Output() modelChange = new EventEmitter<number>();
-  nrValue: number;
-  strValue: string;
-  T = T;
-  lastVal: number;
+  @Input() name: string | undefined;
+  @Input() placeholder: string | undefined;
+  @Input() required: boolean | undefined;
+  @Output() modelChange: EventEmitter<number> = new EventEmitter();
+  nrValue: number | undefined;
+  strValue: string | undefined | null;
+  lastVal: number | undefined;
+  T: typeof T = T;
 
   constructor() {
     const lastVal = localStorage.getItem(LS_LAST_REMINDER_DATE);
-    console.log(lastVal, Date.now(), +lastVal > Date.now());
-    if (lastVal && +lastVal > Date.now()) {
+    if (lastVal !== null && +lastVal > Date.now()) {
       this.lastVal = +lastVal;
     }
   }
 
   get model() {
-    return this.nrValue;
+    return this.nrValue || 0;
   }
 
   @Input()
@@ -67,15 +66,16 @@ export class DatetimeInputComponent {
   }
 
   setLastVal() {
-    this._updateValues(this.lastVal, false);
+    if (this.lastVal) {
+      this._updateValues(this.lastVal, false);
+    }
   }
 
-  private _updateValues(v: number | Date, isFromInput = false) {
-    if (typeof v === 'string') {
-      v = new Date(v);
-    }
+  private _updateValues(v: number | Date | string, isFromInput: boolean = false) {
     if (v instanceof Date) {
       v = v.getTime();
+    } else if (typeof v === 'string') {
+      v = new Date(v).getTime();
     }
     this.nrValue = v;
     this.modelChange.emit(v);
@@ -88,7 +88,7 @@ export class DatetimeInputComponent {
     }
   }
 
-  private _convertToIsoString(dateTime: number): string {
+  private _convertToIsoString(dateTime: number | undefined): string | null {
     if (!dateTime || dateTime < 10000) {
       return null;
     }

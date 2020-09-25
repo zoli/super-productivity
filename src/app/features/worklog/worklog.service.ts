@@ -1,33 +1,30 @@
-import {Injectable} from '@angular/core';
-import {Worklog, WorklogDay, WorklogWeek} from './worklog.model';
-import {dedupeByKey} from '../../util/de-dupe-by-key';
-import {PersistenceService} from '../../core/persistence/persistence.service';
-import {ProjectService} from '../project/project.service';
-import {BehaviorSubject, from, merge, Observable} from 'rxjs';
-import {concatMap, filter, first, map, shareReplay, startWith, switchMap, take} from 'rxjs/operators';
-import {getWeekNumber} from '../../util/get-week-number';
-import {WorkContextService} from '../work-context/work-context.service';
-import {WorkContext} from '../work-context/work-context.model';
-import {mapArchiveToWorklog} from './util/map-archive-to-worklog';
-import {TaskService} from '../tasks/task.service';
-import {createEmptyEntity} from '../../util/create-empty-entity';
-import {getCompleteStateForWorkContext} from './util/get-complete-state-for-work-context.util';
-import {NavigationEnd, Router} from '@angular/router';
-import {DataInitService} from '../../core/data-init/data-init.service';
-import {WorklogTask} from '../tasks/task.model';
+import { Injectable } from '@angular/core';
+import { Worklog, WorklogDay, WorklogWeek } from './worklog.model';
+import { dedupeByKey } from '../../util/de-dupe-by-key';
+import { PersistenceService } from '../../core/persistence/persistence.service';
+import { BehaviorSubject, from, merge, Observable } from 'rxjs';
+import { concatMap, filter, first, map, shareReplay, startWith, switchMap, take } from 'rxjs/operators';
+import { getWeekNumber } from '../../util/get-week-number';
+import { WorkContextService } from '../work-context/work-context.service';
+import { WorkContext } from '../work-context/work-context.model';
+import { mapArchiveToWorklog } from './util/map-archive-to-worklog';
+import { TaskService } from '../tasks/task.service';
+import { createEmptyEntity } from '../../util/create-empty-entity';
+import { getCompleteStateForWorkContext } from './util/get-complete-state-for-work-context.util';
+import { NavigationEnd, Router } from '@angular/router';
+import { DataInitService } from '../../core/data-init/data-init.service';
+import { WorklogTask } from '../tasks/task.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class WorklogService {
   // treated as private but needs to be assigned first
-  _archiveUpdateManualTrigger$ = new BehaviorSubject(true);
-  _archiveUpdateTrigger$ = this._dataInitService.isAllDataLoadedInitially$.pipe(
+  _archiveUpdateManualTrigger$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(true);
+  _archiveUpdateTrigger$: Observable<any> = this._dataInitService.isAllDataLoadedInitially$.pipe(
     concatMap(() => merge(
       // this._workContextService.activeWorkContextOnceOnContextChange$,
       this._archiveUpdateManualTrigger$,
       this._router.events.pipe(
-        filter(event => event instanceof NavigationEnd),
+        filter((event: any) => event instanceof NavigationEnd),
         filter(({urlAfterRedirects}: NavigationEnd) =>
           urlAfterRedirects.includes('worklog')
           || urlAfterRedirects.includes('daily-summary')
@@ -52,7 +49,7 @@ export class WorklogService {
 
   worklog$: Observable<Worklog> = this._worklogDataIfDefined$.pipe(map(data => data.worklog));
   totalTimeSpent$: Observable<number> = this._worklogDataIfDefined$.pipe(map(data => data.totalTimeSpent));
-  currentWeek$: Observable<WorklogWeek> = this.worklog$.pipe(
+  currentWeek$: Observable<WorklogWeek | null> = this.worklog$.pipe(
     map(worklog => {
       const now = new Date();
       const year = now.getFullYear();
@@ -60,8 +57,9 @@ export class WorklogService {
       const weekNr = getWeekNumber(now);
 
       if (worklog[year] && worklog[year].ent[month]) {
-        return worklog[year].ent[month].weeks.find(week => week.weekNr === weekNr);
+        return worklog[year].ent[month].weeks.find(week => week.weekNr === weekNr) || null;
       }
+      return null;
     }),
   );
 
@@ -99,7 +97,6 @@ export class WorklogService {
     private readonly _persistenceService: PersistenceService,
     private readonly _workContextService: WorkContextService,
     private readonly _dataInitService: DataInitService,
-    private readonly _projectService: ProjectService,
     private readonly _taskService: TaskService,
     private readonly _router: Router,
   ) {
@@ -110,18 +107,21 @@ export class WorklogService {
   }
 
   // TODO this is not waiting for worklog data
-  getTaskListForRange$(rangeStart: Date, rangeEnd: Date, isFilterOutTimeSpentOnOtherDays = false): Observable<WorklogTask[]> {
+  getTaskListForRange$(rangeStart: Date, rangeEnd: Date, isFilterOutTimeSpentOnOtherDays: boolean = false, projectId?: string | null): Observable<WorklogTask[]> {
+    const isProjectIdProvided: boolean = !!projectId || projectId === null;
+
     return this.worklogTasks$.pipe(
       map(tasks => {
-        tasks = tasks.filter((task) => {
+        tasks = tasks.filter((task: WorklogTask) => {
           const taskDate = new Date(task.dateStr);
-          return (taskDate >= rangeStart && taskDate <= rangeEnd);
+          return (!isProjectIdProvided || task.projectId === projectId)
+            && (taskDate >= rangeStart && taskDate <= rangeEnd);
         });
 
         if (isFilterOutTimeSpentOnOtherDays) {
           tasks = tasks.map((task): WorklogTask => {
 
-            const timeSpentOnDay = {};
+            const timeSpentOnDay: any = {};
             Object.keys(task.timeSpentOnDay).forEach(dateStr => {
               const date = new Date(dateStr);
 
@@ -142,7 +142,6 @@ export class WorklogService {
     );
   }
 
-
   private async _loadForWorkContext(workContext: WorkContext): Promise<{ worklog: Worklog; totalTimeSpent: number }> {
     const archive = await this._persistenceService.taskArchive.loadState() || createEmptyEntity();
     const taskState = await this._taskService.taskFeatureState$.pipe(first()).toPromise() || createEmptyEntity();
@@ -156,7 +155,6 @@ export class WorklogService {
       workEnd: workContext.workEnd,
     };
 
-
     if (completeStateForWorkContext) {
       const {worklog, totalTimeSpent} = mapArchiveToWorklog(completeStateForWorkContext, unarchivedIds, startEnd);
       return {
@@ -166,10 +164,9 @@ export class WorklogService {
     }
     return {
       worklog: {},
-      totalTimeSpent: null
+      totalTimeSpent: 0
     };
   }
-
 
   private _createTasksForDay(data: WorklogDay): WorklogTask[] {
     const dayData = {...data};

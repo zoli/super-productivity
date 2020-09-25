@@ -1,6 +1,6 @@
-import {TaskWithSubTasks} from '../tasks/task.model';
+import { TaskWithSubTasks } from '../tasks/task.model';
 
-export const mapEstimateRemainingFromTasks = (tasks): number => tasks && tasks.length && tasks.reduce((acc, task) => {
+export const mapEstimateRemainingFromTasks = (tasks: TaskWithSubTasks[]): number => tasks && tasks.length && tasks.reduce((acc: number, task: TaskWithSubTasks): number => {
   let isTrackVal;
   let estimateRemaining;
   if (task.subTasks && task.subTasks.length > 0) {
@@ -15,7 +15,6 @@ export const mapEstimateRemainingFromTasks = (tasks): number => tasks && tasks.l
   isTrackVal = ((estimateRemaining > 0) && !task.isDone);
   return acc + ((isTrackVal) ? estimateRemaining : 0);
 }, 0);
-
 
 export const hasTasksToWorkOn = (tasks: TaskWithSubTasks[]): boolean => {
   const _tasksToWorkOn = tasks.filter((t) => {

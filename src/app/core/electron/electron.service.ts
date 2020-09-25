@@ -1,32 +1,29 @@
-import {Injectable} from '@angular/core';
+import { Injectable } from '@angular/core';
 // If you import a module but never use any of the imported values other than as TypeScript types,
 // the resulting javascript file will look as if you never imported the module at all.
-import {ipcRenderer, remote, shell, webFrame} from 'electron';
+import { ipcRenderer, remote, shell, webFrame } from 'electron';
+import { IS_ELECTRON } from '../../app.constants';
+import { getElectron } from '../../util/get-electron';
+import * as ElectronRenderer from 'electron/renderer';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class ElectronService {
-  ipcRenderer: typeof ipcRenderer;
-  webFrame: typeof webFrame;
-  remote: typeof remote;
-  shell: typeof shell;
+  ipcRenderer?: typeof ipcRenderer;
+  webFrame?: typeof webFrame;
+  remote?: typeof remote;
+  shell?: typeof shell;
 
   // fs: typeof fs;
 
-  get isElectron(): boolean {
-    return !!(window && window.process && window.process.type);
-  }
-
   constructor() {
     // Conditional imports
-    if (this.isElectron) {
-      const electron = window.require('electron');
+    if (IS_ELECTRON) {
+      const electron = getElectron() as typeof ElectronRenderer;
       this.ipcRenderer = electron.ipcRenderer;
       this.webFrame = electron.webFrame;
       this.remote = electron.remote;
-      this.shell = electron.shell;
-      window.require('source-map-support').install();
+      // NOTE: works for non-sandboxed electron only
+      this.shell = (electron as any).shell;
     }
 
     // NOTE: useful in case we want to disable the node integration
@@ -42,6 +39,10 @@ export class ElectronService {
     //   },
     //   getZoomFactor: () => 1
     // };
+  }
+
+  get isElectron(): boolean {
+    return !!(window && window.process && window.process.type);
   }
 
   public get isElectronApp(): boolean {

@@ -1,22 +1,23 @@
-import {TestBed} from '@angular/core/testing';
-import {SnackService} from '../snack/snack.service';
-import {DatabaseService} from './database.service';
-import {CompressionService} from '../compression/compression.service';
-import {PersistenceService} from './persistence.service';
-import {TestScheduler} from 'rxjs/testing';
-import {of} from 'rxjs';
-import {createEmptyEntity} from '../../util/create-empty-entity';
+import { TestBed } from '@angular/core/testing';
+import { SnackService } from '../snack/snack.service';
+import { DatabaseService } from './database.service';
+import { CompressionService } from '../compression/compression.service';
+import { PersistenceService } from './persistence.service';
+import { TestScheduler } from 'rxjs/testing';
+import { of } from 'rxjs';
+import { createEmptyEntity } from '../../util/create-empty-entity';
+import { provideMockStore } from '@ngrx/store/testing';
 
 const testScheduler = new TestScheduler((actual, expected) => {
   // asserting the two objects are equal
   expect(actual).toEqual(expected);
 });
 
-
 describe('PersistenceService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
         providers: [
+          provideMockStore({initialState: {}}),
           {
             provide: SnackService, useValue: {
               open: () => false,
@@ -41,13 +42,15 @@ describe('PersistenceService', () => {
     );
   });
 
-  it('database update should trigger onAfterSave$', (done) => {
+  it('database update should trigger onAfterSave$', async (done) => {
     const service: PersistenceService = TestBed.inject(PersistenceService);
+    // once is required to fill up data
+    await service.loadComplete();
     service.onAfterSave$.subscribe(({data}) => {
       expect(data).toEqual(createEmptyEntity());
       done();
     });
-    service.tag.saveState(createEmptyEntity());
+    service.tag.saveState(createEmptyEntity(), {isSyncModelChange: true});
   });
 
   describe('inMemoryComplete$', () => {
@@ -63,7 +66,7 @@ describe('PersistenceService', () => {
 
     it('should refresh onAfterSave$', (done) => {
       const service: PersistenceService = TestBed.inject(PersistenceService);
-      let ll;
+      let ll: any;
       let i = 0;
       service.inMemoryComplete$.subscribe((data) => {
         const l = JSON.stringify(data).length;

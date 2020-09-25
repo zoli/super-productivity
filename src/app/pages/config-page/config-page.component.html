@@ -16,7 +16,7 @@
       <section *ngFor="let section of globalConfigFormCfg; trackBy:trackBySectionKey;"
                class="config-section ">
         <config-section (save)="saveGlobalCfg($event)"
-                        [cfg]="globalCfg[section.key]"
+                        [cfg]="getGlobalCfgSection(section.key)"
                         [section]="section"></config-section>
       </section>
 
@@ -26,7 +26,7 @@
       <section *ngFor="let section of globalProductivityConfigFormCfg; trackBy:trackBySectionKey;"
                class="config-section ">
         <config-section (save)="saveGlobalCfg($event)"
-                        [cfg]="globalCfg[section.key]"
+                        [cfg]="getGlobalCfgSection(section.key)"
                         [section]="section"></config-section>
       </section>
 
@@ -36,7 +36,7 @@
       <section *ngFor="let section of globalSyncProviderFormCfg; trackBy:trackBySectionKey;"
                class="config-section ">
         <config-section (save)="saveGlobalCfg($event)"
-                        [cfg]="globalCfg[section.key]"
+                        [cfg]="getGlobalCfgSection(section.key)"
                         [section]="section"></config-section>
       </section>
     </div>
@@ -46,6 +46,6 @@
 <footer class="version-footer">
   Super Productivity <a href="https://github.com/johannesjo/super-productivity/blob/master/CHANGELOG.md"
                         target="_blank">{{appVersion}}</a> –
-  <a href="https://super-productivity.com/private-policy.html"
+  <a href="https://super-productivity.com/private-policy"
      target="_blank">{{T.PS.PRIVATE_POLICY|translate}}</a>
 </footer>

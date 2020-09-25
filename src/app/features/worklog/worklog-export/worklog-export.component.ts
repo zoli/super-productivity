@@ -8,26 +8,27 @@ import {
   OnInit,
   Output
 } from '@angular/core';
-import {TaskCopy, WorklogTask} from '../../tasks/task.model';
-import {combineLatest, Subscription} from 'rxjs';
-import {getWorklogStr} from '../../../util/get-work-log-str';
+import { TaskCopy, WorklogTask } from '../../tasks/task.model';
+import { combineLatest, Subscription } from 'rxjs';
+import { getWorklogStr } from '../../../util/get-work-log-str';
 import * as moment from 'moment';
 import 'moment-duration-format';
-import {unique} from '../../../util/unique';
-import {msToString} from '../../../ui/duration/ms-to-string.pipe';
-import {msToClockString} from '../../../ui/duration/ms-to-clock-string.pipe';
-import {roundTime} from '../../../util/round-time';
-import {roundDuration} from '../../../util/round-duration';
+import { unique } from '../../../util/unique';
+import { msToString } from '../../../ui/duration/ms-to-string.pipe';
+import { msToClockString } from '../../../ui/duration/ms-to-clock-string.pipe';
+import { roundTime } from '../../../util/round-time';
+import { roundDuration } from '../../../util/round-duration';
+// @ts-ignore
 import Clipboard from 'clipboard';
-import {SnackService} from '../../../core/snack/snack.service';
-import {WorklogService} from '../worklog.service';
-import {WorklogColTypes, WorklogExportSettingsCopy, WorklogGrouping} from '../worklog.model';
-import {T} from '../../../t.const';
-import {distinctUntilChanged} from 'rxjs/operators';
-import {distinctUntilChangedObject} from '../../../util/distinct-until-changed-object';
-import {WorkStartEnd} from '../../work-context/work-context.model';
-import {WORKLOG_EXPORT_DEFAULTS} from '../../work-context/work-context.const';
-import {WorkContextService} from '../../work-context/work-context.service';
+import { SnackService } from '../../../core/snack/snack.service';
+import { WorklogService } from '../worklog.service';
+import { WorklogColTypes, WorklogExportSettingsCopy, WorklogGrouping } from '../worklog.model';
+import { T } from '../../../t.const';
+import { distinctUntilChanged } from 'rxjs/operators';
+import { distinctUntilChangedObject } from '../../../util/distinct-until-changed-object';
+import { WorkContextAdvancedCfg, WorkStartEnd } from '../../work-context/work-context.model';
+import { WORKLOG_EXPORT_DEFAULTS } from '../../work-context/work-context.const';
+import { WorkContextService } from '../../work-context/work-context.service';
 
 const LINE_SEPARATOR = '\n';
 const EMPTY_VAL = ' - ';
@@ -38,8 +39,8 @@ interface TaskWithParentTitle extends TaskCopy {
 
 interface RowItem {
   dates: string[];
-  workStart: number;
-  workEnd: number;
+  workStart: number | undefined;
+  workEnd: number | undefined;
   timeSpent: number;
   timeEstimate: number;
   tasks: TaskWithParentTitle[];
@@ -54,30 +55,31 @@ interface RowItem {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class WorklogExportComponent implements OnInit, OnDestroy {
-  @Input() rangeStart: Date;
-  @Input() rangeEnd: Date;
-  @Input() isWorklogExport: boolean;
-  @Input() isShowClose: boolean;
+  @Input() rangeStart?: Date;
+  @Input() rangeEnd?: Date;
+  @Input() isWorklogExport?: boolean;
+  @Input() isShowClose?: boolean;
+  @Input() projectId?: string | null;
 
-  @Output() cancel = new EventEmitter();
+  @Output() cancel: EventEmitter<void> = new EventEmitter();
 
-  T = T;
-  isShowAsText = false;
+  T: typeof T = T;
+  isShowAsText: boolean = false;
   headlineCols: string[] = [];
-  formattedRows: (string | number)[][];
+  formattedRows?: (string | number | undefined)[][];
   options: WorklogExportSettingsCopy = {
     ...WORKLOG_EXPORT_DEFAULTS,
     cols: [...WORKLOG_EXPORT_DEFAULTS.cols],
   };
-  txt: string;
-  fileName = 'tasks.csv';
-  roundTimeOptions = [
+  txt: string = '';
+  fileName: string = 'tasks.csv';
+  roundTimeOptions: { id: string; title: string }[] = [
     {id: 'QUARTER', title: T.F.WORKLOG.EXPORT.O.FULL_QUARTERS},
     {id: 'HALF', title: T.F.WORKLOG.EXPORT.O.FULL_HALF_HOURS},
     {id: 'HOUR', title: T.F.WORKLOG.EXPORT.O.FULL_HOURS},
   ];
 
-  colOpts = [
+  colOpts: { id: string; title: string }[] = [
     {id: 'DATE', title: T.F.WORKLOG.EXPORT.O.DATE},
     {id: 'START', title: T.F.WORKLOG.EXPORT.O.STARTED_WORKING},
     {id: 'END', title: T.F.WORKLOG.EXPORT.O.ENDED_WORKING},
@@ -91,7 +93,7 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
     {id: 'ESTIMATE_CLOCK', title: T.F.WORKLOG.EXPORT.O.ESTIMATE_AS_CLOCK},
   ];
 
-  groupByOptions = [
+  groupByOptions: { id: string; title: string }[] = [
     {id: WorklogGrouping.DATE, title: T.F.WORKLOG.EXPORT.O.DATE},
     {id: WorklogGrouping.TASK, title: T.F.WORKLOG.EXPORT.O.TASK_SUBTASK},
     {id: WorklogGrouping.PARENT, title: T.F.WORKLOG.EXPORT.O.PARENT_TASK},
@@ -109,19 +111,20 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    if (this.rangeStart && this.rangeEnd) {
-      this.fileName
-        = 'tasks'
-        + getWorklogStr(this.rangeStart)
-        + '-'
-        + getWorklogStr(this.rangeEnd)
-        + '.csv'
-      ;
+    if (!this.rangeStart || !this.rangeEnd) {
+      throw new Error('Worklog: Invalid date range');
     }
+    this.fileName
+      = 'tasks'
+      + getWorklogStr(this.rangeStart)
+      + '-'
+      + getWorklogStr(this.rangeEnd)
+      + '.csv'
+    ;
 
     this._subs.add(this._workContextService.advancedCfg$.pipe(
       distinctUntilChanged(distinctUntilChangedObject)
-    ).subscribe(advancedCfg => {
+    ).subscribe((advancedCfg: WorkContextAdvancedCfg) => {
       if (advancedCfg.worklogExportSettings) {
         this.options = {
           ...WORKLOG_EXPORT_DEFAULTS,
@@ -144,7 +147,7 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
 
     this._subs.add(
       combineLatest([
-        this._worklogService.getTaskListForRange$(this.rangeStart, this.rangeEnd, true),
+        this._worklogService.getTaskListForRange$(this.rangeStart, this.rangeEnd, true, this.projectId),
         this._workContextService.activeWorkContext$,
       ])
         .pipe(
@@ -174,6 +177,8 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
               case 'ESTIMATE_STR':
               case 'ESTIMATE_CLOCK':
                 return 'Estimate';
+              default:
+                return 'INVALI COL';
             }
           });
 
@@ -210,11 +215,15 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
     this.options.cols.push(colOpt);
   }
 
+  trackByIndex(i: number, p: any) {
+    return i;
+  }
+
   private _createRows(tasks: WorklogTask[], startTimes: WorkStartEnd, endTimes: WorkStartEnd, groupBy: WorklogGrouping): RowItem[] {
 
     const _mapToGroups = (task: WorklogTask) => {
       const taskGroups: { [key: string]: RowItem } = {};
-      const createEmptyGroup = () => {
+      const createEmptyGroup = (): RowItem => {
         return {
           dates: [],
           timeSpent: 0,
@@ -288,10 +297,12 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
           groups[groupKey].tasks.push(...taskGroups[groupKey].tasks);
           groups[groupKey].dates.push(...taskGroups[groupKey].dates);
           if (taskGroups[groupKey].workStart !== undefined) {
-            groups[groupKey].workStart = Math.min(groups[groupKey].workStart, taskGroups[groupKey].workStart);
+            // TODO check if this works as intended
+            groups[groupKey].workStart = Math.min(groups[groupKey].workStart as number, taskGroups[groupKey].workStart as number);
           }
           if (taskGroups[groupKey].workEnd !== undefined) {
-            groups[groupKey].workEnd = Math.min(groups[groupKey].workEnd, taskGroups[groupKey].workEnd);
+            // TODO check if this works as intended
+            groups[groupKey].workEnd = Math.min(groups[groupKey].workEnd as number, taskGroups[groupKey].workEnd as number);
           }
           groups[groupKey].timeEstimate += taskGroups[groupKey].timeEstimate;
           groups[groupKey].timeSpent += taskGroups[groupKey].timeSpent;
@@ -307,10 +318,13 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
       const group = groups[key];
 
       group.titlesWithSub = unique(group.tasks.map(t => t.title));
-      group.titles = unique(group.tasks.map(t => (
-          t.parentId && tasks.find(ptIN => ptIN.id === t.parentId).title
-        ) || (!t.parentId && t.title)
-      )).filter(title => !!title);
+      // TODO check all the typing
+      group.titles = unique<any>(
+        group.tasks.map((t: TaskWithParentTitle) => (
+            t.parentId && (tasks.find(ptIN => ptIN.id === t.parentId) as TaskCopy).title
+          ) || (!t.parentId && t.title)
+        )
+      ).filter((title: string) => !!title);
       group.dates = unique(group.dates).sort((a: string, b: string) => {
         const dateA: number = new Date(a).getTime();
         const dateB: number = new Date(b).getTime();
@@ -329,12 +343,17 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
 
   }
 
-  private _formatRows(rows: RowItem[]): (string | number)[][] {
-    return rows.map(row => {
+  private _formatRows(rows: RowItem[]): (string | number | undefined)[][] {
+    return rows.map((row: RowItem) => {
       return this.options.cols.map(col => {
+        // TODO check if this is possible
         if (!col) {
           return;
         }
+        if (!row.titles || !row.titlesWithSub) {
+          throw new Error('Worklog: No titles');
+        }
+
         const timeSpent = (this.options.roundWorkTimeTo)
           ? roundDuration(row.timeSpent, this.options.roundWorkTimeTo, true).asMilliseconds()
           : row.timeSpent;
@@ -349,7 +368,6 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
           console.log(`${row.timeSpent} / ${timeSpentTotal} = ${timeSpentPart}`);
           timeEstimate = timeEstimate * timeSpentPart;
         }
-
 
         switch (col) {
           case 'DATE':
@@ -398,7 +416,7 @@ export class WorklogExportComponent implements OnInit, OnDestroy {
     });
   }
 
-  private _formatText(headlineCols: string[], rows: (string | number)[][]): string {
+  private _formatText(headlineCols: string[], rows: (string | number | undefined)[][]): string {
     let txt = '';
     txt += headlineCols.join(';') + LINE_SEPARATOR;
     txt += rows.map(cols => cols.join(';')).join(LINE_SEPARATOR);

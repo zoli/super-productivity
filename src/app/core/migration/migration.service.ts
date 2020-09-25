@@ -1,34 +1,27 @@
-import {Injectable} from '@angular/core';
-import {PersistenceService} from '../persistence/persistence.service';
-import {ProjectState} from '../../features/project/store/project.reducer';
-import {EMPTY, from, Observable, of} from 'rxjs';
-import {TaskArchive, TaskState} from 'src/app/features/tasks/task.model';
-import {Dictionary, EntityState} from '@ngrx/entity';
-import {TaskAttachment} from '../../features/tasks/task-attachment/task-attachment.model';
-import {TaskRepeatCfgState} from '../../features/task-repeat-cfg/task-repeat-cfg.model';
-import {initialTaskRepeatCfgState} from '../../features/task-repeat-cfg/store/task-repeat-cfg.reducer';
-import {T} from '../../t.const';
-import {TranslateService} from '@ngx-translate/core';
-import {LegacyAppDataComplete} from './legacy-models';
-import {LegacyPersistenceService} from './legacy-persistence.sevice';
-import {AppDataComplete} from '../../imex/sync/sync.model';
-import {initialTaskState} from '../../features/tasks/store/task.reducer';
-import {initialTagState} from '../../features/tag/store/tag.reducer';
-import {Project} from '../../features/project/project.model';
-import {concatMap, map} from 'rxjs/operators';
-import {migrateTaskState} from '../../features/tasks/migrate-task-state.util';
-import shortid from 'shortid';
-import {initialSimpleCounterState} from '../../features/simple-counter/store/simple-counter.reducer';
-
-interface ReplaceIdMap {
-  [key: string]: string;
-}
+import { Injectable } from '@angular/core';
+import { PersistenceService } from '../persistence/persistence.service';
+import { ProjectState } from '../../features/project/store/project.reducer';
+import { EMPTY, from, Observable, of } from 'rxjs';
+import { TaskArchive, TaskState } from 'src/app/features/tasks/task.model';
+import { Dictionary, EntityState } from '@ngrx/entity';
+import { TaskAttachment } from '../../features/tasks/task-attachment/task-attachment.model';
+import { TaskRepeatCfgState } from '../../features/task-repeat-cfg/task-repeat-cfg.model';
+import { initialTaskRepeatCfgState } from '../../features/task-repeat-cfg/store/task-repeat-cfg.reducer';
+import { T } from '../../t.const';
+import { TranslateService } from '@ngx-translate/core';
+import { LegacyAppDataComplete } from './legacy-models';
+import { LegacyPersistenceService } from './legacy-persistence.sevice';
+import { AppDataComplete } from '../../imex/sync/sync.model';
+import { initialTaskState } from '../../features/tasks/store/task.reducer';
+import { initialTagState } from '../../features/tag/store/tag.reducer';
+import { Project } from '../../features/project/project.model';
+import { concatMap, map } from 'rxjs/operators';
+import { migrateTaskState } from '../../features/tasks/migrate-task-state.util';
+import { initialSimpleCounterState } from '../../features/simple-counter/store/simple-counter.reducer';
 
 const EMTPY_ENTITY = () => ({ids: [], entities: {}});
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({providedIn: 'root'})
 export class MigrationService {
   constructor(
     private _persistenceService: PersistenceService,
@@ -54,7 +47,6 @@ export class MigrationService {
       : of(projectState);
   }
 
-
   migrateIfNecessary(appDataComplete: LegacyAppDataComplete | AppDataComplete): AppDataComplete {
     const projectState = appDataComplete.project;
     const isNeedsMigration = this._isNeedsMigration(projectState);
@@ -63,9 +55,8 @@ export class MigrationService {
       if (this._isConfirmMigrateDialog()) {
         return this._migrate(legacyAppDataComplete);
       }
-    } else {
-      return appDataComplete as AppDataComplete;
     }
+    return appDataComplete as AppDataComplete;
   }
 
   private _migrate(legacyAppDataComplete: LegacyAppDataComplete): AppDataComplete {
@@ -77,7 +68,7 @@ export class MigrationService {
       lastLocalSyncModelChange: legacyAppDataComplete.lastActiveTime,
       archivedProjects: legacyAppDataComplete.archivedProjects,
       globalConfig: legacyAppDataComplete.globalConfig,
-      reminders: legacyAppDataComplete.reminders,
+      reminders: legacyAppDataComplete.reminders || [],
       // new
       tag: initialTagState,
       simpleCounter: initialSimpleCounterState,
@@ -91,6 +82,13 @@ export class MigrationService {
 
       task: this._mTaskState(legacyAppDataComplete),
       taskArchive: this._mTaskArchiveState(legacyAppDataComplete),
+
+      // NEW PROJECT MODELS
+      note: {},
+      metric: {},
+      improvement: {},
+      obstruction: {},
+      bookmark: {},
     };
 
     console.log('DATA AFTER MIGRATIONS', newAppData);
@@ -103,7 +101,7 @@ export class MigrationService {
     return {
       ...projectStateBefore,
       entities: (projectStateBefore.ids as string[]).reduce((acc, id): Dictionary<Project> => {
-        const taskState = legacyAppDataComplete.task[id] || {};
+        const taskState = (legacyAppDataComplete.task as any)[id] || {};
         return {
           ...acc,
           [id]: {
@@ -115,7 +113,6 @@ export class MigrationService {
       }, {})
     };
   }
-
 
   private _mTaskState(legacyAppDataComplete: LegacyAppDataComplete): TaskState {
     const singleState = this._mTaskFromProjectToSingle(legacyAppDataComplete);
@@ -129,17 +126,16 @@ export class MigrationService {
     return this._mTaskAttachmentsToTaskStates(legacyAppDataComplete, standardMigration) as TaskArchive;
   }
 
-
   private _mTaskRepeatCfg(legacyAppDataComplete: LegacyAppDataComplete): TaskRepeatCfgState {
     const pids = legacyAppDataComplete.project.ids as string[];
-    const repeatStates = this._addProjectIdToEntity(pids, legacyAppDataComplete.taskRepeatCfg, {tagIds: []});
+    const repeatStates = this._addProjectIdToEntity(pids, (legacyAppDataComplete.taskRepeatCfg as any), {tagIds: []});
     return this._mergeEntities(repeatStates, initialTaskRepeatCfgState) as TaskRepeatCfgState;
   }
 
   private _addProjectIdToEntity(
     pids: string[],
     entityProjectStates: { [key: string]: EntityState<any> },
-    additionalChanges = {}
+    additionalChanges: {} = {}
   ): EntityState<any>[] {
     return pids.map((projectId) => {
       const state = entityProjectStates[projectId];
@@ -162,24 +158,24 @@ export class MigrationService {
           };
         }, {})
       };
-    });
+    }) as any;
   }
 
   private _mTaskFromProjectToSingle(legacyAppDataComplete: LegacyAppDataComplete): TaskState {
     const pids = legacyAppDataComplete.project.ids as string[];
-    const taskStates: TaskState[] = this._addProjectIdToEntity(pids, legacyAppDataComplete.task) as TaskState[];
+    const taskStates: TaskState[] = this._addProjectIdToEntity(pids, legacyAppDataComplete.task as any) as TaskState[];
     return this._mergeEntities(taskStates, initialTaskState) as TaskState;
   }
 
   private _mTaskArchiveFromProjectToSingle(legacyAppDataComplete: LegacyAppDataComplete): TaskArchive {
     const pids = legacyAppDataComplete.project.ids as string[];
-    const taskStates: TaskArchive[] = this._addProjectIdToEntity(pids, legacyAppDataComplete.taskArchive) as TaskArchive[];
+    const taskStates: TaskArchive[] = this._addProjectIdToEntity(pids, legacyAppDataComplete.taskArchive as any) as TaskArchive[];
     return this._mergeEntities(taskStates, EMTPY_ENTITY()) as TaskArchive;
   }
 
   private _mTaskAttachmentsToTaskStates(legacyAppDataComplete: LegacyAppDataComplete, taskState: (TaskState | TaskArchive)):
     TaskState | TaskArchive {
-    const attachmentStates = Object.keys(legacyAppDataComplete.taskAttachment).map(id => legacyAppDataComplete.taskAttachment[id]);
+    const attachmentStates = Object.keys(legacyAppDataComplete.taskAttachment as any).map(id => (legacyAppDataComplete.taskAttachment as any)[id]);
     const allAttachmentState = this._mergeEntities(attachmentStates, initialTaskRepeatCfgState) as EntityState<TaskAttachment>;
 
     return (taskState.ids as string[]).reduce((acc, id) => {
@@ -191,7 +187,7 @@ export class MigrationService {
           [id]: {
             ...tEnt,
             attachments: tEnt.attachments || (attachmentIds
-              ? attachmentIds.map(attachmentId => {
+              ? attachmentIds.map((attachmentId: string) => {
                 const result = allAttachmentState.entities[attachmentId];
                 if (!result) {
                   console.log('ATTACHMENT NOT FOUND: Will be removed', attachmentIds);
@@ -200,7 +196,7 @@ export class MigrationService {
                   console.log('ATTACHMENT FOUND', result.title);
                 }
                 return result;
-              }).filter(v => !!v)
+              }).filter((v: any) => !!v)
               : [])
           },
         }
@@ -223,60 +219,6 @@ export class MigrationService {
       }, initial
     );
   }
-
-  private _mergeEntitiesWithIdReplacement(
-    states: EntityState<any>[],
-    initial: EntityState<any>): { mergedState: EntityState<any>, replaceIdMap: ReplaceIdMap } {
-    const replaceIdMap: ReplaceIdMap = {};
-
-    const mergedState = states.reduce(
-      (acc, s) => {
-        if (!s || !s.ids) {
-          return acc;
-        }
-        // for bad reasons there might be double ids, we copy those
-        const alreadyExistingIds = (s.ids as string[]).filter((id: string) =>
-          (acc.ids as string[]).includes(id));
-        if (alreadyExistingIds.length) {
-          const replacingIds = alreadyExistingIds.map((idToReplace) => {
-            const newId = shortid();
-            replaceIdMap[idToReplace] = newId;
-            return newId;
-          });
-          const replacingEntities = alreadyExistingIds.reduce((newEnts, alreadyExistingId) => {
-            const replacingId = replaceIdMap[alreadyExistingId];
-            return {
-              ...newEnts,
-              [replacingId]: {
-                ...s.entities[alreadyExistingId],
-                id: replacingId,
-              }
-            };
-          }, {});
-          return {
-            ...acc,
-            ids: [...acc.ids, ...replacingIds] as string[],
-            // NOTE: that this can lead to overwrite when the ids are the same for some reason
-            entities: {...acc.entities, ...replacingEntities}
-          };
-        } else {
-
-          return {
-            ...acc,
-            ids: [...acc.ids, ...s.ids] as string[],
-            // NOTE: that this can lead to overwrite when the ids are the same for some reason
-            entities: {...acc.entities, ...s.entities}
-          };
-        }
-      }, initial
-    );
-
-    return {
-      mergedState,
-      replaceIdMap,
-    };
-  }
-
 
   private _isNeedsMigration(projectState: ProjectState): boolean {
     return (projectState && (!(projectState as any).__modelVersion || (projectState as any).__modelVersion <= 3));

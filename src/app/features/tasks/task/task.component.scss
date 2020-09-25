@@ -103,13 +103,14 @@
       // NOTE: somehow ng build messes up, if we don't include it like that
       border-color: $task-c-focus;
       border-width: 1px;
-      border-style: dashed !important;
+      border-style: solid !important;
     }
   }
 
   :host.isCurrent.isCurrent.isCurrent.isCurrent.isCurrent & {
     border-color: $task-c-current !important;
     border-width: 1px !important;
+    border-style: dashed;
 
     border-radius: 12px !important;
     bottom: -2px;
@@ -272,7 +273,7 @@
   }
 
   @include mq(xs, max) {
-    :host-context(.isTouchDevice) & {
+    :host-context(.isTouchOnly) & {
       display: none !important;
     }
   }
@@ -346,6 +347,12 @@
 // -----------------
 .title-and-tags-wrapper {
   flex-grow: 1;
+
+  > * {
+    @include touchOnlyDevice {
+      pointer-events: none;
+    }
+  }
 }
 
 // TASK TITLE
@@ -761,7 +768,7 @@ $this-play-size: 22px;
   transform-origin: left top;
   transition-property: all;
 
-  :host-context(.isNoTouchDevice) & {
+  :host-context(.isNoTouchOnly) & {
     opacity: 0;
   }
 

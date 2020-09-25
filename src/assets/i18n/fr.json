@@ -14,10 +14,7 @@
     "UPDATE_WEB_APP": "Une nouvelle version est disponible. Charger la nouvelle version ?"
   },
   "BL": {
-    "FROM_OTHER_PROJECTS": "À partir d'autres projets",
-    "NO_TASKS": "Il n'y a actuellement aucune tâche dans votre backlog",
-    "SCHEDULED": "Planifié",
-    "TITLE": "Backlog"
+    "NO_TASKS": "Il n'y a actuellement aucune tâche dans votre backlog"
   },
   "DATETIME_INPUT": {
     "IN": "dans {{time}}",
@@ -80,6 +77,13 @@
       }
     },
     "DROPBOX": {
+      "C": {
+        "EMPTY_SYNC": "Vous essayez de synchroniser un objet de données vide. Est-ce votre toute première synchronisation d'une application (presque) vierge?",
+        "FORCE_IMPORT": "Importer quand même des données distantes?",
+        "FORCE_UPLOAD": "Télécharger quand même des données locales?",
+        "FORCE_UPLOAD_AFTER_ERROR": "Une erreur s'est produite lors du téléchargement de vos données locales. Essayez de forcer la mise à jour?",
+        "TRY_LOAD_REMOTE_AGAIN": "Essayez à nouveau de recharger les données depuis la télécommande?"
+      },
       "D_CONFLICT": {
         "LAST_CHANGE": "dernier changement:",
         "LAST_SYNC": "Dernière synchronisation:",
@@ -160,11 +164,11 @@
         "IS_AUTO_ADD_TO_BACKLOG": "Ajouter automatiquement les Issues non résolus de Gitlab au backlog",
         "IS_AUTO_POLL": "Surveiller automatiquement les issues git importées pour avoir les modifications",
         "IS_SEARCH_ISSUES_FROM_GITLAB": "Afficher les issues de git sous forme de suggestions lors de l'ajout de nouvelles tâches",
-        "PROJECT": "\"username% 2FProjectName\" pour le projet gitlab que vous souhaitez suivre",
+        "PROJECT": "Chemin complet ou nom d'utilisateur / projet",
         "TOKEN": "Jeton d'accès"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Ici, vous pouvez configurer SuperProductivity pour répertorier les issues Gitlab ouvertes pour un repository spécifique dans le panneau de création de tâches de la vue Planification quotidienne. Ils seront listés en tant que suggestions et fourniront un lien vers l'issue, ainsi que plus d'informations à son sujet.</p> <p>De plus, vous pouvez ajouter et synchroniser automatiquement toutes les issues ouvertes dans votre backlog.</p>",
+        "HELP": "<p> Ici, vous pouvez configurer SuperProductivity pour répertorier les problèmes ouverts de Gitlab (que ce soit la version en ligne ou une instance auto-hébergée) pour un projet spécifique dans le panneau de création de tâches dans la vue de planification quotidienne. Ils seront répertoriés sous forme de suggestions et fourniront un lien vers le problème ainsi que plus d'informations à ce sujet. </p> <p> En outre, vous pouvez automatiquement ajouter et synchroniser tous les problèmes ouverts à votre carnet de tâches. </p>",
         "TITLE": "Gitlab"
       },
       "ISSUE_CONTENT": {
@@ -315,7 +319,8 @@
         "ALLOW_SELF_SIGNED": "Autoriser le certificat auto-signé",
         "HOST": "Hôte (par exemple: http://my-host.de:1234)",
         "PASSWORD": "Jeton / mot de passe",
-        "USER_NAME": "Email / Nom d'utilisateur"
+        "USER_NAME": "Email / Nom d'utilisateur",
+        "WONKY_COOKIE_MODE": "Authentification de secours Wonky Cookie (application de bureau uniquement)"
       },
       "FORM_SECTION": {
         "ADV_CFG": "Configuration avancée",
@@ -609,8 +614,12 @@
         "TIME": "Temps"
       },
       "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "Ajouter la tâche existante \"{{taskTitle}}\"",
+        "ADD_ISSUE_TASK": "Ajouter le problème n °{{issueNr}} de {{issueType}}",
         "ADD_TASK": "Ajouter une tâche",
         "ADD_TASK_TO_BACKLOG": "Ajouter une tâche au backlog",
+        "CREATE_TASK": "Créer une nouvelle tâche",
+        "EXAMPLE": "Exemple: \"Un titre de tâche + projectName # une balise # une autre balise 10m / 3h\"",
         "START": "Appuyez sur Entrée une fois de plus pour démarrer"
       },
       "B": {
@@ -831,12 +840,14 @@
     "SAVE": "sauvegarder",
     "TITLE": "Titre",
     "UNDO": "annuler",
-    "UPDATE": "Mettre à jour"
+    "UPDATE": "Mettre à jour",
+    "WITHOUT_PROJECT": "Sans projet"
   },
   "GCF": {
     "AUTO_BACKUPS": {
       "HELP": "Sauvegardez automatiquement toutes les données dans votre dossier d'applications afin de les retrouver en cas de problème.",
       "LABEL_IS_ENABLED": "Activer les sauvegardes automatiques",
+      "LOCATION_INFO": "Les sauvegardes sont enregistrées dans:",
       "TITLE": "Sauvegardes automatiques"
     },
     "EVALUATION": {
@@ -926,6 +937,7 @@
       "IS_AUTO_START_NEXT_TASK": "Commencer le suivi de la tâche suivante lors du marquage du courant comme terminé",
       "IS_CONFIRM_BEFORE_EXIT": "Confirmez avant de quitter l'application",
       "IS_DARK_MODE": "Mode sombre",
+      "IS_DISABLE_INITIAL_DIALOG": "Désactivez la boîte de dialogue d'informations initiale (vous risquez de manquer des mises à jour importantes!)",
       "IS_HIDE_NAV": "Masquer la navigation jusqu'à ce que l'en-tête principal soit survolé (bureau uniquement)",
       "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Notifier quand le temps estimé a été dépassé",
       "IS_TURN_OFF_MARKDOWN": "Désactiver l'analyse de démarquage pour les notes",
@@ -945,6 +957,13 @@
       "LONGER_BREAK_DURATION": "Durée des pauses plus longues",
       "TITLE": "Pomodoro Timer"
     },
+    "SOUND": {
+      "DONE_SOUND": "Tâche terminée son",
+      "IS_INCREASE_DONE_PITCH": "Augmentez la hauteur pour chaque tâche effectuée",
+      "IS_PLAY_DONE_SOUND": "Jouer le son lorsque la tâche est marquée comme terminée",
+      "TITLE": "Du son",
+      "VOLUME": "Le volume"
+    },
     "TAKE_A_BREAK": {
       "HELP": "<div> <p>vous permet de configurer un rappel récurrent lorsque vous avez travaillé pendant une durée déterminée sans prendre de pause.</p> <p>Vous pouvez modifier le message affiché. ${duration} sera remplacé par le temps passé sans pause.</p> </div>",
       "IS_ENABLED": "Activer le rappel de pause",
@@ -960,7 +979,9 @@
     "COPY_TO_CLIPPBOARD": "Copié dans le presse-papier",
     "ERR_COMPRESSION": "Erreur pour l'interface de compression",
     "PERSISTENCE_DISALLOWED": "Les données ne seront pas conservées de manière permanente. Sachez que cela peut entraîner une perte de données!",
-    "RUNNING_X": "\"{{str}}\" en cours."
+    "RUNNING_X": "\"{{str}}\" en cours.",
+    "SHORTCUT_WARN_OPEN_BOOKMARKS_FROM_TAG": "{{keyCombo}} enfoncé, mais le raccourci vers les favoris ouverts n'est disponible que dans le contexte du projet.",
+    "SHORTCUT_WARN_OPEN_NOTES_FROM_TAG": "{{keyCombo}} enfoncé, mais le raccourci Notes ouvertes n'est disponible que dans le contexte du projet."
   },
   "GPB": {
     "ASSETS": "Chargement des éléments ...",
@@ -1078,7 +1099,6 @@
     }
   },
   "SCHEDULE": {
-    "ADD_TO_TODAY": "Ajouter à aujourd'hui et supprimer le rappel",
     "NO_SCHEDULED": "Il n'y a actuellement aucune tâche planifiée. Vous pouvez planifier une tâche en choisissant \"Planifier une tâche\" dans le menu contextuel de la tâche. Pour l'ouvrir, cliquez sur les 3 petits points à droite d'une tâche.",
     "START_TASK": "Démarrer la tâche maintenant et supprimer le rappel"
   },

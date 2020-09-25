@@ -7,7 +7,7 @@ import {
   toggleShowNotes,
   toggleSideNav
 } from './layout.actions';
-import {Action, createFeatureSelector, createReducer, createSelector, on} from '@ngrx/store';
+import { Action, createFeatureSelector, createReducer, createSelector, on } from '@ngrx/store';
 
 export const LAYOUT_FEATURE_NAME = 'layout';
 
@@ -33,7 +33,6 @@ export const selectIsShowSideNav = createSelector(selectLayoutFeatureState, stat
 
 export const selectIsShowNotes = createSelector(selectLayoutFeatureState, (state) => state.isShowNotes);
 
-
 const _reducer = createReducer<LayoutState>(
   _initialLayoutState,
 
@@ -53,7 +52,7 @@ const _reducer = createReducer<LayoutState>(
 );
 
 export function reducer(
-  state = _initialLayoutState,
+  state: LayoutState = _initialLayoutState,
   action: Action
 ): LayoutState {
   return _reducer(state, action);

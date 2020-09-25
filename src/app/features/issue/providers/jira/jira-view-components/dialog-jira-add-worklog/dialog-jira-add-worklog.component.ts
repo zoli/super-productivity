@@ -1,12 +1,12 @@
-import {ChangeDetectionStrategy, Component, Inject} from '@angular/core';
-import {JiraApiService} from '../../jira-api.service';
-import {MAT_DIALOG_DATA, MatDialogRef} from '@angular/material/dialog';
-import {SnackService} from '../../../../../../core/snack/snack.service';
-import {JiraIssue} from '../../jira-issue/jira-issue.model';
-import {Task} from '../../../../../tasks/task.model';
-import {T} from '../../../../../../t.const';
-import {ProjectService} from '../../../../../project/project.service';
-import {first} from 'rxjs/operators';
+import { ChangeDetectionStrategy, Component, Inject } from '@angular/core';
+import { JiraApiService } from '../../jira-api.service';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { SnackService } from '../../../../../../core/snack/snack.service';
+import { JiraIssue } from '../../jira-issue/jira-issue.model';
+import { Task } from '../../../../../tasks/task.model';
+import { T } from '../../../../../../t.const';
+import { ProjectService } from '../../../../../project/project.service';
+import { first } from 'rxjs/operators';
 
 @Component({
   selector: 'dialog-jira-add-worklog',
@@ -15,7 +15,7 @@ import {first} from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DialogJiraAddWorklogComponent {
-  T = T;
+  T: typeof T = T;
   timeSpent: number;
   started: string;
   comment: string;
@@ -42,7 +42,7 @@ export class DialogJiraAddWorklogComponent {
   }
 
   async submitWorklog() {
-    if (this.issue.id && this.started && this.timeSpent) {
+    if (this.issue.id && this.started && this.timeSpent && this.data.task.projectId) {
       const cfg = await this._projectService.getJiraCfgForProject$(this.data.task.projectId).pipe(first()).toPromise();
       this._jiraApiService.addWorklog$({
         issueId: this.issue.id,

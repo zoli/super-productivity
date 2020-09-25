@@ -34,17 +34,23 @@ $light-theme-bg-darker: rgb(246, 246, 246);
 
 $dark-theme-text-color: rgb(225, 225, 225);
 $dark-theme-text-color-less-intense: transparentize($dark-theme-text-color, 0.1);
+$dark-theme-text-color-muted: transparentize($dark-theme-text-color, 0.4);
 $dark-theme-text-color-more-intense: rgb(240, 240, 240);
 $dark-theme-text-color-most-intense: rgb(255, 255, 255);
 
 $light-theme-text-color: rgb(44, 44, 44);
 $light-theme-text-color-less-intense: transparentize($light-theme-text-color, 0.1);
+$light-theme-text-color-muted: transparentize($light-theme-text-color, 0.4);
 $light-theme-text-color-most-intense: rgb(0, 0, 0);
 
 $light-theme-selected-task-bg-color: mat-css-color-primary(100);
 $light-theme-selected-task-bg-color: #fff;
 $light-theme-extra-border-color: #dddddd;
 $dark-theme-extra-border-color: rgba(255, 255, 255, 0.12);
+
+$light-theme-separator-color: rgba(18, 18, 18, 0.3);
+$dark-theme-separator-color: rgba(255, 255, 255, 0.3);
+
 
 $c-accent: mat-css-color-accent();
 $c-warn: mat-css-color-warn();

@@ -1,17 +1,17 @@
-import {Injectable} from '@angular/core';
-import {Actions, Effect, ofType} from '@ngrx/effects';
-import {first, switchMap, tap} from 'rxjs/operators';
-import {select, Store} from '@ngrx/store';
-import {BookmarkActionTypes} from './bookmark.actions';
-import {BookmarkState, selectBookmarkFeatureState} from './bookmark.reducer';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {combineLatest} from 'rxjs';
-import {WorkContextService} from '../../work-context/work-context.service';
+import { Injectable } from '@angular/core';
+import { Actions, Effect, ofType } from '@ngrx/effects';
+import { first, switchMap, tap } from 'rxjs/operators';
+import { select, Store } from '@ngrx/store';
+import { BookmarkActionTypes } from './bookmark.actions';
+import { BookmarkState, selectBookmarkFeatureState } from './bookmark.reducer';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { combineLatest, Observable } from 'rxjs';
+import { WorkContextService } from '../../work-context/work-context.service';
 
 @Injectable()
 export class BookmarkEffects {
 
-  @Effect({dispatch: false}) updateBookmarks$: any = this._actions$
+  @Effect({dispatch: false}) updateBookmarks$: Observable<unknown> = this._actions$
     .pipe(
       ofType(
         BookmarkActionTypes.AddBookmark,
@@ -38,8 +38,7 @@ export class BookmarkEffects {
 
   private _saveToLs(currentProjectId: string, bookmarkState: BookmarkState) {
     if (currentProjectId) {
-      this._persistenceService.updateLastLocalSyncModelChange();
-      this._persistenceService.bookmark.save(currentProjectId, bookmarkState);
+      this._persistenceService.bookmark.save(currentProjectId, bookmarkState, {isSyncModelChange: true});
     } else {
       throw new Error('No current project id');
     }

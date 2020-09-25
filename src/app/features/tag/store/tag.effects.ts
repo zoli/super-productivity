@@ -1,11 +1,11 @@
-import {Injectable} from '@angular/core';
-import {Actions, createEffect, Effect, ofType} from '@ngrx/effects';
-import {concatMap, filter, first, map, switchMap, take, tap} from 'rxjs/operators';
-import {select, Store} from '@ngrx/store';
-import {selectTagFeatureState} from './tag.reducer';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {T} from '../../../t.const';
-import {SnackService} from '../../../core/snack/snack.service';
+import { Injectable } from '@angular/core';
+import { Actions, createEffect, Effect, ofType } from '@ngrx/effects';
+import { concatMap, filter, first, map, switchMap, take, tap } from 'rxjs/operators';
+import { select, Store } from '@ngrx/store';
+import { selectTagFeatureState } from './tag.reducer';
+import { PersistenceService } from '../../../core/persistence/persistence.service';
+import { T } from '../../../t.const';
+import { SnackService } from '../../../core/snack/snack.service';
 import {
   addTag,
   addToBreakTimeForTag,
@@ -28,28 +28,32 @@ import {
   RestoreTask,
   TaskActionTypes
 } from '../../tasks/store/task.actions';
-import {TagService} from '../tag.service';
-import {TaskService} from '../../tasks/task.service';
-import {EMPTY, of} from 'rxjs';
-import {Task, TaskArchive} from '../../tasks/task.model';
-import {Tag} from '../tag.model';
-import {getWorklogStr} from '../../../util/get-work-log-str';
-import {WorkContextType} from '../../work-context/work-context.model';
-import {WorkContextService} from '../../work-context/work-context.service';
-import {Router} from '@angular/router';
-import {TODAY_TAG} from '../tag.const';
-import {createEmptyEntity} from '../../../util/create-empty-entity';
-import {DataInitService} from '../../../core/data-init/data-init.service';
+import { TagService } from '../tag.service';
+import { TaskService } from '../../tasks/task.service';
+import { EMPTY, Observable, of } from 'rxjs';
+import { Task, TaskArchive } from '../../tasks/task.model';
+import { Tag } from '../tag.model';
+import { getWorklogStr } from '../../../util/get-work-log-str';
+import { WorkContextType } from '../../work-context/work-context.model';
+import { WorkContextService } from '../../work-context/work-context.service';
+import { Router } from '@angular/router';
+import { TODAY_TAG } from '../tag.const';
+import { createEmptyEntity } from '../../../util/create-empty-entity';
 import {
   moveTaskDownInTodayList,
   moveTaskInTodayList,
   moveTaskUpInTodayList
 } from '../../work-context/store/work-context-meta.actions';
-
+import { TaskRepeatCfgService } from '../../task-repeat-cfg/task-repeat-cfg.service';
 
 @Injectable()
 export class TagEffects {
-  updateTagsStorage$ = createEffect(() => this._actions$.pipe(
+  saveToLs$: Observable<unknown> = this._store$.pipe(
+    select(selectTagFeatureState),
+    take(1),
+    switchMap((tagState) => this._persistenceService.tag.saveState(tagState, {isSyncModelChange: true})),
+  );
+  updateTagsStorage$: Observable<unknown> = createEffect(() => this._actions$.pipe(
     ofType(
       addTag,
       updateTag,
@@ -67,8 +71,7 @@ export class TagEffects {
     ),
     switchMap(() => this.saveToLs$),
   ), {dispatch: false});
-
-  updateProjectStorageConditionalTask$ = createEffect(() => this._actions$.pipe(
+  updateProjectStorageConditionalTask$: Observable<unknown> = createEffect(() => this._actions$.pipe(
     ofType(
       TaskActionTypes.AddTask,
       TaskActionTypes.DeleteTask,
@@ -97,8 +100,7 @@ export class TagEffects {
     }),
     switchMap(() => this.saveToLs$),
   ), {dispatch: false});
-
-  updateTagsStorageConditional$ = createEffect(() => this._actions$.pipe(
+  updateTagsStorageConditional$: Observable<unknown> = createEffect(() => this._actions$.pipe(
     ofType(
       moveTaskInTodayList,
       moveTaskUpInTodayList,
@@ -107,16 +109,6 @@ export class TagEffects {
     filter((p) => p.workContextType === WorkContextType.TAG),
     switchMap(() => this.saveToLs$),
   ), {dispatch: false});
-
-
-  saveToLs$ = this._store$.pipe(
-    select(selectTagFeatureState),
-    take(1),
-    switchMap((tagState) => this._persistenceService.tag.saveState(tagState)),
-    tap(this._updateLastLocalSyncModelChange.bind(this)),
-  );
-
-
   @Effect({dispatch: false})
   snackUpdateBaseSettings$: any = this._actions$.pipe(
     ofType(updateTag),
@@ -125,7 +117,6 @@ export class TagEffects {
       msg: T.F.TAG.S.UPDATED,
     }))
   );
-
 
   @Effect()
   updateWorkStart$: any = this._actions$.pipe(
@@ -149,7 +140,7 @@ export class TagEffects {
   );
 
   @Effect()
-  updateWorkEnd$: any = this._actions$.pipe(
+  updateWorkEnd$: Observable<unknown> = this._actions$.pipe(
     ofType(TaskActionTypes.AddTimeSpent),
     concatMap(({payload}: AddTimeSpent) => payload.task.parentId
       ? this._taskService.getByIdOnce$(payload.task.parentId).pipe(first())
@@ -168,7 +159,7 @@ export class TagEffects {
   );
 
   @Effect({dispatch: false})
-  deleteTagRelatedData: any = this._actions$.pipe(
+  deleteTagRelatedData: Observable<unknown> = this._actions$.pipe(
     ofType(
       deleteTag,
       deleteTags,
@@ -190,29 +181,44 @@ export class TagEffects {
       // remove orphaned for archive
       const taskArchiveState: TaskArchive = await this._persistenceService.taskArchive.loadState() || createEmptyEntity();
       const archiveTaskIdsToDelete = (taskArchiveState.ids as string[]).filter((id) => {
-        const t = taskArchiveState.entities[id];
+        const t = taskArchiveState.entities[id] as Task;
         return isOrphanedParentTask(t);
       });
       await this._persistenceService.taskArchive.execAction(new DeleteMainTasks({taskIds: archiveTaskIdsToDelete}));
+
+      // remove from task repeat
+      const taskRepeatCfgs = await this._taskRepeatCfgService.taskRepeatCfgs$.pipe(take(1)).toPromise();
+      taskRepeatCfgs.forEach(taskRepeatCfg => {
+        if (taskRepeatCfg.tagIds.some(r => tagIdsToRemove.indexOf(r) >= 0)) {
+          const tagIds = taskRepeatCfg.tagIds.filter(tagId => !tagIdsToRemove.includes(tagId));
+          if (tagIds.length === 0 && !taskRepeatCfg.projectId) {
+            this._taskRepeatCfgService.deleteTaskRepeatCfg(taskRepeatCfg.id as string);
+          } else {
+            this._taskRepeatCfgService.updateTaskRepeatCfg(taskRepeatCfg.id as string, {
+              tagIds
+            });
+          }
+        }
+      });
     }),
   );
 
   @Effect({dispatch: false})
-  redirectIfCurrentTagIsDeleted: any = this._actions$.pipe(
+  redirectIfCurrentTagIsDeleted: Observable<unknown> = this._actions$.pipe(
     ofType(
       deleteTag,
       deleteTags,
     ),
     map((a: any) => a.ids ? a.ids : [a.id]),
     tap(async (tagIdsToRemove: string[]) => {
-      if (tagIdsToRemove.includes(this._workContextService.activeWorkContextId)) {
+      if (tagIdsToRemove.includes(this._workContextService.activeWorkContextId as string)) {
         this._router.navigate([`tag/${TODAY_TAG.id}/tasks`]);
       }
     }),
   );
 
   @Effect({dispatch: false})
-  cleanupNullTasksForTaskList: any = this._workContextService.activeWorkContextTypeAndId$.pipe(
+  cleanupNullTasksForTaskList: Observable<unknown> = this._workContextService.activeWorkContextTypeAndId$.pipe(
     filter(({activeType}) => activeType === WorkContextType.TAG),
     switchMap(({activeType, activeId}) => this._workContextService.todaysTasks$.pipe(
       take(1),
@@ -237,21 +243,16 @@ export class TagEffects {
     }),
   );
 
-
   constructor(
     private _actions$: Actions,
     private _store$: Store<any>,
     private _persistenceService: PersistenceService,
-    private _dataInitService: DataInitService,
     private _snackService: SnackService,
     private _tagService: TagService,
     private _workContextService: WorkContextService,
     private _taskService: TaskService,
+    private _taskRepeatCfgService: TaskRepeatCfgService,
     private _router: Router,
   ) {
-  }
-
-  private _updateLastLocalSyncModelChange() {
-    this._persistenceService.updateLastLocalSyncModelChange();
   }
 }

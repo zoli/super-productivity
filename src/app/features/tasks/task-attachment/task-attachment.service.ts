@@ -1,14 +1,13 @@
-import {Injectable} from '@angular/core';
-import {Store} from '@ngrx/store';
-import {TaskAttachment} from './task-attachment.model';
-import shortid from 'shortid';
-import {DialogEditTaskAttachmentComponent} from './dialog-edit-attachment/dialog-edit-task-attachment.component';
-import {MatDialog} from '@angular/material/dialog';
-import {DropPasteInput} from '../../../core/drop-paste-input/drop-paste.model';
-import {PersistenceService} from '../../../core/persistence/persistence.service';
-import {AddTaskAttachment, DeleteTaskAttachment, UpdateTaskAttachment} from './task-attachment.actions';
-import {TaskState} from '../task.model';
-import {createFromDrop} from 'src/app/core/drop-paste-input/drop-paste-input';
+import { Injectable } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { TaskAttachment } from './task-attachment.model';
+import * as shortid from 'shortid';
+import { DialogEditTaskAttachmentComponent } from './dialog-edit-attachment/dialog-edit-task-attachment.component';
+import { MatDialog } from '@angular/material/dialog';
+import { DropPasteInput } from '../../../core/drop-paste-input/drop-paste.model';
+import { AddTaskAttachment, DeleteTaskAttachment, UpdateTaskAttachment } from './task-attachment.actions';
+import { TaskState } from '../task.model';
+import { createFromDrop } from 'src/app/core/drop-paste-input/drop-paste-input';
 
 @Injectable({
   providedIn: 'root',
@@ -18,7 +17,6 @@ export class TaskAttachmentService {
   constructor(
     private _store$: Store<TaskState>,
     private _matDialog: MatDialog,
-    private _persistenceService: PersistenceService,
   ) {
   }
 
@@ -41,31 +39,29 @@ export class TaskAttachmentService {
     this._store$.dispatch(new DeleteTaskAttachment({taskId, id}));
   }
 
-
   updateAttachment(taskId: string, id: string, changes: Partial<TaskAttachment>) {
     this._store$.dispatch(new UpdateTaskAttachment({taskId, taskAttachment: {id, changes}}));
   }
 
   // HANDLE INPUT
   // ------------
-  createFromDrop(ev, taskId: string) {
-    this._handleInput(createFromDrop(ev), ev, taskId);
+  createFromDrop(ev: DragEvent, taskId: string) {
+    this._handleInput(createFromDrop(ev) as DropPasteInput, ev, taskId);
   }
-
 
   // createFromPaste(ev, taskId: string) {
   //   this._handleInput(createFromPaste(ev), ev, taskId);
   // }
 
-
-  private _handleInput(attachment: DropPasteInput, ev, taskId) {
+  private _handleInput(attachment: DropPasteInput, ev: Event, taskId: string) {
     // properly not intentional so we leave
     if (!attachment || !attachment.path) {
       return;
     }
 
     // don't intervene with text inputs
-    if (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA') {
+    const targetEl = ev.target as HTMLElement;
+    if (targetEl.tagName === 'INPUT' || targetEl.tagName === 'TEXTAREA') {
       return;
     }
 

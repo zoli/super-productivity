@@ -8,15 +8,14 @@ import {
   Output,
   ViewChild
 } from '@angular/core';
-import {GoogleApiService} from '../google-api.service';
-import {GlobalConfigService} from '../../config/global-config.service';
-import {GoogleDriveSyncService} from '../google-drive-sync.service';
-import {SnackService} from '../../../core/snack/snack.service';
-import {GoogleDriveSyncConfig} from '../../config/global-config.model';
-import {Subscription} from 'rxjs';
-import {expandFadeAnimation} from '../../../ui/animations/expand.ani';
-import {FormGroup} from '@angular/forms';
-import {T} from '../../../t.const';
+import { GoogleApiService } from '../google-api.service';
+import { GlobalConfigService } from '../../config/global-config.service';
+import { GoogleDriveSyncService } from '../google-drive-sync.service';
+import { GoogleDriveSyncConfig } from '../../config/global-config.model';
+import { Subscription } from 'rxjs';
+import { expandFadeAnimation } from '../../../ui/animations/expand.ani';
+import { FormGroup } from '@angular/forms';
+import { T } from '../../../t.const';
 
 @Component({
   selector: 'google-sync-cfg',
@@ -26,22 +25,21 @@ import {T} from '../../../t.const';
   animations: [expandFadeAnimation]
 })
 export class GoogleSyncCfgComponent implements OnInit, OnDestroy {
-  T = T;
+  T: typeof T = T;
   tmpSyncFile: any;
-  cfg: GoogleDriveSyncConfig;
-  loginPromise: Promise<any>;
+  cfg?: GoogleDriveSyncConfig;
+  loginPromise?: Promise<any>;
 
-  @ViewChild('formRef', {static: true}) formRef: FormGroup;
+  @ViewChild('formRef', {static: true}) formRef?: FormGroup;
 
-  @Output() save = new EventEmitter<any>();
+  @Output() save: EventEmitter<any> = new EventEmitter();
 
-  private _subs = new Subscription();
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public readonly googleApiService: GoogleApiService,
     public readonly googleDriveSyncService: GoogleDriveSyncService,
     private readonly _configService: GlobalConfigService,
-    private readonly _snackService: SnackService,
     private readonly _cd: ChangeDetectorRef,
   ) {
   }
@@ -59,15 +57,20 @@ export class GoogleSyncCfgComponent implements OnInit, OnDestroy {
   }
 
   submit() {
-    if (this.formRef.valid) {
+    const f = this.formRef;
+    if (!f) {
+      throw new Error();
+    }
+
+    if (f.valid) {
       this.save.emit({
         sectionKey: 'googleDriveSync',
         config: this.cfg,
       });
     } else {
-      Object.keys(this.formRef.controls)
+      Object.keys(f.controls)
         .forEach(fieldName =>
-          this.formRef.controls[fieldName].markAsDirty()
+          f.controls[fieldName].markAsDirty()
         );
     }
   }
@@ -88,7 +91,7 @@ export class GoogleSyncCfgComponent implements OnInit, OnDestroy {
     this.googleApiService.logout();
   }
 
-  changeSyncFileName(newSyncFile) {
+  changeSyncFileName(newSyncFile: string) {
     this.googleDriveSyncService.changeSyncFileName(newSyncFile);
   }
 

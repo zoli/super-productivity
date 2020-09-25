@@ -1,6 +1,6 @@
-import {ChangeDetectionStrategy, Component} from '@angular/core';
-import {MatDialogRef} from '@angular/material/dialog';
-import {T} from '../../../t.const';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { MatDialogRef } from '@angular/material/dialog';
+import { T } from '../../../t.const';
 
 interface NewTimeEntry {
   timeSpent: number;
@@ -14,7 +14,7 @@ interface NewTimeEntry {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DialogAddTimeEstimateForOtherDayComponent {
-  T = T;
+  T: typeof T = T;
   newEntry: NewTimeEntry;
 
   constructor(private _matDialogRef: MatDialogRef<DialogAddTimeEstimateForOtherDayComponent>) {

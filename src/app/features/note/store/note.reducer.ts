@@ -1,5 +1,5 @@
-import {createEntityAdapter, EntityAdapter, EntityState} from '@ngrx/entity';
-import {Note} from '../note.model';
+import { createEntityAdapter, EntityAdapter, EntityState } from '@ngrx/entity';
+import { Note } from '../note.model';
 import {
   addNote,
   addNotes,
@@ -13,7 +13,7 @@ import {
   upsertNote,
   upsertNotes
 } from './note.actions';
-import {Action, createFeatureSelector, createReducer, createSelector, on} from '@ngrx/store';
+import { Action, createFeatureSelector, createReducer, createSelector, on } from '@ngrx/store';
 
 export interface NoteState extends EntityState<Note> {
 }
@@ -34,7 +34,13 @@ export const selectNoteFeatureState = createFeatureSelector<NoteState>(NOTE_FEAT
 export const selectAllNotes = createSelector(selectNoteFeatureState, selectAll);
 export const selectNoteById = createSelector(
   selectNoteFeatureState,
-  (state, props: { id: string }) => state.entities[props.id]
+  (state: NoteState, props: { id: string }): Note => {
+    const n = state.entities[props.id];
+    if (!n) {
+      throw new Error('No note');
+    }
+    return n;
+  }
 );
 
 const _reducer = createReducer<NoteState>(
@@ -78,7 +84,7 @@ const _reducer = createReducer<NoteState>(
 );
 
 export function noteReducer(
-  state = initialNoteState,
+  state: NoteState = initialNoteState,
   action: Action
 ): NoteState {
   return _reducer(state, action);

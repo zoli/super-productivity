@@ -1,5 +1,5 @@
-import {AppBaseData, AppDataForProjects} from '../../imex/sync/sync.model';
-import {Action} from '@ngrx/store';
+import { AppBaseData, AppDataForProjects } from '../../imex/sync/sync.model';
+import { Action } from '@ngrx/store';
 
 export type ProjectDataLsKey
   = 'CFG'
@@ -16,13 +16,12 @@ export type ProjectDataLsKey
   | 'OBSTRUCTION_STATE'
   ;
 
-
 export interface PersistenceBaseModel<T> {
   appDataKey: keyof AppBaseData;
 
   loadState(isSkipMigration?: boolean): Promise<T>;
 
-  saveState(state: T, isDataImport?: boolean): Promise<any>;
+  saveState(state: T, flags: { isDataImport?: boolean, isSyncModelChange?: boolean }): Promise<unknown>;
 }
 
 export interface PersistenceBaseEntityModel<S, M> extends PersistenceBaseModel<S> {
@@ -43,8 +42,8 @@ export interface PersistenceForProjectModel<S, M> {
 
   load(projectId: string): Promise<S>;
 
-  save(projectId: string, state: S, isDataImport?: boolean): Promise<any>;
+  save(projectId: string, state: S, flags: { isDataImport?: boolean, isSyncModelChange?: boolean }): Promise<unknown>;
 
   /* @deprecated */
-  remove(projectId: string): Promise<any>;
+  remove(projectId: string): Promise<unknown>;
 }

@@ -1,6 +1,6 @@
-import {GitlabIssue} from './gitlab-issue.model';
-import {GitlabOriginalIssue} from '../gitlab-api/gitlab-api-responses';
-import {IssueProviderKey, SearchResultItem} from '../../../issue.model';
+import { GitlabIssue } from './gitlab-issue.model';
+import { GitlabOriginalIssue } from '../gitlab-api/gitlab-api-responses';
+import { IssueProviderKey, SearchResultItem } from '../../../issue.model';
 
 export const mapGitlabIssue = (issue: GitlabOriginalIssue): GitlabIssue => {
   return {
@@ -12,7 +12,7 @@ export const mapGitlabIssue = (issue: GitlabOriginalIssue): GitlabIssue => {
     user: issue.author,
     labels: issue.labels,
     assignee: issue.assignee,
-    milestone: issue.milestone,
+    milestone: issue.milestone as any,
     closed_at: issue.closed_at,
     created_at: issue.created_at,
     updated_at: issue.updated_at,

@@ -14,10 +14,7 @@
     "UPDATE_WEB_APP": "Nieuwe versie beschikbaar. Nieuwe versie laden?"
   },
   "BL": {
-    "FROM_OTHER_PROJECTS": "Van andere projecten",
-    "NO_TASKS": "Er staan momenteel geen taken in uw backlog",
-    "SCHEDULED": "Gepland",
-    "TITLE": "Achterstand"
+    "NO_TASKS": "Er staan momenteel geen taken in uw backlog"
   },
   "DATETIME_INPUT": {
     "IN": "op {{time}}",
@@ -80,6 +77,13 @@
       }
     },
     "DROPBOX": {
+      "C": {
+        "EMPTY_SYNC": "U probeert een leeg gegevensobject te synchroniseren. Is dit uw allereerste synchronisatie van een (bijna) nieuwe app?",
+        "FORCE_IMPORT": "Toch externe gegevens importeren?",
+        "FORCE_UPLOAD": "Lokale gegevens toch uploaden?",
+        "FORCE_UPLOAD_AFTER_ERROR": "Er is een fout opgetreden tijdens het uploaden van uw lokale gegevens. Probeer de update te forceren?",
+        "TRY_LOAD_REMOTE_AGAIN": "Wilt u nogmaals gegevens van de afstandsbediening opnieuw laden?"
+      },
       "D_CONFLICT": {
         "LAST_CHANGE": "laatste wijziging:",
         "LAST_SYNC": "laatste gesynchroniseerd:",
@@ -122,7 +126,7 @@
         "TOKEN": "Toegangstoken"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Hier kunt u SuperProductivity configureren om openstaande GithHub-problemen voor een specifieke repository weer te geven in het paneel voor het maken van taken in de dagelijkse planningsweergave. Ze worden vermeld als suggesties en bieden een link naar het probleem en meer informatie erover.</p> <p>Daarnaast kunt u automatisch alle openstaande problemen toevoegen en synchroniseren met uw taakachterstand.</p>",
+        "HELP": "<p>Hier kunt u SuperProductivity configureren om openstaande GitHub-problemen voor een specifieke repository weer te geven in het paneel voor het maken van taken in de dagelijkse planningsweergave. Ze worden vermeld als suggesties en bieden een link naar het probleem en meer informatie erover.</p> <p>Daarnaast kunt u automatisch alle openstaande problemen toevoegen en synchroniseren met uw taakachterstand.</p>",
         "TITLE": "Github"
       },
       "ISSUE_CONTENT": {
@@ -160,11 +164,11 @@
         "IS_AUTO_ADD_TO_BACKLOG": "Voeg automatisch onopgeloste problemen van Gitlab toe aan de achterstand",
         "IS_AUTO_POLL": "Poll automatisch geïmporteerde git-problemen voor wijzigingen",
         "IS_SEARCH_ISSUES_FROM_GITLAB": "Toon problemen van git als suggesties bij het toevoegen van nieuwe taken",
-        "PROJECT": "\"gebruikersnaam% 2FProjectName\" voor het gitlab-project dat u wilt volgen",
+        "PROJECT": "Volledig pad of gebruikersnaam / project",
         "TOKEN": "Toegangstoken"
       },
       "FORM_SECTION": {
-        "HELP": "<p>Hier kunt u SuperProductivity configureren om open Gitlab-problemen voor een specifiek project weer te geven in het paneel voor het maken van taken in de dagelijkse planningsweergave. Ze worden vermeld als suggesties en bieden een link naar het probleem en meer informatie erover.</p> <p>Daarnaast kunt u automatisch alle openstaande problemen toevoegen en synchroniseren met uw taakachterstand.</p>",
+        "HELP": "<p> Hier kunt u SuperProductivity configureren om open Gitlab (ofwel de online versie of een zelf-gehoste instantie) problemen voor een specifiek project in het taakcreatiepaneel in de dagelijkse planningsweergave op te sommen. Ze worden vermeld als suggesties en bevatten een link naar het probleem en meer informatie erover. </p> <p> Daarnaast kunt u automatisch alle openstaande problemen toevoegen aan en synchroniseren met uw taakachterstand. </p>",
         "TITLE": "Gitlab"
       },
       "ISSUE_CONTENT": {
@@ -315,7 +319,8 @@
         "ALLOW_SELF_SIGNED": "Zelfondertekend certificaat toestaan",
         "HOST": "Host (bijv .: http://my-host.de:1234)",
         "PASSWORD": "Token / wachtwoord",
-        "USER_NAME": "E-mail / gebruikersnaam"
+        "USER_NAME": "E-mail / gebruikersnaam",
+        "WONKY_COOKIE_MODE": "Wonky Cookie Fallback Authentication (alleen desktop-app)"
       },
       "FORM_SECTION": {
         "ADV_CFG": "Geavanceerde configuratie",
@@ -609,8 +614,12 @@
         "TIME": "Tijd"
       },
       "ADD_TASK_BAR": {
+        "ADD_EXISTING_TASK": "Voeg bestaande taak \"{{taskTitle}}\" toe",
+        "ADD_ISSUE_TASK": "Voeg probleem #{{issueNr}} van {{issueType}}toe",
         "ADD_TASK": "Voeg taak toe",
         "ADD_TASK_TO_BACKLOG": "Taak toevoegen aan achterstand",
+        "CREATE_TASK": "Maak een nieuwe taak",
+        "EXAMPLE": "Voorbeeld: \"Een taaktitel + projectnaam # een tag # een andere tag 10 m / 3 uur\"",
         "START": "Druk nogmaals op Enter om te beginnen"
       },
       "B": {
@@ -738,13 +747,13 @@
     "TIME_TRACKING": {
       "B": {
         "ALREADY_DID": "heb ik al gedaan",
-        "SNOOZE": "{{Time}} snoozen"
+        "SNOOZE": "{{time}} snoozen"
       },
       "D_IDLE": {
-        "BREAK": "Breken",
-        "CREATE_AND_TRACK": "<em>Maak</em> en volg naar:",
+        "BREAK": "Pauze",
+        "CREATE_AND_TRACK": "<em>Maak</em> en ga naar:",
         "IDLE_FOR": "Je hebt niets gedaan voor:",
-        "SKIP": "Overspringen",
+        "SKIP": "Overslaan",
         "TASK": "Taak",
         "TASK_BREAK": "Taak + pauze",
         "TRACK_TO": "Track naar:"
@@ -812,7 +821,7 @@
   "G": {
     "CANCEL": "annuleren",
     "CLICK_TO_EDIT": "Klik om te bewerken",
-    "CLOSE": "Dichtbij",
+    "CLOSE": "Sluiten",
     "DELETE": "Verwijderen",
     "DISMISS": "Afwijzen",
     "DO_IT": "Doe het!",
@@ -831,12 +840,14 @@
     "SAVE": "Opslaan",
     "TITLE": "Titel",
     "UNDO": "Ongedaan maken",
-    "UPDATE": "Bijwerken"
+    "UPDATE": "Bijwerken",
+    "WITHOUT_PROJECT": "Zonder project"
   },
   "GCF": {
     "AUTO_BACKUPS": {
       "HELP": "Sla alle gegevens automatisch op in uw app-map om deze gereed te hebben voor het geval er iets misgaat.",
       "LABEL_IS_ENABLED": "Schakel automatische back-ups in",
+      "LOCATION_INFO": "Back-ups worden opgeslagen in:",
       "TITLE": "Automatische back-ups"
     },
     "EVALUATION": {
@@ -926,6 +937,7 @@
       "IS_AUTO_START_NEXT_TASK": "Begin met het volgen van de volgende taak wanneer u de stroom als voltooid markeert",
       "IS_CONFIRM_BEFORE_EXIT": "Bevestig voordat u de app afsluit",
       "IS_DARK_MODE": "Donkere modus",
+      "IS_DISABLE_INITIAL_DIALOG": "Schakel het dialoogvenster met eerste informatie uit (u mist mogelijk belangrijke updates!)",
       "IS_HIDE_NAV": "Verberg navigatie totdat de hoofdkop is opgehangen (alleen desktop)",
       "IS_NOTIFY_WHEN_TIME_ESTIMATE_EXCEEDED": "Informeer wanneer de geschatte tijd is overschreden",
       "IS_TURN_OFF_MARKDOWN": "Schakel markdown-parsering voor notities uit",
@@ -945,6 +957,13 @@
       "LONGER_BREAK_DURATION": "Duur van langere pauzes",
       "TITLE": "Pomodoro Timer"
     },
+    "SOUND": {
+      "DONE_SOUND": "Taak gedaan geluid",
+      "IS_INCREASE_DONE_PITCH": "Verhoog de toon voor elke uitgevoerde taak",
+      "IS_PLAY_DONE_SOUND": "Speel geluid af wanneer de taak is gemarkeerd als voltooid",
+      "TITLE": "Geluid",
+      "VOLUME": "Volume"
+    },
     "TAKE_A_BREAK": {
       "HELP": "<div> <p>Hiermee kunt u een terugkerende herinnering configureren wanneer u een bepaalde tijd hebt gewerkt zonder een pauze te nemen.</p> <p>U kunt het weergegeven bericht wijzigen. $ {duration} wordt vervangen door de tijd die u zonder pauze doorbrengt.</p> </div>",
       "IS_ENABLED": "Schakel een pauzeherinnering in",
@@ -960,7 +979,9 @@
     "COPY_TO_CLIPPBOARD": "Gekopieerd naar het klembord",
     "ERR_COMPRESSION": "Fout voor compressie-interface",
     "PERSISTENCE_DISALLOWED": "Gegevens worden niet permanent bewaard. Houd er rekening mee dat dit kan leiden tot gegevensverlies !!",
-    "RUNNING_X": "\"{{Str}}\" wordt uitgevoerd."
+    "RUNNING_X": "\"{{Str}}\" wordt uitgevoerd.",
+    "SHORTCUT_WARN_OPEN_BOOKMARKS_FROM_TAG": "{{keyCombo}} ingedrukt, maar de snelkoppeling naar bladwijzers openen is alleen beschikbaar in projectcontext.",
+    "SHORTCUT_WARN_OPEN_NOTES_FROM_TAG": "{{keyCombo}} ingedrukt, maar de snelkoppeling voor open notities is alleen beschikbaar in projectcontext."
   },
   "GPB": {
     "ASSETS": "Activa laden ...",
@@ -1019,7 +1040,7 @@
     "ROUND_UP_15M": "Rond alle taken af naar 15 minuten",
     "ROUND_UP_30M": "Rond alle taken af op 30 minuten",
     "ROUND_UP_5M": "Rond alle taken af op 5 minuten",
-    "SAVE_AND_GO_HOME": "Bespaar en ga naar huis",
+    "SAVE_AND_GO_HOME": "Opslaan en naar huis gaan",
     "START_END": "Begin het einde",
     "SUMMARY_FOR": "Dagelijks overzicht voor {{dayStr}}",
     "TASKS_COMPLETED": "Taken voltooid",
@@ -1078,7 +1099,6 @@
     }
   },
   "SCHEDULE": {
-    "ADD_TO_TODAY": "Voeg toe aan vandaag en verwijder de herinnering",
     "NO_SCHEDULED": "Er zijn momenteel geen geplande taken. U kunt een taak plannen door \"Taak plannen\" te kiezen in het taakcontextmenu. Klik op de 3 kleine puntjes rechts van een taak om deze te openen.",
     "START_TASK": "Start de taak nu en verwijder de herinnering"
   },

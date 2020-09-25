@@ -1,20 +1,20 @@
-import {ChangeDetectionStrategy, Component, OnDestroy, OnInit} from '@angular/core';
-import {ProjectService} from '../../features/project/project.service';
-import {MatDialog} from '@angular/material/dialog';
-import {DialogCreateProjectComponent} from '../../features/project/dialogs/create-project/dialog-create-project.component';
-import {DialogConfirmComponent} from '../../ui/dialog-confirm/dialog-confirm.component';
-import {standardListAnimation} from '../../ui/animations/standard-list.ani';
-import {Subscription} from 'rxjs';
-import {DragulaService} from 'ng2-dragula';
-import {Project} from '../../features/project/project.model';
-import {PersistenceService} from '../../core/persistence/persistence.service';
-import {download} from '../../util/download';
-import {SnackService} from '../../core/snack/snack.service';
-import {T} from '../../t.const';
-import {THEME_COLOR_MAP} from '../../app.constants';
-import {WorkContextService} from '../../features/work-context/work-context.service';
-import {withLatestFrom} from 'rxjs/operators';
-import {ExportedProject} from '../../features/project/project-archive.model';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit } from '@angular/core';
+import { ProjectService } from '../../features/project/project.service';
+import { MatDialog } from '@angular/material/dialog';
+import { DialogCreateProjectComponent } from '../../features/project/dialogs/create-project/dialog-create-project.component';
+import { DialogConfirmComponent } from '../../ui/dialog-confirm/dialog-confirm.component';
+import { standardListAnimation } from '../../ui/animations/standard-list.ani';
+import { Subscription } from 'rxjs';
+import { DragulaService } from 'ng2-dragula';
+import { Project } from '../../features/project/project.model';
+import { PersistenceService } from '../../core/persistence/persistence.service';
+import { download } from '../../util/download';
+import { SnackService } from '../../core/snack/snack.service';
+import { T } from '../../t.const';
+import { THEME_COLOR_MAP } from '../../app.constants';
+import { WorkContextService } from '../../features/work-context/work-context.service';
+import { withLatestFrom } from 'rxjs/operators';
+import { ExportedProject } from '../../features/project/project-archive.model';
 
 @Component({
   selector: 'project-page',
@@ -24,8 +24,8 @@ import {ExportedProject} from '../../features/project/project-archive.model';
   animations: [standardListAnimation],
 })
 export class ProjectOverviewPageComponent implements OnInit, OnDestroy {
-  T = T;
-  private _subs = new Subscription();
+  T: typeof T = T;
+  private _subs: Subscription = new Subscription();
 
   constructor(
     public readonly projectService: ProjectService,
@@ -47,10 +47,12 @@ export class ProjectOverviewPageComponent implements OnInit, OnDestroy {
     this._subs.add(this._dragulaService.dropModel('PROJECTS').pipe(
       withLatestFrom(this.projectService.archived$),
       ).subscribe(([params, archived]: any) => {
-        const {target, source, targetModel, item} = params;
-        const targetNewIds = targetModel.map((project) => project.id);
+        const {targetModel} = params;
+        const targetNewIds = targetModel.map((project: Project) => project.id);
 
-        const archivedIds = archived ? archived.map(p => p.id) : [];
+        const archivedIds = archived
+          ? archived.map((p: Project) => p.id)
+          : [];
         this.projectService.updateOrder([...targetNewIds, ...archivedIds]);
       })
     );
@@ -77,7 +79,7 @@ export class ProjectOverviewPageComponent implements OnInit, OnDestroy {
 
       let project: ExportedProject;
       try {
-        project = JSON.parse(textData.toString());
+        project = JSON.parse((textData as any).toString());
         this.projectService.importCompleteProject(project);
       } catch (e) {
         console.error(e);
@@ -87,7 +89,7 @@ export class ProjectOverviewPageComponent implements OnInit, OnDestroy {
     reader.readAsText(file);
   }
 
-  edit(project) {
+  edit(project: Project) {
     this._matDialog.open(DialogCreateProjectComponent, {
       restoreFocus: true,
       data: Object.assign({}, project),
@@ -124,7 +126,7 @@ export class ProjectOverviewPageComponent implements OnInit, OnDestroy {
       });
   }
 
-  remove(projectId) {
+  remove(projectId: string) {
     this._matDialog.open(DialogConfirmComponent, {
       restoreFocus: true,
       data: {
@@ -144,7 +146,7 @@ export class ProjectOverviewPageComponent implements OnInit, OnDestroy {
   }
 
   getThemeColor(color: string): { [key: string]: string } {
-    const standardColor = THEME_COLOR_MAP[color];
+    const standardColor = (THEME_COLOR_MAP as any)[color];
     const colorToUse = (standardColor)
       ? standardColor
       : color;

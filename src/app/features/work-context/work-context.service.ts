@@ -1,6 +1,6 @@
-import {Injectable} from '@angular/core';
-import {select, Store} from '@ngrx/store';
-import {combineLatest, EMPTY, interval, Observable, of, timer} from 'rxjs';
+import { Injectable } from '@angular/core';
+import { select, Store } from '@ngrx/store';
+import { combineLatest, EMPTY, interval, Observable, of, timer } from 'rxjs';
 import {
   WorkContext,
   WorkContextAdvancedCfg,
@@ -9,10 +9,9 @@ import {
   WorkContextThemeCfg,
   WorkContextType
 } from './work-context.model';
-import {PersistenceService} from '../../core/persistence/persistence.service';
-import {setActiveWorkContext} from './store/work-context.actions';
-import {selectActiveContextId, selectActiveContextTypeAndId} from './store/work-context.reducer';
-import {NavigationEnd, Router} from '@angular/router';
+import { setActiveWorkContext } from './store/work-context.actions';
+import { selectActiveContextId, selectActiveContextTypeAndId } from './store/work-context.reducer';
+import { NavigationEnd, Router } from '@angular/router';
 import {
   concatMap,
   delayWhen,
@@ -27,17 +26,17 @@ import {
   take,
   withLatestFrom
 } from 'rxjs/operators';
-import {TODAY_TAG} from '../tag/tag.const';
-import {TagService} from '../tag/tag.service';
-import {Task, TaskWithSubTasks} from '../tasks/task.model';
-import {distinctUntilChangedObject} from '../../util/distinct-until-changed-object';
-import {getWorklogStr} from '../../util/get-work-log-str';
-import {hasTasksToWorkOn, mapEstimateRemainingFromTasks} from './work-context.util';
-import {flattenTasks, selectTaskEntities, selectTasksWithSubTasksByIds} from '../tasks/store/task.selectors';
-import {Actions, ofType} from '@ngrx/effects';
-import {moveTaskToBacklogList} from './store/work-context-meta.actions';
-import {selectProjectById} from '../project/store/project.reducer';
-import {WorklogExportSettings} from '../worklog/worklog.model';
+import { TODAY_TAG } from '../tag/tag.const';
+import { TagService } from '../tag/tag.service';
+import { Task, TaskWithSubTasks } from '../tasks/task.model';
+import { distinctUntilChangedObject } from '../../util/distinct-until-changed-object';
+import { getWorklogStr } from '../../util/get-work-log-str';
+import { hasTasksToWorkOn, mapEstimateRemainingFromTasks } from './work-context.util';
+import { flattenTasks, selectTaskEntities, selectTasksWithSubTasksByIds } from '../tasks/store/task.selectors';
+import { Actions, ofType } from '@ngrx/effects';
+import { moveTaskToBacklogList } from './store/work-context-meta.actions';
+import { selectProjectById } from '../project/store/project.reducer';
+import { WorklogExportSettings } from '../worklog/worklog.model';
 import {
   AddToProjectBreakTime,
   UpdateProjectAdvancedCfg,
@@ -50,8 +49,8 @@ import {
   updateWorkEndForTag,
   updateWorkStartForTag
 } from '../tag/store/tag.actions';
-import {allDataWasLoaded} from '../../root-store/meta/all-data-was-loaded.actions';
-import {isToday} from '../../util/is-today.util';
+import { allDataWasLoaded } from '../../root-store/meta/all-data-was-loaded.actions';
+import { isToday } from '../../util/is-today.util';
 
 @Injectable({
   providedIn: 'root',
@@ -68,13 +67,12 @@ export class WorkContextService {
 
   // CONTEXT LEVEL
   // -------------
-  activeWorkContextId$: Observable<string> = this._store$.pipe(
+  activeWorkContextId$: Observable<string | null> = this._store$.pipe(
     select(selectActiveContextId),
     distinctUntilChanged(),
     shareReplay(1),
   );
   // activeWorkContextType$: Observable<WorkContextType> = this._store$.pipe(select(selectActiveContextType));
-
 
   activeWorkContextTypeAndId$: Observable<{
     activeId: string;
@@ -103,10 +101,9 @@ export class WorkContextService {
     })
   );
 
-
   // for convenience...
-  activeWorkContextId: string;
-  activeWorkContextType: WorkContextType;
+  activeWorkContextId?: string;
+  activeWorkContextType?: WorkContextType;
 
   activeWorkContext$: Observable<WorkContext> = this.activeWorkContextTypeAndId$.pipe(
     switchMap(({activeId, activeType}) => {
@@ -137,6 +134,7 @@ export class WorkContextService {
           })),
         );
       }
+      // return nothing until defined
       return EMPTY;
     }),
     // TODO find out why this is sometimes undefined
@@ -238,16 +236,16 @@ export class WorkContextService {
     switchMap(([activeContext, entities]) => {
       const taskIds = activeContext.taskIds;
       return of(
-        Object.keys(entities)
+        (Object.keys(entities)
           .filter((id) => {
-            const t = entities[id];
+            const t = entities[id] as Task;
             return !t.isDone && (
               (t.parentId)
                 ? (taskIds.includes(t.parentId))
                 : (taskIds.includes(id) && (!t.subTaskIds || t.subTaskIds.length === 0))
             );
           })
-          .map(key => entities[key])
+          .map(key => entities[key]) as Task[])
       );
     })
   );
@@ -278,17 +276,69 @@ export class WorkContextService {
     ]))
   );
 
+  flatDoneTodayNr$: Observable<number> = this.todaysTasks$.pipe(
+    map(tasks => flattenTasks(tasks)),
+    map(tasks => {
+      const done = tasks.filter(task => task.isDone);
+      return done.length;
+    })
+  );
+
   allRepeatableTasksFlat$: Observable<TaskWithSubTasks[]> = this.allNonArchiveTasks$.pipe(
     map((tasks) => (tasks.filter(task => !!task.repeatCfgId))),
     map(tasks => flattenTasks(tasks)),
   );
 
-  isToday: boolean;
+  isToday: boolean = false;
   isToday$: Observable<boolean> = this.activeWorkContextId$.pipe(
     map(id => id === TODAY_TAG.id),
     shareReplay(1),
   );
 
+  constructor(
+    private _store$: Store<WorkContextState>,
+    private _actions$: Actions,
+    private _tagService: TagService,
+    private _router: Router,
+  ) {
+    this.isToday$.subscribe((v) => this.isToday = v);
+
+    this.activeWorkContextTypeAndId$.subscribe(v => {
+      this.activeWorkContextId = v.activeId;
+      this.activeWorkContextType = v.activeType;
+    });
+
+    // we need all data to be loaded before we dispatch a setActiveContext action
+    this._router.events.pipe(
+      // NOTE: when we use any other router event than NavigationEnd, the changes triggered
+      // by the active context may occur before the current page component is unloaded
+      filter(event => event instanceof NavigationEnd),
+      withLatestFrom(this._isAllDataLoaded$),
+      concatMap(([next, isAllDataLoaded]) => isAllDataLoaded
+        ? of(next as NavigationEnd)
+        : this._isAllDataLoaded$.pipe(
+          filter(isLoaded => isLoaded),
+          take(1),
+          mapTo(next as NavigationEnd),
+        )
+      ),
+    ).subscribe(({urlAfterRedirects}: NavigationEnd) => {
+        const split = urlAfterRedirects.split('/');
+        const id = split[2];
+
+        // prevent issue when setActiveContext is called directly
+        if (this.activeWorkContextId === id) {
+          return;
+        }
+
+        if (urlAfterRedirects.match(/tag\/.+/)) {
+          this._setActiveContext(id, WorkContextType.TAG);
+        } else if (urlAfterRedirects.match(/project\/.+/)) {
+          this._setActiveContext(id, WorkContextType.PROJECT);
+        }
+      }
+    );
+  }
 
   // TODO could be done better
   getTimeWorkedForDay$(day: string = getWorklogStr()): Observable<number> {
@@ -326,8 +376,7 @@ export class WorkContextService {
     );
   }
 
-
-  getDailySummaryTasksFlat$(dayStr: string) {
+  getDailySummaryTasksFlat$(dayStr: string): Observable<Task[]> {
     return combineLatest([
       this.allRepeatableTasksFlat$,
       this._getDailySummaryTasksFlatWithoutRepeatable$(dayStr)
@@ -336,7 +385,7 @@ export class WorkContextService {
         ...repeatableTasks,
         // NOTE: remove double tasks
         ...workedOnOrDoneTasks.filter(
-          (task => !task.repeatCfgId || task.repeatCfgId === null)
+          (task => !task.repeatCfgId)
         ),
       ]),
     );
@@ -366,53 +415,6 @@ export class WorkContextService {
     );
   }
 
-
-  constructor(
-    private _store$: Store<WorkContextState>,
-    private _persistenceService: PersistenceService,
-    private _actions$: Actions,
-    private _tagService: TagService,
-    private _router: Router,
-  ) {
-    this.isToday$.subscribe((v) => this.isToday = v);
-
-    this.activeWorkContextTypeAndId$.subscribe(v => {
-      this.activeWorkContextId = v.activeId;
-      this.activeWorkContextType = v.activeType;
-    });
-
-    // we need all data to be loaded before we dispatch a setActiveContext action
-    this._router.events.pipe(
-      // NOTE: when we use any other router event than NavigationEnd, the changes triggered
-      // by the active context may occur before the current page component is unloaded
-      filter(event => event instanceof NavigationEnd),
-      withLatestFrom(this._isAllDataLoaded$),
-      concatMap(([next, isAllDataLoaded]) => isAllDataLoaded
-        ? of(next)
-        : this._isAllDataLoaded$.pipe(
-          filter(isLoaded => isLoaded),
-          take(1),
-          mapTo(next),
-        )
-      ),
-    ).subscribe(({urlAfterRedirects}: NavigationEnd) => {
-        const split = urlAfterRedirects.split('/');
-        const id = split[2];
-
-        // prevent issue when setActiveContext is called directly
-        if (this.activeWorkContextId === id) {
-          return;
-        }
-
-        if (urlAfterRedirects.match(/tag\/.+/)) {
-          this._setActiveContext(id, WorkContextType.TAG);
-        } else if (urlAfterRedirects.match(/project\/.+/)) {
-          this._setActiveContext(id, WorkContextType.PROJECT);
-        }
-      }
-    );
-  }
-
   async load() {
     // NOTE: currently route has prevalence over everything else and as there is not state apart from
     // activeContextId, and activeContextType, we don't need to load it
@@ -427,8 +429,8 @@ export class WorkContextService {
   }
 
   updateWorkStartForActiveContext(date: string, newVal: number) {
-    const payload = {
-      id: this.activeWorkContextId,
+    const payload: { id: string; date: string; newVal: number; } = {
+      id: this.activeWorkContextId as string,
       date,
       newVal,
     };
@@ -439,8 +441,8 @@ export class WorkContextService {
   }
 
   updateWorkEndForActiveContext(date: string, newVal: number) {
-    const payload = {
-      id: this.activeWorkContextId,
+    const payload: { id: string; date: string; newVal: number; } = {
+      id: this.activeWorkContextId as string,
       date,
       newVal,
     };
@@ -451,8 +453,8 @@ export class WorkContextService {
   }
 
   addToBreakTimeForActiveContext(date: string = getWorklogStr(), valToAdd: number) {
-    const payload = {
-      id: this.activeWorkContextId,
+    const payload: { id: string; date: string; valToAdd: number; } = {
+      id: this.activeWorkContextId as string,
       date,
       valToAdd,
     };
@@ -465,13 +467,13 @@ export class WorkContextService {
   private _updateAdvancedCfgForCurrentContext(sectionKey: WorkContextAdvancedCfgKey, data: any) {
     if (this.activeWorkContextType === WorkContextType.PROJECT) {
       this._store$.dispatch(new UpdateProjectAdvancedCfg({
-        projectId: this.activeWorkContextId,
+        projectId: this.activeWorkContextId as string,
         sectionKey,
         data,
       }));
     } else if (this.activeWorkContextType === WorkContextType.TAG) {
       this._store$.dispatch(updateAdvancedConfigForTag({
-        tagId: this.activeWorkContextId,
+        tagId: this.activeWorkContextId as string,
         sectionKey,
         data
       }));

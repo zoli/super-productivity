@@ -1,25 +1,26 @@
-import {TestBed} from '@angular/core/testing';
-import {provideMockActions} from '@ngrx/effects/testing';
-import {BehaviorSubject, EMPTY, Observable, of} from 'rxjs';
+import { TestBed } from '@angular/core/testing';
+import { provideMockActions } from '@ngrx/effects/testing';
+import { BehaviorSubject, EMPTY, Observable, of } from 'rxjs';
 
-import {PomodoroEffects} from './pomodoro.effects';
-import {provideMockStore} from '@ngrx/store/testing';
-import {NotifyService} from '../../../core/notify/notify.service';
-import {MatDialog} from '@angular/material/dialog';
-import {ElectronService} from '../../../core/electron/electron.service';
-import {SnackService} from '../../../core/snack/snack.service';
-import {PomodoroService} from '../pomodoro.service';
-import {SetCurrentTask} from '../../tasks/store/task.actions';
-import {PomodoroConfig} from '../../config/global-config.model';
-import {PomodoroActionTypes} from './pomodoro.actions';
-import {DEFAULT_GLOBAL_CONFIG} from '../../config/default-global-config.const';
+import { PomodoroEffects } from './pomodoro.effects';
+import { provideMockStore } from '@ngrx/store/testing';
+import { NotifyService } from '../../../core/notify/notify.service';
+import { MatDialog } from '@angular/material/dialog';
+import { ElectronService } from '../../../core/electron/electron.service';
+import { SnackService } from '../../../core/snack/snack.service';
+import { PomodoroService } from '../pomodoro.service';
+import { SetCurrentTask } from '../../tasks/store/task.actions';
+import { PomodoroConfig } from '../../config/global-config.model';
+import { PomodoroActionTypes } from './pomodoro.actions';
+import { DEFAULT_GLOBAL_CONFIG } from '../../config/default-global-config.const';
+import { Action } from '@ngrx/store';
 
 describe('PomodoroEffects', () => {
   let actions$: Observable<any>;
   let effects: PomodoroEffects;
-  let cfg$;
-  let currentSessionTime$;
-  let isBreak$;
+  let cfg$: BehaviorSubject<PomodoroConfig>;
+  let currentSessionTime$: BehaviorSubject<number>;
+  let isBreak$: BehaviorSubject<boolean>;
 
   beforeEach(() => {
     cfg$ = new BehaviorSubject<PomodoroConfig>({
@@ -72,7 +73,7 @@ describe('PomodoroEffects', () => {
     currentSessionTime$.next(0);
     actions$ = of(new SetCurrentTask('something'));
 
-    const as = [];
+    const as: Action[] = [];
     effects.playPauseOnCurrentUpdate$.subscribe(effectAction => {
       as.push(effectAction);
       if (as.length === 2) {
