@@ -3,6 +3,7 @@ import { shortSyntax } from './short-syntax.util';
 import { getWorklogStr } from '../../util/get-work-log-str';
 import { Tag } from '../tag/tag.model';
 import { DEFAULT_TAG } from '../tag/tag.const';
+import { Project } from '../project/project.model';
 
 const TASK: TaskCopy = {
   id: 'id',
@@ -64,6 +65,8 @@ describe('shortSyntax', () => {
       const r = shortSyntax(t);
       expect(r).toEqual({
         newTagTitles: [],
+        remindAt: null,
+        projectId: undefined,
         taskChanges: {
           title: 'Fun title',
           // timeSpent: 7200000,
@@ -71,7 +74,7 @@ describe('shortSyntax', () => {
             [getWorklogStr()]: 600000
           },
           timeEstimate: 3600000
-        }
+        },
       });
     });
 
@@ -83,6 +86,8 @@ describe('shortSyntax', () => {
       const r = shortSyntax(t);
       expect(r).toEqual({
         newTagTitles: [],
+        remindAt: null,
+        projectId: undefined,
         taskChanges: {
           title: 'Fun title whatever',
           // timeSpent: 7200000,
@@ -115,6 +120,8 @@ describe('shortSyntax', () => {
 
       expect(r).toEqual({
         newTagTitles: [],
+        remindAt: null,
+        projectId: undefined,
         taskChanges: {
           title: '#134 Fun title',
           tagIds: ['blu_id']
@@ -131,6 +138,8 @@ describe('shortSyntax', () => {
 
       expect(r).toEqual({
         newTagTitles: [],
+        remindAt: null,
+        projectId: undefined,
         taskChanges: {
           title: 'Fun title',
           tagIds: ['blu_id', 'A_id']
@@ -148,6 +157,8 @@ describe('shortSyntax', () => {
 
       expect(r).toEqual({
         newTagTitles: [],
+        remindAt: null,
+        projectId: undefined,
         taskChanges: {
           title: 'Fun title',
           tagIds: ['blu_id', 'A', 'multi_word_id', 'hihi_id']
@@ -165,6 +176,8 @@ describe('shortSyntax', () => {
 
       expect(r).toEqual({
         newTagTitles: ['idontexist'],
+        remindAt: null,
+        projectId: undefined,
         taskChanges: {
           title: 'Fun title',
           tagIds: ['blu_id']
@@ -182,6 +195,8 @@ describe('shortSyntax', () => {
       const r = shortSyntax(t, ALL_TAGS);
       expect(r).toEqual({
         newTagTitles: [],
+        remindAt: null,
+        projectId: undefined,
         taskChanges: {
           title: 'Fun title',
           // timeSpent: 7200000,
@@ -211,5 +226,134 @@ describe('shortSyntax', () => {
     //     tagIds: ['blu_id']
     //   });
     // });
+  });
+
+  describe('projects', () => {
+    let projects: Project[];
+    beforeEach(() => {
+      projects = [
+        {
+          title: 'ProjectEasyShort',
+          id: 'ProjectEasyShortID'
+        },
+        {
+          title: 'Some Project Title',
+          id: 'SomeProjectID'
+        }
+      ] as any;
+    });
+
+    it('should work', () => {
+      const t = {
+        ...TASK,
+        title: 'Fun title +ProjectEasyShort'
+      };
+      const r = shortSyntax(t, [], projects);
+      expect(r).toEqual({
+        newTagTitles: [],
+        remindAt: null,
+        projectId: 'ProjectEasyShortID',
+        taskChanges: {
+          title: 'Fun title',
+        },
+      });
+    });
+
+    it('should work together with time estimates', () => {
+      const t = {
+        ...TASK,
+        title: 'Fun title +ProjectEasyShort 10m/1h'
+      };
+      const r = shortSyntax(t, [], projects);
+      expect(r).toEqual({
+        newTagTitles: [],
+        remindAt: null,
+        projectId: 'ProjectEasyShortID',
+        taskChanges: {
+          title: 'Fun title',
+          // timeSpent: 7200000,
+          timeSpentOnDay: {
+            [getWorklogStr()]: 600000,
+          },
+          timeEstimate: 3600000,
+        },
+      });
+    });
+
+    it('should work with only the beginning of a project title if it is at least 3 chars long', () => {
+      const t = {
+        ...TASK,
+        title: 'Fun title +Project'
+      };
+      const r = shortSyntax(t, [], projects);
+      expect(r).toEqual({
+        newTagTitles: [],
+        remindAt: null,
+        projectId: 'ProjectEasyShortID',
+        taskChanges: {
+          title: 'Fun title',
+        },
+      });
+    });
+
+    it('should work with multi word project titles', () => {
+      const t = {
+        ...TASK,
+        title: 'Fun title +Some Project Title'
+      };
+      const r = shortSyntax(t, [], projects);
+      expect(r).toEqual({
+        newTagTitles: [],
+        remindAt: null,
+        projectId: 'SomeProjectID',
+        taskChanges: {
+          title: 'Fun title',
+        },
+      });
+    });
+
+    it('should work with multi word project titles partial', () => {
+      const t = {
+        ...TASK,
+        title: 'Fun title +Some Pro'
+      };
+      const r = shortSyntax(t, [], projects);
+      expect(r).toEqual({
+        newTagTitles: [],
+        remindAt: null,
+        projectId: 'SomeProjectID',
+        taskChanges: {
+          title: 'Fun title',
+        },
+      });
+    });
+
+    it('should work with multi word project titles partial written without white space', () => {
+      const t = {
+        ...TASK,
+        title: 'Other fun title +SomePro'
+      };
+      const r = shortSyntax(t, [], projects);
+      expect(r).toEqual({
+        newTagTitles: [],
+        remindAt: null,
+        projectId: 'SomeProjectID',
+        taskChanges: {
+          title: 'Other fun title',
+        },
+      });
+    });
+
+    it('should ignore non existing', () => {
+      const t = {
+        ...TASK,
+        title: 'Other fun title +Some non existing project'
+      };
+      const r = shortSyntax(t, [], projects);
+      expect(r).toEqual(undefined);
+    });
+  });
+
+  describe('due:', () => {
   });
 });

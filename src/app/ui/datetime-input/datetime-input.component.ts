@@ -17,8 +17,7 @@ export class DatetimeInputComponent {
   nrValue: number | undefined;
   strValue: string | undefined | null;
   lastVal: number | undefined;
-  // tslint:disable-next-line:typedef
-  T = T;
+  T: typeof T = T;
 
   constructor() {
     const lastVal = localStorage.getItem(LS_LAST_REMINDER_DATE);
@@ -72,9 +71,11 @@ export class DatetimeInputComponent {
     }
   }
 
-  private _updateValues(v: number | Date, isFromInput: boolean = false) {
+  private _updateValues(v: number | Date | string, isFromInput: boolean = false) {
     if (v instanceof Date) {
       v = v.getTime();
+    } else if (typeof v === 'string') {
+      v = new Date(v).getTime();
     }
     this.nrValue = v;
     this.modelChange.emit(v);

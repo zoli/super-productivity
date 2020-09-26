@@ -14,6 +14,7 @@ import { ElectronService } from '../../core/electron/electron.service';
 import { UiHelperService } from '../ui-helper/ui-helper.service';
 import { WorkContextService } from '../work-context/work-context.service';
 import { ipcRenderer } from 'electron';
+import { lazySetInterval } from '../../../../electron/lazy-set-interval';
 
 const DEFAULT_MIN_IDLE_TIME = 60000;
 const IDLE_POLL_INTERVAL = 1000;
@@ -36,7 +37,7 @@ export class IdleService {
 
   private lastCurrentTaskId?: string | null;
   private isIdleDialogOpen: boolean = false;
-  private idlePollInterval?: number;
+  private clearIdlePollInterval?: () => void;
 
   constructor(
     private _chromeExtensionInterfaceService: ChromeExtensionInterfaceService,
@@ -56,7 +57,8 @@ export class IdleService {
       });
     } else {
       this._chromeExtensionInterfaceService.onReady$.subscribe(() => {
-        this._chromeExtensionInterfaceService.addEventListener(IPC.IDLE_TIME, (ev: any, idleTimeInMs: number) => {
+        this._chromeExtensionInterfaceService.addEventListener(IPC.IDLE_TIME, (ev: Event, data?: unknown) => {
+          const idleTimeInMs = Number(data);
           this.handleIdle(idleTimeInMs);
         });
       });
@@ -123,12 +125,13 @@ export class IdleService {
 
             if (task) {
               if (typeof task === 'string') {
-                this._taskService.add(task, false, {
+                const currId = this._taskService.add(task, false, {
                   timeSpent,
                   timeSpentOnDay: {
                     [getWorklogStr()]: timeSpent
                   }
                 });
+                this._taskService.setCurrentId(currId);
               } else {
                 this._taskService.addTimeSpent(task, timeSpent);
                 this._taskService.setCurrentId(task.id);
@@ -146,15 +149,17 @@ export class IdleService {
   initIdlePoll(initialIdleTime: number) {
     const idleStart = Date.now();
     this._idleTime$.next(initialIdleTime);
-    this.idlePollInterval = window.setInterval(() => {
+
+    this.clearIdlePollInterval = lazySetInterval(() => {
       const delta = Date.now() - idleStart;
       this._idleTime$.next(initialIdleTime + delta);
     }, IDLE_POLL_INTERVAL);
   }
 
   cancelIdlePoll() {
-    if (this.idlePollInterval) {
-      window.clearInterval(this.idlePollInterval);
+    if (this.clearIdlePollInterval) {
+      this.clearIdlePollInterval();
+      this.clearIdlePollInterval = undefined;
       this._idleTime$.next(0);
     }
   }

@@ -53,8 +53,7 @@ export class SideNavComponent implements OnDestroy {
     )
   );
 
-  // tslint:disable-next-line:typedef
-  T = T;
+  T: typeof T = T;
   readonly PROJECTS_SIDE_NAV: string = 'PROJECTS_SIDE_NAV';
   readonly TAG_SIDE_NAV: string = 'TAG_SIDE_NAV';
   activeWorkContextId?: string | null;
@@ -103,7 +102,7 @@ export class SideNavComponent implements OnDestroy {
   }
 
   getThemeColor(color: THEME_COLOR_MAP | string): { [key: string]: string } {
-    const standardColor = THEME_COLOR_MAP[color];
+    const standardColor = (THEME_COLOR_MAP as any)[color];
     const colorToUse = (standardColor)
       ? standardColor
       : color;

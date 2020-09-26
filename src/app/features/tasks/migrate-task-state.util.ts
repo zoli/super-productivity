@@ -6,7 +6,7 @@ import * as moment from 'moment';
 import { convertToWesternArabic } from '../../util/numeric-converter';
 import { isMigrateModel } from '../../util/model-version';
 
-const MODEL_VERSION = 3.3333;
+const MODEL_VERSION = 3.3334;
 export const LEGACY_GITHUB_TYPE = 'GIT';
 
 export const migrateTaskState = (taskState: TaskState): TaskState => {
@@ -149,23 +149,23 @@ const _makeNullAndArraysConsistent = (task: Task): Task => {
 };
 
 const _addProjectIdForSubTasksAndRemoveTags = (entities: Dictionary<Task>): Dictionary<Task> => {
-  const copy: any = {...entities};
-  Object.keys(copy).forEach(id => {
-    const task = copy[id];
+  const entitiesCopy: any = {...entities};
+  Object.keys(entitiesCopy).forEach(id => {
+    const task = entitiesCopy[id];
     if (!task) {
       throw new Error('No task');
     }
 
     if (task.parentId) {
-      copy[id] = {
-        ...copy[id],
+      entitiesCopy[id] = {
+        ...entitiesCopy[id],
         tagIds: [],
-        projectId: copy[task.parentId].projectId,
+        projectId: entitiesCopy[task.parentId].projectId,
       };
     }
   });
 
-  return copy;
+  return entitiesCopy;
 };
 
 

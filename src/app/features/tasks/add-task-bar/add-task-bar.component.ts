@@ -12,9 +12,9 @@ import {
 } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { TaskService } from '../task.service';
-import { debounceTime, first, map, switchMap, take, tap, withLatestFrom } from 'rxjs/operators';
+import { debounceTime, filter, first, map, startWith, switchMap, take, tap, withLatestFrom } from 'rxjs/operators';
 import { JiraIssue } from '../../issue/providers/jira/jira-issue/jira-issue.model';
-import { BehaviorSubject, forkJoin, from, Observable, of, zip } from 'rxjs';
+import { BehaviorSubject, forkJoin, from, Observable, of, Subscription, zip } from 'rxjs';
 import { IssueService } from '../../issue/issue.service';
 import { SnackService } from '../../../core/snack/snack.service';
 import { T } from '../../../t.const';
@@ -28,12 +28,16 @@ import { TagService } from '../../tag/tag.service';
 import { ProjectService } from '../../project/project.service';
 import { Tag } from '../../tag/tag.model';
 import { Project } from '../../project/project.model';
+import { shortSyntaxToTags } from './short-syntax-to-tags.util';
+import { slideAnimation } from '../../../ui/animations/slide.ani';
+import { fadeAnimation } from '../../../ui/animations/fade.ani';
 
 @Component({
   selector: 'add-task-bar',
   templateUrl: './add-task-bar.component.html',
   styleUrls: ['./add-task-bar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  animations: [slideAnimation, fadeAnimation]
 })
 export class AddTaskBarComponent implements AfterViewInit, OnDestroy {
   @Input() isAddToBacklog: boolean = false;
@@ -46,14 +50,13 @@ export class AddTaskBarComponent implements AfterViewInit, OnDestroy {
 
   @ViewChild('inputEl', {static: true}) inputEl?: ElementRef;
 
-  // tslint:disable-next-line:typedef
-  T = T;
+  T: typeof T = T;
   isLoading$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   doubleEnterCount: number = 0;
 
   taskSuggestionsCtrl: FormControl = new FormControl();
 
-  filteredIssueSuggestions$: Observable<(AddTaskSuggestion)[]> = this.taskSuggestionsCtrl.valueChanges.pipe(
+  filteredIssueSuggestions$: Observable<AddTaskSuggestion[]> = this.taskSuggestionsCtrl.valueChanges.pipe(
     debounceTime(300),
     tap(() => this.isLoading$.next(true)),
     withLatestFrom(this._workContextService.activeWorkContextTypeAndId$),
@@ -79,11 +82,39 @@ export class AddTaskBarComponent implements AfterViewInit, OnDestroy {
     }),
   );
 
+  activatedIssueTask$: BehaviorSubject<AddTaskSuggestion | null> = new BehaviorSubject<AddTaskSuggestion | null>(null);
+  activatedIssueTask: AddTaskSuggestion | null = null;
+
+  shortSyntaxTags: {
+    title: string;
+    color: string;
+    icon: string;
+  }[] = [];
+  shortSyntaxTags$: Observable<{
+    title: string;
+    color: string;
+    icon: string;
+  }[]> = this.taskSuggestionsCtrl.valueChanges.pipe(
+    filter(val => typeof val === 'string'),
+    withLatestFrom(this._tagService.tags$, this._projectService.list$, this._workContextService.activeWorkContext$),
+    map(([val, tags, projects, activeWorkContext]) => shortSyntaxToTags({
+      val,
+      tags,
+      projects,
+      defaultColor: activeWorkContext.theme.primary
+    })),
+    startWith([]),
+  );
+
+  inputVal: string = '';
+  inputVal$: Observable<string> = this.taskSuggestionsCtrl.valueChanges;
+
   private _isAddInProgress?: boolean;
   private _blurTimeout?: number;
   private _autofocusTimeout?: number;
   private _attachKeyDownHandlerTimeout?: number;
   private _lastAddedTaskId?: string;
+  private _subs: Subscription = new Subscription();
 
   constructor(
     private _taskService: TaskService,
@@ -94,6 +125,9 @@ export class AddTaskBarComponent implements AfterViewInit, OnDestroy {
     private _tagService: TagService,
     private _cd: ChangeDetectorRef,
   ) {
+    this._subs.add(this.activatedIssueTask$.subscribe((v) => this.activatedIssueTask = v));
+    this._subs.add(this.shortSyntaxTags$.subscribe((v) => this.shortSyntaxTags = v));
+    this._subs.add(this.inputVal$.subscribe((v) => this.inputVal = v));
   }
 
   ngAfterViewInit(): void {
@@ -136,6 +170,10 @@ export class AddTaskBarComponent implements AfterViewInit, OnDestroy {
     this.blurred.emit(ev);
   }
 
+  onOptionActivated(val: any) {
+    this.activatedIssueTask$.next(val);
+  }
+
   onBlur(ev: FocusEvent) {
     const relatedTarget: HTMLElement = ev.relatedTarget as HTMLElement;
     if (relatedTarget && relatedTarget.className.includes('switch-add-to-btn')) {
@@ -157,6 +195,10 @@ export class AddTaskBarComponent implements AfterViewInit, OnDestroy {
 
   trackByFn(i: number, item: AddTaskSuggestion) {
     return item.taskId || (item.issueData && item.issueData.id);
+  }
+
+  trackById(i: number, item: any): string {
+    return item.id;
   }
 
   async addTask() {
@@ -211,7 +253,7 @@ export class AddTaskBarComponent implements AfterViewInit, OnDestroy {
       if (!item.issueType || !item.issueData) {
         throw new Error('No issueData');
       }
-      const res = await this._taskService.checkForTaskWithIssue(item.issueData.id, item.issueType);
+      const res = await this._taskService.checkForTaskWithIssueInProject(item.issueData.id, item.issueType, this._workContextService.activeWorkContextId as string);
       if (!res) {
         this._lastAddedTaskId = await this._issueService.addTaskWithIssue(
           item.issueType,

@@ -4,6 +4,7 @@ import {
   ChangeDetectorRef,
   Component,
   HostBinding,
+  HostListener,
   Input,
   OnDestroy,
   QueryList,
@@ -46,6 +47,7 @@ import { LayoutService } from '../../../core-ui/layout/layout.service';
 import { ipcRenderer } from 'electron';
 import { devError } from '../../../util/dev-error';
 import { SS_JIRA_WONKY_COOKIE } from '../../../core/persistence/ls-keys.const';
+import { IS_MOBILE } from '../../../util/is-mobile';
 
 interface IssueAndType {
   id: string | number | null;
@@ -69,8 +71,9 @@ export class TaskAdditionalInfoComponent implements AfterViewInit, OnDestroy {
   ShowSubTasksMode: typeof ShowSubTasksMode = ShowSubTasksMode;
   selectedItemIndex: number = 0;
   isFocusNotes: boolean = false;
-  // tslint:disable-next-line:typedef
-  T = T;
+  isDragOver: boolean = false;
+
+  T: typeof T = T;
   issueAttachments: TaskAttachment[] = [];
   reminderId$: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
   reminderData$: Observable<ReminderCopy | null> = this.reminderId$.pipe(
@@ -95,7 +98,8 @@ export class TaskAdditionalInfoComponent implements AfterViewInit, OnDestroy {
   repeatCfgId$: BehaviorSubject<string | null> = new BehaviorSubject<string | null>(null);
   repeatCfgDays$: Observable<string | null> = this.repeatCfgId$.pipe(
     switchMap(id => (id)
-      ? this._taskRepeatCfgService.getTaskRepeatCfgById$(id).pipe(
+      // TODO for some reason this can be undefined, maybe there is a better way
+      ? this._taskRepeatCfgService.getTaskRepeatCfgByIdAllowUndefined$(id).pipe(
         map(repeatCfg => {
           if (!repeatCfg) {
             return null;
@@ -147,9 +151,11 @@ export class TaskAdditionalInfoComponent implements AfterViewInit, OnDestroy {
       ? this._issueService.getMappedAttachments(type, data)
       : [])
   );
+  IS_MOBILE: boolean = IS_MOBILE;
 
   private _focusTimeout?: number;
   private _subs: Subscription = new Subscription();
+  private _dragEnterTarget?: HTMLElement;
 
   constructor(
     public attachmentService: TaskAttachmentService,
@@ -160,6 +166,7 @@ export class TaskAdditionalInfoComponent implements AfterViewInit, OnDestroy {
     private _taskRepeatCfgService: TaskRepeatCfgService,
     private _matDialog: MatDialog,
     private _projectService: ProjectService,
+    private readonly _attachmentService: TaskAttachmentService,
     private _electronService: ElectronService,
     private _cd: ChangeDetectorRef,
   ) {
@@ -195,6 +202,27 @@ export class TaskAdditionalInfoComponent implements AfterViewInit, OnDestroy {
     // this.issueData$.subscribe((v) => console.log('issueData$', v));
   }
 
+  @HostListener('dragenter', ['$event']) onDragEnter(ev: DragEvent) {
+    this._dragEnterTarget = ev.target as HTMLElement;
+    ev.preventDefault();
+    ev.stopPropagation();
+    this.isDragOver = true;
+  }
+
+  @HostListener('dragleave', ['$event']) onDragLeave(ev: DragEvent) {
+    if (this._dragEnterTarget === (ev.target as HTMLElement)) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      this.isDragOver = false;
+    }
+  }
+
+  @HostListener('drop', ['$event']) onDrop(ev: DragEvent) {
+    this._attachmentService.createFromDrop(ev, this.task.id);
+    ev.stopPropagation();
+    this.isDragOver = false;
+  }
+
   get task(): TaskWithSubTasks {
     return this._taskData as TaskWithSubTasks;
   }
@@ -220,15 +248,15 @@ export class TaskAdditionalInfoComponent implements AfterViewInit, OnDestroy {
       this.issueDataNullTrigger$.next(null);
     }
 
-    if (!prev || prev.issueId !== newVal.issueId) {
+    if (!prev || (prev.reminderId !== newVal.reminderId)) {
       this.reminderId$.next(newVal.reminderId);
     }
 
-    if (!prev || prev.issueId !== newVal.issueId) {
+    if (!prev || (prev.repeatCfgId !== newVal.repeatCfgId)) {
       this.repeatCfgId$.next(newVal.repeatCfgId);
     }
 
-    if (!prev || prev.issueId !== newVal.issueId) {
+    if (!prev || (prev.parentId !== newVal.parentId)) {
       this.parentId$.next(newVal.parentId);
     }
   }

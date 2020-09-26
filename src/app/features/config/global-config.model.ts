@@ -118,6 +118,18 @@ export type LanguageConfig = Readonly<{
   lng: LanguageCode | null,
 }>;
 
+export type SoundConfig = Readonly<{
+  isPlayDoneSound: boolean;
+  isIncreaseDoneSoundPitch: boolean;
+  doneSound: string;
+  volume: number;
+}>;
+
+export type TrackingReminderConfig = Readonly<{
+  isEnabled: boolean;
+  minTime: number;
+}>;
+
 export type GlobalConfigState = Readonly<{
   lang: LanguageConfig;
   misc: MiscConfig;
@@ -129,6 +141,8 @@ export type GlobalConfigState = Readonly<{
   dropboxSync: DropboxSyncConfig;
   keyboard: KeyboardConfig;
   localBackup: LocalBackupConfig;
+  sound: SoundConfig;
+  trackingReminder: TrackingReminderConfig;
 
   [MODEL_VERSION_KEY]?: number;
 }>;

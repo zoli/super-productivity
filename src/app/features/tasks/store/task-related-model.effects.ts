@@ -10,7 +10,7 @@ import {
   UpdateTask,
   UpdateTaskTags
 } from './task.actions';
-import { concatMap, filter, first, map, mapTo, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
+import { concatMap, delay, filter, first, map, mapTo, mergeMap, switchMap, tap, withLatestFrom } from 'rxjs/operators';
 import { PersistenceService } from '../../../core/persistence/persistence.service';
 import { Task, TaskArchive, TaskWithSubTasks } from '../task.model';
 import { ReminderService } from '../../reminder/reminder.service';
@@ -154,18 +154,39 @@ export class TaskRelatedModelEffects {
       // we only want to execute this for task title updates
       return (changeProps.length === 1 && changeProps[0] === 'title');
     }),
+    // dirty fix to execute this after setDefaultProjectId$ effect
+    delay(20),
     concatMap((action: AddTask | UpdateTask): Observable<any> => {
       return this._taskService.getByIdOnce$(action.payload.task.id as string);
     }),
-    withLatestFrom(this._tagService.tags$),
-    mergeMap(([task, tags]) => {
-      const r = shortSyntax(task, tags);
+    withLatestFrom(
+      this._tagService.tags$,
+      this._projectService.list$,
+    ),
+    mergeMap(([task, tags, projects]) => {
+      const r = shortSyntax(task, tags, projects);
       if (!r) {
         return EMPTY;
       }
 
       const actions: any[] = [];
       const tagIds: string[] = [...(r.taskChanges.tagIds || task.tagIds)];
+
+      actions.push(
+        new UpdateTask({
+            task: {
+              id: task.id,
+              changes: r.taskChanges,
+            }
+          }
+        )
+      );
+      if (r.projectId && r.projectId !== task.projectId) {
+        actions.push(new MoveToOtherProject({
+          task,
+          targetProjectId: r.projectId,
+        }));
+      }
 
       if (r.newTagTitles.length) {
         r.newTagTitles.forEach(newTagTitle => {
@@ -175,18 +196,19 @@ export class TaskRelatedModelEffects {
         });
       }
 
-      actions.push(
-        new UpdateTask({
-            task: {
-              id: task.id,
-              changes: {
-                ...r.taskChanges,
-                ...(tagIds !== task.tagIds ? {tagIds} : {}),
-              }
-            }
-          }
-        )
-      );
+      if (tagIds && tagIds.length) {
+        const isEqualTags = (JSON.stringify(tagIds) === JSON.stringify(task.tagIds));
+        if (!task.tagIds) {
+          throw new Error('Task Old TagIds need to be passed');
+        }
+        if (!isEqualTags) {
+          actions.push(new UpdateTaskTags({
+            task,
+            newTagIds: unique(tagIds),
+            oldTagIds: task.tagIds,
+          }));
+        }
+      }
 
       return actions;
     }),
