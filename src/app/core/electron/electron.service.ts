@@ -7,11 +7,11 @@ import { getElectron } from '../../util/get-electron';
 import * as ElectronRenderer from 'electron/renderer';
 
 // TODO make available for both
-export const getSendChannel = channel => `%better-ipc-send-channel-${channel}`;
+export const getSendChannel = (channel: string) => `%better-ipc-send-channel-${channel}`;
 const getUniqueId = () => `${Date.now()}-${Math.random()}`;
 
 // const getRendererSendChannel = (windowId, channel) => `%better-ipc-send-channel-${windowId}-${channel}`;
-const getResponseChannels = channel => {
+const getResponseChannels = (channel: string) => {
   const id = getUniqueId();
   return {
     sendChannel: getSendChannel(channel),
@@ -72,7 +72,6 @@ export class ElectronService {
     return this.remote ? this.remote.process : null;
   }
 
-
   public callMain(channel: string, data: unknown) {
     return new Promise((resolve, reject) => {
       const {sendChannel, dataChannel, errorChannel} = getResponseChannels(channel);
@@ -82,12 +81,12 @@ export class ElectronService {
         (this.ipcRenderer as typeof ipcRenderer).off(errorChannel, onError);
       };
 
-      const onData = (event, result) => {
+      const onData = (event: unknown, result: unknown) => {
         cleanup();
         resolve(result);
       };
 
-      const onError = (event, error) => {
+      const onError = (event: unknown, error: unknown) => {
         cleanup();
         // reject(deserializeError(error));
         reject(error);
