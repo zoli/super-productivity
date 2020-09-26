@@ -15,7 +15,7 @@ export class DatabaseService {
     private _electronFileDbAdapter: ElectronFileDbAdapter,
   ) {
     if (IS_ELECTRON) {
-      // TODO migrate for version
+      // TODO migrate for indexeddb if present version
       this.adapter = this._electronFileDbAdapter;
     } else {
       this.adapter = this._indexedDbAdapter;

@@ -2,11 +2,14 @@ import { Injectable } from '@angular/core';
 import { DataBaseAdapter } from './database-adapter.interface';
 import { IPC } from '../../../../../electron/ipc-events.const';
 import { ElectronService } from '../../electron/electron.service';
+import { EMPTY, Observable } from 'rxjs';
+import { AppDataComplete } from '../../../imex/sync/sync.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ElectronFileDbAdapter implements DataBaseAdapter {
+  onChange$: Observable<AppDataComplete> = EMPTY;
 
   constructor(
     private _electronService: ElectronService,
@@ -23,7 +26,7 @@ export class ElectronFileDbAdapter implements DataBaseAdapter {
       })
       // .then((data) => JSON.parse(data as string))
       .then((data) => {
-        console.log(data);
+        console.log(key, ':', data);
         if (data && (data as any).toString) {
           return JSON.parse((data as any).toString());
         }

@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { DBSchema, IDBPTransaction, openDB } from 'idb';
 import { IDBPDatabase } from 'idb/build/esm/entry';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, EMPTY } from 'rxjs';
 import { filter, shareReplay, take } from 'rxjs/operators';
 import { DataBaseAdapter } from './database-adapter.interface';
+import { AppDataComplete } from '../../../imex/sync/sync.model';
 
 const DB_NAME = 'SUP';
 const DB_MAIN_NAME = 'SUP_STORE';
@@ -19,6 +20,7 @@ interface MyDb extends DBSchema {
   providedIn: 'root',
 })
 export class IndexedDbAdapter implements DataBaseAdapter {
+  onChange$: Observable<AppDataComplete> = EMPTY;
   db?: IDBPDatabase<MyDb>;
   isReady$: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
 
