@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { CalendarOptions } from '@fullcalendar/angular';
 
 @Component({
   // apparently calendar does not work, so we add a prefix
@@ -8,6 +9,11 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CalendarComponent {
+
+  calOptions: CalendarOptions = {
+    // initialView: 'daygrid'
+  };
+
   constructor() {
   }
 }
