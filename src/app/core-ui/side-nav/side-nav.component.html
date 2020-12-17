@@ -35,6 +35,15 @@
     <mat-icon>access_alarms</mat-icon>
     <span class="text">{{T.MH.SCHEDULED|translate}}</span>
   </button>
+
+  <button class="route-link"
+          #menuEntry
+          mat-menu-item
+          routerLink="active/calendar"
+          routerLinkActive="isActiveRoute">
+    <mat-icon>date_range</mat-icon>
+    <span class="text">{{T.MH.CALENDAR|translate}}</span>
+  </button>
 </section>
 
 <section *ngIf="projectList$|async as projectList"

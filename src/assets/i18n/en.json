@@ -1069,6 +1069,7 @@
   },
   "MH": {
     "ADD_NEW_TASK": "Add new Task",
+    "CALENDAR": "Calendar",
     "CREATE_PROJECT": "Create Project",
     "CREATE_TAG": "Create Tag",
     "DELETE_TAG": "Delete Tag",

@@ -12,6 +12,7 @@ import { TagTaskPageComponent } from './pages/tag-task-page/tag-task-page.compon
 import { ActiveWorkContextGuard, ValidProjectIdGuard, ValidTagIdGuard } from './app.guard';
 import { TagSettingsPageComponent } from './pages/tag-settings-page/tag-settings-page.component';
 import { TODAY_TAG } from './features/tag/tag.const';
+import { CalendarPageComponent } from './pages/calendar-page/calendar-page.component';
 
 export const APP_ROUTES: Routes = [
   {path: 'config', component: ConfigPageComponent, data: {page: 'config'}},
@@ -49,7 +50,12 @@ export const APP_ROUTES: Routes = [
     data: {page: 'daily-summary'},
     canActivate: [ValidTagIdGuard]
   },
-
+  {
+    path: 'tag/:id/calendar',
+    component: CalendarPageComponent,
+    data: {page: 'calendar'},
+    canActivate: [ValidTagIdGuard]
+  },
   {
     path: 'project/:id/tasks',
     component: ProjectTaskPageComponent,
@@ -84,6 +90,12 @@ export const APP_ROUTES: Routes = [
     path: 'project/:id/daily-summary/:dayStr',
     component: DailySummaryComponent,
     data: {page: 'daily-summary'},
+    canActivate: [ValidProjectIdGuard]
+  },
+  {
+    path: 'project/:id/calendar',
+    component: CalendarPageComponent,
+    data: {page: 'calendar'},
     canActivate: [ValidProjectIdGuard]
   },
   {path: 'project-overview', component: ProjectOverviewPageComponent, data: {page: 'project-overview'}},
