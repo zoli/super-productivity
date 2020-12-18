@@ -3,7 +3,7 @@ import { CalendarOptions, EventClickArg, FullCalendarComponent } from '@fullcale
 import { ScheduledTaskService } from '../tasks/scheduled-task.service';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { EventInput, EventSourceFunc, EventSourceInput, Identity } from '@fullcalendar/common';
+import { EventInput } from '@fullcalendar/common';
 
 @Component({
   // apparently calendar does not work, so we add a prefix
@@ -22,8 +22,13 @@ export class CalendarComponent {
       // this.openDialog(calEvent);
     },
     events: [],
+    headerToolbar: {
+      start: 'today prev,next',
+      center: 'title',
+      end: 'timeGridDay,timeGridWeek,dayGridMonth'
+    },
+    initialView: 'timeGridWeek',
     // dateClick: this.handleDateClick.bind(this), // bind is important!
-    // initialView: 'daygrid',
     // events: [{
     //   title: 'Asd',
     //   start: new Date(),
@@ -63,7 +68,7 @@ export class CalendarComponent {
   ) {
   }
 
-  private handleDateClick(arg: any) {
-    alert('date click! ' + arg.dateStr);
-  }
+  // private handleDateClick(arg: any) {
+  //   alert('date click! ' + arg.dateStr);
+  // }
 }
