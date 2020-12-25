@@ -27,7 +27,7 @@ export class CalendarComponent {
       center: 'title',
       end: 'timeGridDay,timeGridWeek,dayGridMonth'
     },
-    initialView: 'timeGridWeek',
+    initialView: 'timeGridDay',
     // dateClick: this.handleDateClick.bind(this), // bind is important!
     // events: [{
     //   title: 'Asd',
@@ -66,6 +66,7 @@ export class CalendarComponent {
   constructor(
     private _scheduledTaskService: ScheduledTaskService,
   ) {
+    this.calOptions$.subscribe((v) => console.log('calOptions$', v));
   }
 
   // private handleDateClick(arg: any) {
