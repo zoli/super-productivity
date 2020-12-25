@@ -60,6 +60,7 @@ export class CalendarComponent {
       center: 'title',
       end: 'timeGridDay,timeGridWeek,dayGridMonth'
     },
+    // height: 'auto',
     initialView: 'timeGridDay',
     // dateClick: this.handleDateClick.bind(this), // bind is important!
     // events: [{
