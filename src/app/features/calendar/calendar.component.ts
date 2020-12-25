@@ -8,6 +8,8 @@ import { WorkContextService } from '../work-context/work-context.service';
 import { TaskService } from '../tasks/task.service';
 import { TaskWithReminderData } from '../tasks/task.model';
 
+const MIN_TASK_DURATION = 30 * 60 * 1000;
+
 @Component({
   // apparently calendar does not work, so we add a prefix
   selector: 'sup-calendar',
@@ -25,8 +27,16 @@ export class CalendarComponent {
     //   // this.openDialog(calEvent);
     // },
     eventResize: (calEvent: any) => {
-      console.log(calEvent);
-      // this.openDialog(calEvent);
+      // console.log(calEvent);
+      // const start = calEvent.event._instance.range.start;
+      // // const start = calEvent.event._instance.range.start;
+      // const task: TaskWithReminderData = calEvent.event.extendedProps;
+      // this._taskService.updateReminder(task.id, task.reminderId as string, start.getTime(), task.title);
+      // console.log(calEvent.endDelta.milliseconds - task.timeSpent);
+      //
+      // this._taskService.update(task.id, {
+      //   timeEstimate: calEvent.endDelta.milliseconds - task.timeSpent
+      // });
     },
     eventDrop: (calEvent: any) => {
       console.log(calEvent);
@@ -34,8 +44,6 @@ export class CalendarComponent {
       const task: TaskWithReminderData = calEvent.event.extendedProps;
       console.log(start, task);
       this._taskService.updateReminder(task.id, task.reminderId as string, start.getTime(), task.title);
-
-      // this.openDialog(calEvent);
     },
     // eventReceive: (calEvent: any) => {
     //   console.log(calEvent);
@@ -75,17 +83,27 @@ export class CalendarComponent {
   calOptions$: Observable<CalendarOptions> = this._scheduledTaskService.allScheduledTasks$.pipe(
     withLatestFrom(this._workContextService.allWorkContextColors$),
     map(([tasks, colorMap]): CalendarOptions => {
-      const events: EventInput[] = tasks.map((task) => ({
-        title: task.title,
-        start: task.reminderData.remindAt,
-        editable: true,
-        startEditable: true,
-        durationEditable: true,
-        extendedProps: task,
-        backgroundColor: task.projectId
-          ? colorMap[task.projectId]
-          : colorMap[task.tagIds[0]]
-      }));
+      const events: EventInput[] = tasks.map((task) => {
+        const timeToGo: number = (task.timeEstimate - task.timeSpent);
+        console.log(timeToGo / 60000, ((timeToGo > (MIN_TASK_DURATION))
+          ? timeToGo
+          : MIN_TASK_DURATION) / 60000);
+
+        return {
+          title: task.title,
+          start: task.reminderData.remindAt,
+          end: task.reminderData.remindAt + ((timeToGo > (MIN_TASK_DURATION))
+            ? timeToGo
+            : MIN_TASK_DURATION),
+          editable: true,
+          startEditable: true,
+          durationEditable: true,
+          extendedProps: task,
+          backgroundColor: task.projectId
+            ? colorMap[task.projectId]
+            : colorMap[task.tagIds[0]]
+        };
+      });
       return {
         ...this.DEFAULT_CAL_OPTS,
         events,
