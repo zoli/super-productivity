@@ -7,6 +7,7 @@ import { EventInput } from '@fullcalendar/common';
 import { WorkContextService } from '../work-context/work-context.service';
 import { TaskService } from '../tasks/task.service';
 import { TaskWithReminderData } from '../tasks/task.model';
+import { getWorklogStr } from '../../util/get-work-log-str';
 
 const MIN_TASK_DURATION = 30 * 60 * 1000;
 
@@ -83,12 +84,16 @@ export class CalendarComponent {
   calOptions$: Observable<CalendarOptions> = this._scheduledTaskService.allScheduledTasks$.pipe(
     withLatestFrom(this._workContextService.allWorkContextColors$),
     map(([tasks, colorMap]): CalendarOptions => {
+      const TD_STR = getWorklogStr();
       const events: EventInput[] = tasks.map((task) => {
-        const timeToGo: number = (task.timeEstimate - task.timeSpent);
-        console.log(timeToGo / 60000, ((timeToGo > (MIN_TASK_DURATION))
-          ? timeToGo
-          : MIN_TASK_DURATION) / 60000);
-
+        let timeToGo: number = (task.timeEstimate - task.timeSpent);
+        const timeSpentToday = task.timeSpentOnDay[TD_STR] || 0;
+        if (timeToGo < timeSpentToday) {
+          timeToGo = timeSpentToday;
+        }
+        // console.log(timeToGo / 60000, ((timeToGo > (MIN_TASK_DURATION))
+        //   ? timeToGo
+        //   : MIN_TASK_DURATION) / 60000);
         return {
           title: task.title,
           start: task.reminderData.remindAt,
