@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
 import { CalendarOptions, EventClickArg, FullCalendarComponent } from '@fullcalendar/angular';
 import { ScheduledTaskService } from '../tasks/scheduled-task.service';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, withLatestFrom } from 'rxjs/operators';
 import { EventInput } from '@fullcalendar/common';
+import { WorkContextService } from '../work-context/work-context.service';
 
 @Component({
   // apparently calendar does not work, so we add a prefix
@@ -49,12 +50,16 @@ export class CalendarComponent {
   };
 
   calOptions$: Observable<CalendarOptions> = this._scheduledTaskService.allScheduledTasks$.pipe(
-    map((tasks): CalendarOptions => {
+    withLatestFrom(this._workContextService.allWorkContextColors$),
+    map(([tasks, colorMap]): CalendarOptions => {
       const events: EventInput[] = tasks.map((task) => ({
         title: task.title,
         start: task.reminderData.remindAt,
         editable: true,
         startEditable: true,
+        backgroundColor: task.projectId
+          ? colorMap[task.projectId]
+          : colorMap[task.tagIds[0]]
       }));
       return {
         ...this.DEFAULT_CAL_OPTS,
@@ -64,6 +69,7 @@ export class CalendarComponent {
   );
 
   constructor(
+    private _workContextService: WorkContextService,
     private _scheduledTaskService: ScheduledTaskService,
   ) {
     this.calOptions$.subscribe((v) => console.log('calOptions$', v));
