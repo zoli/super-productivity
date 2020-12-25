@@ -86,3 +86,12 @@ export interface WorkContextState {
   activeType: WorkContextType | null;
   // additional entities state properties
 }
+
+export interface WorkContextColorEntry {
+  id: string;
+  color: string;
+}
+
+export interface WorkContextColorMap {
+  [key: string]: string;
+}

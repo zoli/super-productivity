@@ -8,6 +8,7 @@ import { GithubCfg } from '../../issue/providers/github/github.model';
 import {
   WorkContextAdvancedCfg,
   WorkContextAdvancedCfgKey,
+  WorkContextColorEntry,
   WorkContextType
 } from '../../work-context/work-context.model';
 import {
@@ -64,6 +65,14 @@ export const selectAllProjects = createSelector(selectProjectFeatureState, selec
 export const selectUnarchivedProjects = createSelector(selectAllProjects, (projects) => projects.filter(p => !p.isArchived));
 
 export const selectArchivedProjects = createSelector(selectAllProjects, (projects) => projects.filter(p => p.isArchived));
+
+export const selectAllProjectColors = createSelector(
+  selectAllProjects,
+  (projects: Project[]): WorkContextColorEntry[] => projects.map(project => ({
+    id: project.id,
+    color: project.theme.primary
+  }))
+);
 
 // DYNAMIC SELECTORS
 // -----------------

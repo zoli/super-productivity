@@ -1,18 +1,26 @@
 import { Injectable } from '@angular/core';
 import { select, Store } from '@ngrx/store';
-import { selectAllTags, selectAllTagsWithoutMyDay, selectTagById, selectTagsByIds } from './store/tag.reducer';
+import {
+  selectAllTagColors,
+  selectAllTags,
+  selectAllTagsWithoutMyDay,
+  selectTagById,
+  selectTagsByIds
+} from './store/tag.reducer';
 import { addTag, deleteTag, deleteTags, updateTag, upsertTag } from './store/tag.actions';
 import { Observable } from 'rxjs';
 import { Tag, TagState } from './tag.model';
 import * as shortid from 'shortid';
 import { DEFAULT_TAG } from './tag.const';
 import { TypedAction } from '@ngrx/store/src/models';
+import { WorkContextColorEntry } from '../work-context/work-context.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class TagService {
   tags$: Observable<Tag[]> = this._store$.pipe(select(selectAllTags));
+  tagsColors$: Observable<WorkContextColorEntry[]> = this._store$.pipe(select(selectAllTagColors));
   tagsNoMyDay$: Observable<Tag[]> = this._store$.pipe(select(selectAllTagsWithoutMyDay));
 
   constructor(

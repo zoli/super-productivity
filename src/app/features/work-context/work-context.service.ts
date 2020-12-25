@@ -5,6 +5,7 @@ import {
   WorkContext,
   WorkContextAdvancedCfg,
   WorkContextAdvancedCfgKey,
+  WorkContextColorMap,
   WorkContextState,
   WorkContextThemeCfg,
   WorkContextType
@@ -34,7 +35,7 @@ import { hasTasksToWorkOn, mapEstimateRemainingFromTasks } from './work-context.
 import { flattenTasks, selectTaskEntities, selectTasksWithSubTasksByIds } from '../tasks/store/task.selectors';
 import { Actions, ofType } from '@ngrx/effects';
 import { moveTaskToBacklogList } from './store/work-context-meta.actions';
-import { selectProjectById } from '../project/store/project.reducer';
+import { selectAllProjectColors, selectProjectById } from '../project/store/project.reducer';
 import { WorklogExportSettings } from '../worklog/worklog.model';
 import {
   AddToProjectBreakTime,
@@ -287,6 +288,26 @@ export class WorkContextService {
     map(id => id === TODAY_TAG.id),
     shareReplay(1),
   );
+
+  allWorkContextColors$: Observable<WorkContextColorMap> = combineLatest([
+    // avoid circular dep
+    this._store$.pipe(select(selectAllProjectColors)),
+    this._tagService.tagsColors$,
+  ]).pipe(
+    map(([forProjects, forTags]) => {
+      const workContextColorMap: WorkContextColorMap = {};
+      forProjects.forEach((project) => {
+        workContextColorMap[project.id] = project.color;
+      });
+      forTags.forEach((tag) => {
+        workContextColorMap[tag.id] = tag.color;
+      });
+      return workContextColorMap;
+    }),
+    shareReplay(1),
+  );
+
+  // allWorkContextColors$: Observable<any> =
 
   constructor(
     private _store$: Store<WorkContextState>,

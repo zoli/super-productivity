@@ -13,7 +13,7 @@ import {
   UpdateTaskTags
 } from '../../tasks/store/task.actions';
 import { TODAY_TAG } from '../tag.const';
-import { WorkContextType } from '../../work-context/work-context.model';
+import { WorkContextColorEntry, WorkContextType } from '../../work-context/work-context.model';
 import {
   moveTaskDownInTodayList,
   moveTaskInTodayList,
@@ -38,7 +38,13 @@ export const selectAllTagsWithoutMyDay = createSelector(
   selectAllTags,
   (tags: Tag[]): Tag[] => tags.filter(tag => tag.id !== TODAY_TAG.id)
 );
-
+export const selectAllTagColors = createSelector(
+  selectAllTags,
+  (tags: Tag[]): WorkContextColorEntry[] => tags.map(tag => ({
+    id: tag.id,
+    color: tag.color || tag.theme.primary
+  }))
+);
 export const selectTagById = createSelector(
   selectTagFeatureState,
   (state: TagState, props: { id: string }): Tag => {
