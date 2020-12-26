@@ -13,3 +13,12 @@
 //    order: 2;
 //  }
 //}
+
+.fc-timeGridDay-view {
+  .fc-timegrid-col,
+  .fc-daygrid-day {
+    &.fc-day-today {
+      background: transparent !important;
+    }
+  }
+}
