@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
-import { CalendarOptions, EventClickArg, FullCalendarComponent } from '@fullcalendar/angular';
+import { CalendarOptions, FullCalendarComponent } from '@fullcalendar/angular';
 import { ScheduledTaskService } from '../tasks/scheduled-task.service';
 import { Observable } from 'rxjs';
 import { map, withLatestFrom } from 'rxjs/operators';
@@ -8,8 +8,10 @@ import { WorkContextService } from '../work-context/work-context.service';
 import { TaskService } from '../tasks/task.service';
 import { getWorklogStr } from '../../util/get-work-log-str';
 import { TaskWithReminderData } from '../tasks/task.model';
+import { msToString } from '../../ui/duration/ms-to-string.pipe';
 
 const MIN_TASK_DURATION = 30 * 60 * 1000;
+const WEIRD_MAGIC_HOUR = 60000 * 60;
 
 @Component({
   // apparently calendar does not work, so we add a prefix
@@ -25,33 +27,33 @@ export class CalendarComponent {
     editable: true,
     timeZone: 'local', // the default (unnecessary to specify)
     eventResize: (calEvent: any) => {
-      // console.log(calEvent);
+      const start = calEvent.event._instance.range.start;
       // const start = calEvent.event._instance.range.start;
-      // // const start = calEvent.event._instance.range.start;
-      // const task: TaskWithReminderData = calEvent.event.extendedProps;
-      // this._taskService.updateReminder(task.id, task.reminderId as string, start.getTime(), task.title);
-      // console.log(calEvent.endDelta.milliseconds - task.timeSpent);
-      //
-      // this._taskService.update(task.id, {
-      //   timeEstimate: calEvent.endDelta.milliseconds - task.timeSpent
-      // });
+      const task: TaskWithReminderData = calEvent.event.extendedProps;
+      this._taskService.updateReminder(task.id, task.reminderId as string, start.getTime() - WEIRD_MAGIC_HOUR, task.title);
+
+      // console.log(calEvent.endDelta.milliseconds + (task.timeSpent));
+
+      this._taskService.update(task.id, {
+        // timeEstimate: calEvent.endDelta.milliseconds + (task.timeSpent)
+        timeEstimate: task.timeEstimate + calEvent.endDelta.milliseconds
+      });
     },
     eventDrop: (calEvent: any) => {
       // TODO understand and fix this
-      const WEIRD_MAGIC_HOUR = 60000 * 60;
       const start = calEvent.event._instance.range.start;
       const task: TaskWithReminderData = calEvent.event.extendedProps;
       this._taskService.updateReminder(task.id, task.reminderId as string, start.getTime() - WEIRD_MAGIC_HOUR, task.title);
     },
-    eventClick: (calEvent: EventClickArg) => {
-      console.log(calEvent);
-      // this.openDialog(calEvent);
-    },
-    dateClick: (arg: any) => {
-      console.log('I am here!');
-      console.log(arg.date.toUTCString()); // use *UTC* methods on the native Date Object
-      // will output something like 'Sat, 01 Sep 2018 00:00:00 GMT'
-    },
+    // eventClick: (calEvent: EventClickArg) => {
+    //   console.log(calEvent);
+    //   // this.openDialog(calEvent);
+    // },
+    // dateClick: (arg: any) => {
+    //   // console.log('I am here!');
+    //   // console.log(arg.date.toUTCString()); // use *UTC* methods on the native Date Object
+    //   // will output something like 'Sat, 01 Sep 2018 00:00:00 GMT'
+    // },
     // eventReceive: (calEvent: any) => {
     //   console.log(calEvent);
     //   // this.openDialog(calEvent);
@@ -70,21 +72,24 @@ export class CalendarComponent {
     initialView: 'timeGridDay',
     // dateClick: this.handleDateClick.bind(this), // bind is important!
     // events: [{
-    //   title: 'Asd',
-    //   start: new Date(),
-    //   allDay: true,
-    //   backgroundColor: 'red',
-    //   // end: new Date()
-    //   // display: 'string | null;',
-    //   // startEditable: 'boolean | null;',
-    //   // durationEditable: 'boolean | null;',
-    //   // constraints: 'Constraint[];',
-    //   // overlap: 'boolean | null;',
-    //   // allows: 'AllowFunc[];',
-    //   // backgroundColor: 'string;',
-    //   // borderColor: 'string;',
-    //   // textColor: 'string;',
-    //   // classNames: 'string[];',
+    // title: 'Asd',
+    // start: new Date(),
+    // allDay: true,
+    // backgroundColor: 'red',
+    // end: new Date()
+    // display: 'string | null;',
+    // startEditable: 'boolean | null;',
+    // durationEditable: 'boolean | null;',
+    // constraints: 'Constraint[];',
+    // overlap: 'boolean | null;',
+    // allows: 'AllowFunc[];',
+    // backgroundColor: 'string;',
+    // borderColor: 'string;',
+    // textColor: 'string;',
+    // classNames: 'string[];',
+    // editable: true,
+    // startEditable: true,
+    // durationEditable: true,
     // }],
   };
 
@@ -98,20 +103,19 @@ export class CalendarComponent {
         if (timeToGo < timeSpentToday) {
           timeToGo = timeSpentToday;
         }
-        console.log(new Date(task.reminderData.remindAt));
-
         // console.log(timeToGo / 60000, ((timeToGo > (MIN_TASK_DURATION))
         //   ? timeToGo
         //   : MIN_TASK_DURATION) / 60000);
         return {
-          title: task.title,
+          title: task.title
+            + ' '
+            + msToString(task.timeSpent)
+            + '/'
+            + msToString(task.timeEstimate),
           start: task.reminderData.remindAt,
           end: task.reminderData.remindAt + ((timeToGo > (MIN_TASK_DURATION))
             ? timeToGo
             : MIN_TASK_DURATION),
-          // editable: true,
-          // startEditable: true,
-          // durationEditable: true,
           extendedProps: task,
           backgroundColor: task.projectId
             ? colorMap[task.projectId]
