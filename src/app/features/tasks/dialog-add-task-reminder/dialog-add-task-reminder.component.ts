@@ -6,7 +6,7 @@ import { ReminderService } from '../../reminder/reminder.service';
 import { T } from '../../../t.const';
 import { AddTaskReminderInterface } from './add-task-reminder-interface';
 import { throttle } from 'helpful-decorators';
-import { Task } from '../task.model';
+import { Task, TaskReminderOption, TaskReminderOptionId } from '../task.model';
 
 @Component({
   selector: 'dialog-add-task-reminder',
@@ -25,6 +25,27 @@ export class DialogAddTaskReminderComponent {
   dateTime?: number = this.reminder && this.reminder.remindAt;
   isShowMoveToBacklog: boolean = (!this.isEdit && !!this.task.projectId && this.task.parentId === null);
   isMoveToBacklog: boolean = (this.isShowMoveToBacklog);
+  reminderCfg?: TaskReminderOption;
+  // TODO make translatable
+  remindAvailableOptions: TaskReminderOption[] = [{
+    id: TaskReminderOptionId.DoNotRemind,
+    title: 'Dont show reminder',
+  }, {
+    id: TaskReminderOptionId.AtStart,
+    title: 'when it starts',
+  }, {
+    id: TaskReminderOptionId.m10,
+    title: '10 minutes before it starts',
+  }, {
+    id: TaskReminderOptionId.m15,
+    title: '15 minutes before it starts',
+  }, {
+    id: TaskReminderOptionId.m30,
+    title: '30 minutes before it starts',
+  }, {
+    id: TaskReminderOptionId.h1,
+    title: '1 hour before it starts',
+  }];
 
   constructor(
     private _taskService: TaskService,
@@ -74,6 +95,10 @@ export class DialogAddTaskReminderComponent {
 
   close() {
     this._matDialogRef.close();
+  }
+
+  trackByIndex(i: number, p: any) {
+    return i;
   }
 }
 
