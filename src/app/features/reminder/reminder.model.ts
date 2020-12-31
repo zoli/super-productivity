@@ -13,6 +13,7 @@ export interface ReminderCopy {
   workContextType: WorkContextType;
   remindAt: number;
   title: string;
+  // TODO cleanup type
   type: ReminderType;
   relatedId: string;
   recurringConfig?: RecurringConfig;

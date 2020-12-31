@@ -27,8 +27,9 @@ const reInitCheckInterval = (reminders: ReminderCopy[]) => {
 
       const remindersToSend = (oldest.type === 'TASK')
         ? dueReminders.filter(r => r.type === 'TASK')
-        // NOTE: for notes we just send the oldest due reminder
-        : [oldest];
+        // TODO LEGACY CODE FOR NOTE: for notes we just send the oldest due reminder
+        // : [oldest];
+        : [];
 
       postMessage(remindersToSend);
       console.log('Worker postMessage', remindersToSend);
