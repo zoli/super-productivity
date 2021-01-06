@@ -8,6 +8,7 @@ import { devError } from '../../util/dev-error';
 
 @Injectable({providedIn: 'root'})
 export class ScheduledTaskService {
+  // TODO maybe remove
   allScheduledTasks$: Observable<TaskWithReminderData[]> = this._reminderService.reminders$.pipe(
     map((reminders) => reminders.filter(
       reminder => reminder.type === 'TASK'

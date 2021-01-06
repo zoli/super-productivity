@@ -3,6 +3,7 @@ import { TASK_FEATURE_NAME } from './task.reducer';
 import { Task, TaskState, TaskWithSubTasks } from '../task.model';
 import { taskAdapter } from './task.adapter';
 import { devError } from '../../../util/dev-error';
+import { TODAY_TAG } from '../../tag/tag.const';
 
 // TODO fix null stuff here
 
@@ -117,6 +118,11 @@ export const selectCurrentTaskParentOrCurrent = createSelector(selectTaskFeature
   && s.entities[s.entities[s.currentTaskId].parentId]
   // @ts-ignore
   || s.entities[s.currentTaskId]
+);
+
+export const selectPlannedTasks = createSelector(selectTaskFeatureState, (s): Task[] => s.ids
+  .map(id => s.entities[id] as Task)
+  .filter(task => task.plannedAt || task.tagIds.includes(TODAY_TAG.id))
 );
 
 export const selectAllTasks = createSelector(selectTaskFeatureState, selectAll);

@@ -52,7 +52,7 @@ import {
   selectCurrentTaskOrParentWithData,
   selectCurrentTaskParentOrCurrent,
   selectIsTaskDataLoaded,
-  selectMainTasksWithoutTag,
+  selectMainTasksWithoutTag, selectPlannedTasks,
   selectSelectedTask,
   selectSelectedTaskId, selectStartableTasks,
   selectTaskAdditionalInfoTargetPanel,
@@ -143,6 +143,10 @@ export class TaskService {
 
   allStartableTasks$: Observable<Task[]> = this._store.pipe(
     select(selectStartableTasks),
+  );
+
+  plannedTasks$: Observable<Task[]> = this._store.pipe(
+    select(selectPlannedTasks),
   );
 
   // META FIELDS

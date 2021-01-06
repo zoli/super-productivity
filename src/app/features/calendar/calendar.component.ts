@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
 import { CalendarOptions, FullCalendarComponent } from '@fullcalendar/angular';
-import { ScheduledTaskService } from '../tasks/scheduled-task.service';
 import { Observable } from 'rxjs';
 import { map, withLatestFrom } from 'rxjs/operators';
 import { EventInput } from '@fullcalendar/common';
@@ -10,7 +9,7 @@ import { getWorklogStr } from '../../util/get-work-log-str';
 import { TaskWithReminderData } from '../tasks/task.model';
 import { msToString } from '../../ui/duration/ms-to-string.pipe';
 
-const MIN_TASK_DURATION = 30 * 60 * 1000;
+const MIN_TASK_DURATION = 15 * 60 * 1000;
 const WEIRD_MAGIC_HOUR = 60000 * 60;
 
 @Component({
@@ -25,6 +24,7 @@ export class CalendarComponent {
 
   private DEFAULT_CAL_OPTS: CalendarOptions = {
     editable: true,
+    slotDuration: '00:15:00',
     timeZone: 'local', // the default (unnecessary to specify)
     eventResize: (calEvent: any) => {
       const start = calEvent.event._instance.range.start;
@@ -93,7 +93,7 @@ export class CalendarComponent {
     // }],
   };
 
-  calOptions$: Observable<CalendarOptions> = this._scheduledTaskService.allScheduledTasks$.pipe(
+  calOptions$: Observable<CalendarOptions> = this._taskService.plannedTasks$.pipe(
     withLatestFrom(this._workContextService.allWorkContextColors$),
     map(([tasks, colorMap]): CalendarOptions => {
       const TD_STR = getWorklogStr();
@@ -112,16 +112,32 @@ export class CalendarComponent {
             + msToString(task.timeSpent)
             + '/'
             + msToString(task.timeEstimate),
-          start: task.reminderData.remindAt,
-          end: task.reminderData.remindAt + ((timeToGo > (MIN_TASK_DURATION))
-            ? timeToGo
-            : MIN_TASK_DURATION),
           extendedProps: task,
+
           backgroundColor: task.projectId
             ? colorMap[task.projectId]
-            : colorMap[task.tagIds[0]]
+            : colorMap[task.tagIds[0]],
+
+          ...(task.plannedAt
+              ? {
+                start: task.plannedAt,
+                end: (task.plannedAt as number) + ((timeToGo > (MIN_TASK_DURATION))
+                  ? timeToGo
+                  : MIN_TASK_DURATION)
+              }
+              : {
+                allDay: true,
+                // start: TD_STR,
+                duration: 2000000,
+                start: Date.now(),
+                end: Date.now() + ((timeToGo > (MIN_TASK_DURATION))
+                  ? timeToGo
+                  : MIN_TASK_DURATION)
+              }
+          )
         };
       });
+
       return {
         ...this.DEFAULT_CAL_OPTS,
         events,
@@ -131,7 +147,6 @@ export class CalendarComponent {
 
   constructor(
     private _workContextService: WorkContextService,
-    private _scheduledTaskService: ScheduledTaskService,
     private _taskService: TaskService,
   ) {
     this.calOptions$.subscribe((v) => console.log('calOptions$', v));
