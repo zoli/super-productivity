@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { map, startWith } from 'rxjs/operators';
 import { GlobalConfigService } from 'src/app/features/config/global-config.service';
 import { T } from 'src/app/t.const';
+import { DAY_STARTS_AT } from '../../app.constants';
 
 @Component({
   selector: 'owl-wrapper',
@@ -35,6 +36,8 @@ export class OwlWrapperComponent {
     '22:00',
     '23:30',
   ];
+
+  DAY_STARTS_AT: string = DAY_STARTS_AT;
 
   firstDayOfWeek$: Observable<number> = this._globalConfigService.misc$.pipe(
     map(cfg => cfg.firstDayOfWeek),

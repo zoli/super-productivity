@@ -8,6 +8,8 @@ import { TaskService } from '../tasks/task.service';
 import { getWorklogStr } from '../../util/get-work-log-str';
 import { TaskWithReminderData } from '../tasks/task.model';
 import { msToString } from '../../ui/duration/ms-to-string.pipe';
+import { DAY_STARTS_AT } from '../../app.constants';
+import { isToday } from '../../util/is-today.util';
 
 const MIN_TASK_DURATION = 15 * 60 * 1000;
 const WEIRD_MAGIC_HOUR = 60000 * 60;
@@ -40,10 +42,23 @@ export class CalendarComponent {
       });
     },
     eventDrop: (calEvent: any) => {
-      // TODO understand and fix this
-      const start = calEvent.event._instance.range.start;
       const task: TaskWithReminderData = calEvent.event.extendedProps;
-      this._taskService.updateReminder(task.id, task.reminderId as string, start.getTime() - WEIRD_MAGIC_HOUR, task.title);
+      const start = calEvent.event._instance.range.start;
+
+      // TODO understand and fix this
+      if (calEvent.event.allDay) {
+        if (isToday(start)) {
+          this._taskService.removeReminder(task.id, task.reminderId as string);
+        } else {
+          const dayStartsSplit = DAY_STARTS_AT.split(':');
+          start.setHours(dayStartsSplit[0], dayStartsSplit[1], 0, 0);
+          const startTime = start.getTime();
+          this._taskService.updateReminder(task.id, task.reminderId as string, startTime, task.title);
+        }
+      } else {
+        const startTime = start.getTime() - WEIRD_MAGIC_HOUR;
+        this._taskService.updateReminder(task.id, task.reminderId as string, startTime, task.title);
+      }
     },
     // eventClick: (calEvent: EventClickArg) => {
     //   console.log(calEvent);
