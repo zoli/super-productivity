@@ -27,6 +27,7 @@ export class CalendarComponent {
   private DEFAULT_CAL_OPTS: CalendarOptions = {
     editable: true,
     slotDuration: '00:15:00',
+    nowIndicator: true,
     timeZone: 'local', // the default (unnecessary to specify)
     eventResize: (calEvent: any) => {
       const start = calEvent.event._instance.range.start;

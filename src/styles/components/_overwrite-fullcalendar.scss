@@ -22,3 +22,8 @@
     }
   }
 }
+
+.fc .fc-timegrid-now-indicator-line {
+  border-color: $c-accent !important;
+  box-shadow: $shadow-card-shadow;
+}
