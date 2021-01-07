@@ -135,6 +135,8 @@ export class CalendarComponent {
             + msToString(task.timeEstimate),
           extendedProps: task,
 
+          classNames: task.isDone ? ['isDone'] : [],
+
           backgroundColor: task.projectId
             ? colorMap[task.projectId]
             : colorMap[task.tagIds[0]],
