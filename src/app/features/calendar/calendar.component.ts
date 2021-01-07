@@ -61,10 +61,11 @@ export class CalendarComponent {
         this._taskService.updateReminder(task.id, task.reminderId as string, startTime, task.title);
       }
     },
-    // eventClick: (calEvent: EventClickArg) => {
-    //   console.log(calEvent);
-    //   // this.openDialog(calEvent);
-    // },
+    // should be EventClickArg but not exported :(
+    eventClick: (calEvent: any) => {
+      console.log(calEvent);
+      // this.openDialog(calEvent);
+    },
     // dateClick: (arg: any) => {
     //   // console.log('I am here!');
     //   // console.log(arg.date.toUTCString()); // use *UTC* methods on the native Date Object
@@ -119,9 +120,13 @@ export class CalendarComponent {
         if (timeToGo < timeSpentToday) {
           timeToGo = timeSpentToday;
         }
+        timeToGo = ((timeToGo > (MIN_TASK_DURATION))
+          ? timeToGo
+          : MIN_TASK_DURATION);
         // console.log(timeToGo / 60000, ((timeToGo > (MIN_TASK_DURATION))
         //   ? timeToGo
         //   : MIN_TASK_DURATION) / 60000);
+
         return {
           title: task.title
             + ' '
@@ -137,20 +142,18 @@ export class CalendarComponent {
           ...(task.plannedAt
               ? {
                 start: task.plannedAt,
-                end: (task.plannedAt as number) + ((timeToGo > (MIN_TASK_DURATION))
-                  ? timeToGo
-                  : MIN_TASK_DURATION)
+                end: (task.isDone && task.doneOn)
+                  ? (task.plannedAt as number) + task.timeSpentOnDay[TD_STR]
+                  : (task.plannedAt as number) + timeToGo,
               }
               : {
                 allDay: true,
                 // start: TD_STR,
                 duration: 2000000,
                 start: Date.now(),
-                end: Date.now() + ((timeToGo > (MIN_TASK_DURATION))
-                  ? timeToGo
-                  : MIN_TASK_DURATION)
+                end: Date.now() + timeToGo
               }
-          )
+          ),
         };
       });
 
