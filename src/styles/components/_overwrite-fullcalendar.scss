@@ -31,3 +31,16 @@
 .fc-timegrid-event.isDone .fc-event-title {
   text-decoration: line-through;
 }
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: rgba(0, 0, 0, .5);
+
+  @include darkTheme(true) {
+    border-color: rgba(255, 255, 255, .3);
+  }
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border: none !important;
+}
