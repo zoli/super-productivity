@@ -120,10 +120,26 @@ export const selectCurrentTaskParentOrCurrent = createSelector(selectTaskFeature
   || s.entities[s.currentTaskId]
 );
 
-export const selectPlannedTasks = createSelector(selectTaskFeatureState, (s): Task[] => s.ids
-  .map(id => s.entities[id] as Task)
-  .filter(task => task.plannedAt || task.tagIds.includes(TODAY_TAG.id))
-);
+export const selectPlannedTasks = createSelector(selectTaskFeatureState, (s): Task[] => {
+  const allTasks: Task[] = [];
+  const allParent = s.ids
+    .map(id => s.entities[id] as Task)
+    .filter(task => task.plannedAt || task.tagIds.includes(TODAY_TAG.id));
+
+  allParent.forEach((pt) => {
+    if (pt.subTaskIds.length) {
+      pt.subTaskIds.forEach(subId => {
+        const st = s.entities[subId] as Task;
+        if (!st.plannedAt) {
+          allTasks.push(st);
+        }
+      });
+    } else {
+      allTasks.push(pt);
+    }
+  });
+  return allTasks;
+});
 
 export const selectAllTasks = createSelector(selectTaskFeatureState, selectAll);
 export const selectScheduledTasks = createSelector(selectAllTasks, (tasks) => tasks.filter(task => task.reminderId));
