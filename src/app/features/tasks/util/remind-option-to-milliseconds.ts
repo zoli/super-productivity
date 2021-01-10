@@ -17,3 +17,24 @@ export const remindOptionToMilliseconds = (plannedAt: number, remindOptId: TaskR
   }
   return undefined;
 };
+
+export const millisecondsDiffToRemindOption = (plannedAt: number, remindAt?: number): TaskReminderOptionId => {
+  if (typeof remindAt !== 'number') {
+    return TaskReminderOptionId.DoNotRemind;
+  }
+
+  const diff: number = plannedAt as number - remindAt;
+  if (diff >= 60 * 60 * 1000) {
+    return TaskReminderOptionId.h1;
+  } else if (diff >= 30 * 60 * 1000) {
+    return TaskReminderOptionId.m30;
+  } else if (diff >= 15 * 60 * 1000) {
+    return TaskReminderOptionId.m15;
+  } else if (diff >= 10 * 60 * 1000) {
+    return TaskReminderOptionId.m10;
+  } else if (diff === 0) {
+    return TaskReminderOptionId.AtStart;
+  } else {
+    return TaskReminderOptionId.DoNotRemind;
+  }
+};

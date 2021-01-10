@@ -7,6 +7,7 @@ import { T } from '../../../t.const';
 import { AddTaskReminderInterface } from './add-task-reminder-interface';
 import { throttle } from 'helpful-decorators';
 import { Task, TaskReminderOption, TaskReminderOptionId } from '../task.model';
+import { millisecondsDiffToRemindOption } from '../util/remind-option-to-milliseconds';
 
 @Component({
   selector: 'dialog-add-task-reminder',
@@ -54,24 +55,7 @@ export class DialogAddTaskReminderComponent {
     @Inject(MAT_DIALOG_DATA) public data: AddTaskReminderInterface,
   ) {
     if (this.isEdit) {
-      this.reminderCfgId = TaskReminderOptionId.DoNotRemind;
-      // todo add more sophisticated logic
-      console.log(this.task.plannedAt, this.reminder?.remindAt);
-      const diff: number = this.task.plannedAt as number - +(this.reminder?.remindAt as any);
-      console.log(diff);
-      if (diff >= 60 * 60 * 1000) {
-        this.reminderCfgId = TaskReminderOptionId.h1;
-      } else if (diff >= 30 * 60 * 1000) {
-        this.reminderCfgId = TaskReminderOptionId.m30;
-      } else if (diff >= 15 * 60 * 1000) {
-        this.reminderCfgId = TaskReminderOptionId.m15;
-      } else if (diff >= 10 * 60 * 1000) {
-        this.reminderCfgId = TaskReminderOptionId.m10;
-      } else if (diff === 0) {
-        this.reminderCfgId = TaskReminderOptionId.AtStart;
-      } else {
-        this.reminderCfgId = TaskReminderOptionId.DoNotRemind;
-      }
+      this.reminderCfgId = millisecondsDiffToRemindOption(this.task.plannedAt as number, this.reminder?.remindAt);
     } else {
       this.reminderCfgId = TaskReminderOptionId.AtStart;
     }

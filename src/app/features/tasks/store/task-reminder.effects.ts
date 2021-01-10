@@ -41,7 +41,7 @@ export class TaskReminderEffects {
       if (isMoveToBacklog && !task.projectId) {
         throw new Error('Move to backlog not possible for non project tasks');
       }
-      if (!remindAt) {
+      if (typeof remindAt !== 'number') {
         return EMPTY;
       }
 
@@ -76,7 +76,7 @@ export class TaskReminderEffects {
     ofType(
       TaskActionTypes.ReScheduleTask,
     ),
-    filter(({payload}: ReScheduleTask) => !!payload.remindAt && !!payload.reminderId),
+    filter(({payload}: ReScheduleTask) => typeof payload.remindAt === 'number' && !!payload.reminderId),
     tap((a: ReScheduleTask) => {
       console.log(a);
       const {title, remindAt, reminderId} = a.payload;

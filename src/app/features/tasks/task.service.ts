@@ -517,13 +517,8 @@ export class TaskService {
     reminderId,
     remindCfg,
     title
-  }: { taskId: string, plannedAt: number, title: string, reminderId?: string, remindCfg: TaskReminderOptionId }) {
-    console.log(remindOptionToMilliseconds(plannedAt, remindCfg), plannedAt);
-    console.log(remindOptionToMilliseconds(plannedAt, remindCfg) as number - plannedAt);
-    console.log({
-      plannedAt,
-      remindCfg,
-    });
+  }: { taskId: string, plannedAt: number, title: string, reminderId?: string, remindCfg: TaskReminderOptionId}) {
+
     this._store.dispatch(new ReScheduleTask({
       id: taskId,
       plannedAt,

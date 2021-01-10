@@ -10,6 +10,7 @@ import { TaskWithReminderData } from '../tasks/task.model';
 import { msToString } from '../../ui/duration/ms-to-string.pipe';
 import { DAY_STARTS_AT } from '../../app.constants';
 import { isToday } from '../../util/is-today.util';
+import { millisecondsDiffToRemindOption } from '../tasks/util/remind-option-to-milliseconds';
 
 const MIN_TASK_DURATION = 15 * 60 * 1000;
 const WEIRD_MAGIC_HOUR = 60000 * 60;
@@ -35,9 +36,10 @@ export class CalendarComponent {
       const task: TaskWithReminderData = calEvent.event.extendedProps;
       this._taskService.reScheduleTask({
         taskId: task.id,
-        reminderId: task.reminderId as string,
         plannedAt: start.getTime() - WEIRD_MAGIC_HOUR,
-        title: task.title
+        title: task.title,
+        reminderId: task.reminderId as string,
+        remindCfg: task.reminderData && millisecondsDiffToRemindOption(task.plannedAt as number, task.reminderData.remindAt),
       });
 
       // console.log(calEvent.endDelta.milliseconds + (task.timeSpent));
@@ -63,7 +65,8 @@ export class CalendarComponent {
             taskId: task.id,
             reminderId: task.reminderId as string,
             plannedAt: startTime,
-            title: task.title
+            remindCfg: task.reminderData && millisecondsDiffToRemindOption(task.plannedAt as number, task.reminderData.remindAt),
+            title: task.title,
           });
         }
       } else {
@@ -72,7 +75,8 @@ export class CalendarComponent {
           taskId: task.id,
           reminderId: task.reminderId as string,
           plannedAt: startTime,
-          title: task.title
+          title: task.title,
+          remindCfg: task.reminderData && millisecondsDiffToRemindOption(task.plannedAt as number, task.reminderData.remindAt),
         });
       }
     },
@@ -131,6 +135,7 @@ export class CalendarComponent {
       const TD_STR = getWorklogStr();
       const events: EventInput[] = tasks.map((task) => {
         let timeToGo: number = (task.timeEstimate - task.timeSpent);
+        const classNames: string[] = [];
         const timeSpentToday = task.timeSpentOnDay[TD_STR] || 0;
         if (timeToGo < timeSpentToday) {
           timeToGo = timeSpentToday;
@@ -142,6 +147,16 @@ export class CalendarComponent {
         //   ? timeToGo
         //   : MIN_TASK_DURATION) / 60000);
 
+        if (task.isDone) {
+          classNames.push('isDone');
+        }
+
+        console.log(task.reminderId);
+
+        if (task.reminderId) {
+          classNames.push('hasAlarm');
+        }
+
         return {
           title: task.title
             + ' '
@@ -150,7 +165,7 @@ export class CalendarComponent {
             + msToString(task.timeEstimate),
           extendedProps: task,
 
-          classNames: task.isDone ? ['isDone'] : [],
+          classNames,
 
           backgroundColor: task.projectId
             ? colorMap[task.projectId]
