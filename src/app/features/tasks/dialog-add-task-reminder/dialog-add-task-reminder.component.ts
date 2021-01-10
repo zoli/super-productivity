@@ -22,10 +22,9 @@ export class DialogAddTaskReminderComponent {
     : undefined;
   isEdit: boolean = !!(this.reminder && this.reminder.id);
 
-  dateTime?: number = this.reminder && this.reminder.remindAt;
+  dateTime?: number = this.task.plannedAt || undefined;
   isShowMoveToBacklog: boolean = (!this.isEdit && !!this.task.projectId && this.task.parentId === null);
   isMoveToBacklog: boolean = (this.isShowMoveToBacklog);
-  reminderCfg?: TaskReminderOption;
   // TODO make translatable
   remindAvailableOptions: TaskReminderOption[] = [{
     id: TaskReminderOptionId.DoNotRemind,
@@ -46,6 +45,7 @@ export class DialogAddTaskReminderComponent {
     id: TaskReminderOptionId.h1,
     title: '1 hour before it starts',
   }];
+  reminderCfgId: TaskReminderOptionId;
 
   constructor(
     private _taskService: TaskService,
@@ -53,6 +53,28 @@ export class DialogAddTaskReminderComponent {
     private _matDialogRef: MatDialogRef<DialogAddTaskReminderComponent>,
     @Inject(MAT_DIALOG_DATA) public data: AddTaskReminderInterface,
   ) {
+    if (this.isEdit) {
+      this.reminderCfgId = TaskReminderOptionId.DoNotRemind;
+      // todo add more sophisticated logic
+      console.log(this.task.plannedAt, this.reminder?.remindAt);
+      const diff: number = this.task.plannedAt as number - +(this.reminder?.remindAt as any);
+      console.log(diff);
+      if (diff >= 60 * 60 * 1000) {
+        this.reminderCfgId = TaskReminderOptionId.h1;
+      } else if (diff >= 30 * 60 * 1000) {
+        this.reminderCfgId = TaskReminderOptionId.m30;
+      } else if (diff >= 15 * 60 * 1000) {
+        this.reminderCfgId = TaskReminderOptionId.m15;
+      } else if (diff >= 10 * 60 * 1000) {
+        this.reminderCfgId = TaskReminderOptionId.m10;
+      } else if (diff === 0) {
+        this.reminderCfgId = TaskReminderOptionId.AtStart;
+      } else {
+        this.reminderCfgId = TaskReminderOptionId.DoNotRemind;
+      }
+    } else {
+      this.reminderCfgId = TaskReminderOptionId.AtStart;
+    }
   }
 
   // NOTE: throttle is used as quick way to prevent multiple submits
@@ -65,17 +87,19 @@ export class DialogAddTaskReminderComponent {
     }
 
     if (this.isEdit && this.reminder) {
-      this._taskService.updateReminder(
-        this.task.id,
-        this.reminder.id,
-        timestamp,
-        this.task.title,
-      );
+      this._taskService.reScheduleTask({
+        taskId: this.task.id,
+        reminderId: this.task.reminderId as string,
+        plannedAt: timestamp,
+        remindCfg: this.reminderCfgId,
+        title: this.task.title,
+      });
       this.close();
     } else {
-      this._taskService.addReminder(
+      this._taskService.scheduleTask(
         this.task,
         timestamp,
+        this.reminderCfgId,
         this.isMoveToBacklog,
       );
       this.close();
@@ -89,7 +113,7 @@ export class DialogAddTaskReminderComponent {
       console.log(this.reminder, this.task);
       throw new Error('No reminder or id');
     }
-    this._taskService.removeReminder(this.task.id, this.reminder.id);
+    this._taskService.unScheduleTask(this.task.id, this.reminder.id);
     this.close();
   }
 

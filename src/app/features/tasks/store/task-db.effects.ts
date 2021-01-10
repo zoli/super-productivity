@@ -18,7 +18,7 @@ export class TaskDbEffects {
         TaskActionTypes.AddTask,
         TaskActionTypes.RestoreTask,
         TaskActionTypes.AddTimeSpent,
-        TaskActionTypes.RemoveTaskReminder,
+        TaskActionTypes.UnScheduleTask,
         TaskActionTypes.DeleteTask,
         TaskActionTypes.DeleteMainTasks,
         TaskActionTypes.UndoDeleteTask,
@@ -38,9 +38,9 @@ export class TaskDbEffects {
         TaskActionTypes.RoundTimeSpentForDay,
 
         // REMINDER
-        TaskActionTypes.AddTaskReminder,
-        TaskActionTypes.UpdateTaskReminder,
-        TaskActionTypes.RemoveTaskReminder,
+        TaskActionTypes.ScheduleTask,
+        TaskActionTypes.ReScheduleTask,
+        TaskActionTypes.UnScheduleTask,
 
         // SUB ACTIONS
         TaskAttachmentActionTypes.AddTaskAttachment,

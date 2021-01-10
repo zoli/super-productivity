@@ -33,7 +33,12 @@ export class CalendarComponent {
       const start = calEvent.event._instance.range.start;
       // const start = calEvent.event._instance.range.start;
       const task: TaskWithReminderData = calEvent.event.extendedProps;
-      this._taskService.updateReminder(task.id, task.reminderId as string, start.getTime() - WEIRD_MAGIC_HOUR, task.title);
+      this._taskService.reScheduleTask({
+        taskId: task.id,
+        reminderId: task.reminderId as string,
+        plannedAt: start.getTime() - WEIRD_MAGIC_HOUR,
+        title: task.title
+      });
 
       // console.log(calEvent.endDelta.milliseconds + (task.timeSpent));
 
@@ -49,16 +54,26 @@ export class CalendarComponent {
       // TODO understand and fix this
       if (calEvent.event.allDay) {
         if (isToday(start)) {
-          this._taskService.removeReminder(task.id, task.reminderId as string);
+          this._taskService.unScheduleTask(task.id, task.reminderId as string);
         } else {
           const dayStartsSplit = DAY_STARTS_AT.split(':');
           start.setHours(dayStartsSplit[0], dayStartsSplit[1], 0, 0);
           const startTime = start.getTime();
-          this._taskService.updateReminder(task.id, task.reminderId as string, startTime, task.title);
+          this._taskService.reScheduleTask({
+            taskId: task.id,
+            reminderId: task.reminderId as string,
+            plannedAt: startTime,
+            title: task.title
+          });
         }
       } else {
         const startTime = start.getTime() - WEIRD_MAGIC_HOUR;
-        this._taskService.updateReminder(task.id, task.reminderId as string, startTime, task.title);
+        this._taskService.reScheduleTask({
+          taskId: task.id,
+          reminderId: task.reminderId as string,
+          plannedAt: startTime,
+          title: task.title
+        });
       }
     },
     // should be EventClickArg but not exported :(

@@ -1,7 +1,7 @@
 import {
   AddSubTask,
   AddTask,
-  AddTaskReminder,
+  ScheduleTask,
   AddTimeSpent,
   ConvertToMainTask,
   DeleteMainTasks,
@@ -12,17 +12,17 @@ import {
   MoveToArchive,
   MoveToOtherProject,
   RemoveTagsForAllTasks,
-  RemoveTaskReminder,
+  UnScheduleTask,
   RemoveTimeSpent,
   RestoreTask,
   RoundTimeSpentForDay,
+  ReScheduleTask,
   SetCurrentTask,
   SetSelectedTask,
   TaskActions,
   TaskActionTypes,
   ToggleTaskShowSubTasks,
   UpdateTask,
-  UpdateTaskReminder,
   UpdateTaskTags,
   UpdateTaskUi
 } from './task.actions';
@@ -549,8 +549,8 @@ export function taskReducer(
 
     // REMINDER STUFF
     // --------------
-    case TaskActionTypes.AddTaskReminder: {
-      const {task, remindAt} = (action as AddTaskReminder).payload;
+    case TaskActionTypes.ScheduleTask: {
+      const {task, remindAt} = (action as ScheduleTask).payload;
       return taskAdapter.updateOne({
         id: task.id,
         changes: {
@@ -559,18 +559,18 @@ export function taskReducer(
       }, state);
     }
 
-    case TaskActionTypes.UpdateTaskReminder: {
-      const {id, remindAt} = (action as UpdateTaskReminder).payload;
+    case TaskActionTypes.ReScheduleTask: {
+      const {id, plannedAt} = (action as ReScheduleTask).payload;
       return taskAdapter.updateOne({
         id,
         changes: {
-          plannedAt: remindAt,
+          plannedAt,
         }
       }, state);
     }
 
-    case TaskActionTypes.RemoveTaskReminder: {
-      const {id} = (action as RemoveTaskReminder).payload;
+    case TaskActionTypes.UnScheduleTask: {
+      const {id} = (action as UnScheduleTask).payload;
       return taskAdapter.updateOne({
         id,
         changes: {
