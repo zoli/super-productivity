@@ -2,6 +2,9 @@ import { TaskReminderOptionId } from '../task.model';
 
 export const remindOptionToMilliseconds = (plannedAt: number, remindOptId: TaskReminderOptionId): number | undefined => {
   switch (remindOptId) {
+    case TaskReminderOptionId.AtStart : {
+      return plannedAt;
+    }
     case TaskReminderOptionId.m10 : {
       return plannedAt - 10 * 60 * 1000;
     }
