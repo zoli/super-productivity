@@ -133,61 +133,63 @@ export class CalendarComponent {
     withLatestFrom(this._workContextService.allWorkContextColors$),
     map(([tasks, colorMap]): CalendarOptions => {
       const TD_STR = getWorklogStr();
-      const events: EventInput[] = tasks.map((task) => {
-        let timeToGo: number = (task.timeEstimate - task.timeSpent);
-        const classNames: string[] = [];
-        const timeSpentToday = task.timeSpentOnDay[TD_STR] || 0;
-        if (timeToGo < timeSpentToday) {
-          timeToGo = timeSpentToday;
-        }
-        timeToGo = ((timeToGo > (MIN_TASK_DURATION))
-          ? timeToGo
-          : MIN_TASK_DURATION);
-        // console.log(timeToGo / 60000, ((timeToGo > (MIN_TASK_DURATION))
-        //   ? timeToGo
-        //   : MIN_TASK_DURATION) / 60000);
+      const events: EventInput[] = tasks
+        .filter(task => task.plannedAt || !task.isDone)
+        .map((task) => {
+          let timeToGo: number = (task.timeEstimate - task.timeSpent);
+          const classNames: string[] = [];
+          const timeSpentToday = task.timeSpentOnDay[TD_STR] || 0;
+          if (timeToGo < timeSpentToday) {
+            timeToGo = timeSpentToday;
+          }
+          timeToGo = ((timeToGo > (MIN_TASK_DURATION))
+            ? timeToGo
+            : MIN_TASK_DURATION);
+          // console.log(timeToGo / 60000, ((timeToGo > (MIN_TASK_DURATION))
+          //   ? timeToGo
+          //   : MIN_TASK_DURATION) / 60000);
 
-        if (task.isDone) {
-          classNames.push('isDone');
-        }
+          if (task.isDone) {
+            classNames.push('isDone');
+          }
 
-        console.log(task.reminderId);
+          console.log(task.reminderId);
 
-        if (task.reminderId) {
-          classNames.push('hasAlarm');
-        }
+          if (task.reminderId) {
+            classNames.push('hasAlarm');
+          }
 
-        return {
-          title: task.title
-            + ' '
-            + msToString(task.timeSpent)
-            + '/'
-            + msToString(task.timeEstimate),
-          extendedProps: task,
+          return {
+            title: task.title
+              + ' '
+              + msToString(task.timeSpent)
+              + '/'
+              + msToString(task.timeEstimate),
+            extendedProps: task,
 
-          classNames,
+            classNames,
 
-          backgroundColor: task.projectId
-            ? colorMap[task.projectId]
-            : colorMap[task.tagIds[0]],
+            backgroundColor: task.projectId
+              ? colorMap[task.projectId]
+              : colorMap[task.tagIds[0]],
 
-          ...(task.plannedAt
-              ? {
-                start: task.plannedAt,
-                end: (task.isDone && task.doneOn)
-                  ? (task.plannedAt as number) + task.timeSpentOnDay[TD_STR]
-                  : (task.plannedAt as number) + timeToGo,
-              }
-              : {
-                allDay: true,
-                // start: TD_STR,
-                duration: 2000000,
-                start: Date.now(),
-                end: Date.now() + timeToGo
-              }
-          ),
-        };
-      });
+            ...(task.plannedAt
+                ? {
+                  start: task.plannedAt,
+                  end: (task.isDone && task.doneOn)
+                    ? (task.plannedAt as number) + task.timeSpentOnDay[TD_STR]
+                    : (task.plannedAt as number) + timeToGo,
+                }
+                : {
+                  allDay: true,
+                  // start: TD_STR,
+                  duration: 2000000,
+                  start: Date.now(),
+                  end: Date.now() + timeToGo
+                }
+            ),
+          };
+        });
 
       return {
         ...this.DEFAULT_CAL_OPTS,
