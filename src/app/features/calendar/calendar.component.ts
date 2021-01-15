@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
 import { CalendarOptions, FullCalendarComponent } from '@fullcalendar/angular';
 import { Observable } from 'rxjs';
-import { map, withLatestFrom } from 'rxjs/operators';
-import { EventInput } from '@fullcalendar/common';
+import { debounceTime, map, withLatestFrom } from 'rxjs/operators';
+import { EventChangeArg, EventClickArg, EventDropArg, EventInput } from '@fullcalendar/common';
 import { WorkContextService } from '../work-context/work-context.service';
 import { TaskService } from '../tasks/task.service';
 import { getWorklogStr } from '../../util/get-work-log-str';
@@ -27,13 +27,18 @@ export class CalendarComponent {
 
   private DEFAULT_CAL_OPTS: CalendarOptions = {
     editable: true,
+    droppable: false,
     slotDuration: '00:15:00',
     nowIndicator: true,
     timeZone: 'local', // the default (unnecessary to specify)
-    eventResize: (calEvent: any) => {
-      const start = calEvent.event._instance.range.start;
+    eventResize: (calEvent: EventChangeArg) => {
+      // we don't want to update the view model from here
+      // calEvent.revert();
+
+      const start = calEvent.event._instance?.range.start as Date;
       // const start = calEvent.event._instance.range.start;
-      const task: TaskWithReminderData = calEvent.event.extendedProps;
+      const task: TaskWithReminderData = calEvent.event.extendedProps as TaskWithReminderData;
+
       this._taskService.reScheduleTask({
         taskId: task.id,
         plannedAt: start.getTime() - WEIRD_MAGIC_HOUR,
@@ -46,12 +51,16 @@ export class CalendarComponent {
 
       this._taskService.update(task.id, {
         // timeEstimate: calEvent.endDelta.milliseconds + (task.timeSpent)
-        timeEstimate: task.timeEstimate + calEvent.endDelta.milliseconds
+        timeEstimate: task.timeEstimate + (calEvent as any).endDelta.milliseconds
       });
     },
-    eventDrop: (calEvent: any) => {
-      const task: TaskWithReminderData = calEvent.event.extendedProps;
-      const start = calEvent.event._instance.range.start;
+    eventDrop: (calEvent: EventDropArg) => {
+      const task: TaskWithReminderData = calEvent.event.extendedProps as TaskWithReminderData;
+      const start = calEvent.event._instance?.range.start as Date;
+      console.log(calEvent);
+
+      // we don't want to update the view model from here
+      // calEvent.revert();
 
       // TODO understand and fix this
       if (calEvent.event.allDay) {
@@ -59,7 +68,7 @@ export class CalendarComponent {
           this._taskService.unScheduleTask(task.id, task.reminderId as string);
         } else {
           const dayStartsSplit = DAY_STARTS_AT.split(':');
-          start.setHours(dayStartsSplit[0], dayStartsSplit[1], 0, 0);
+          start.setHours(+dayStartsSplit[0], +dayStartsSplit[1], 0, 0);
           const startTime = start.getTime();
           this._taskService.reScheduleTask({
             taskId: task.id,
@@ -81,7 +90,7 @@ export class CalendarComponent {
       }
     },
     // should be EventClickArg but not exported :(
-    eventClick: (calEvent: any) => {
+    eventClick: (calEvent: EventClickArg) => {
       console.log(calEvent);
       // this.openDialog(calEvent);
     },
@@ -106,6 +115,7 @@ export class CalendarComponent {
     },
     // height: 'auto',
     initialView: 'timeGridDay',
+    eventOverlap: true,
     // dateClick: this.handleDateClick.bind(this), // bind is important!
     // events: [{
     // title: 'Asd',
@@ -130,12 +140,15 @@ export class CalendarComponent {
   };
 
   calOptions$: Observable<CalendarOptions> = this._taskService.plannedTasks$.pipe(
+    // give the calendar some time to render
+    debounceTime(1000),
+    // take(1),
     withLatestFrom(this._workContextService.allWorkContextColors$),
     map(([tasks, colorMap]): CalendarOptions => {
       const TD_STR = getWorklogStr();
       const events: EventInput[] = tasks
         .filter(task => task.plannedAt || !task.isDone)
-        .map((task) => {
+        .map((task): EventInput => {
           let timeToGo: number = (task.timeEstimate - task.timeSpent);
           const classNames: string[] = [];
           const timeSpentToday = task.timeSpentOnDay[TD_STR] || 0;
@@ -153,8 +166,6 @@ export class CalendarComponent {
             classNames.push('isDone');
           }
 
-          console.log(task.reminderId);
-
           if (task.reminderId) {
             classNames.push('hasAlarm');
           }
@@ -165,6 +176,8 @@ export class CalendarComponent {
               + msToString(task.timeSpent)
               + '/'
               + msToString(task.timeEstimate),
+            // groupId: task.parentId || undefined,
+
             extendedProps: task,
 
             classNames,
@@ -175,10 +188,10 @@ export class CalendarComponent {
 
             ...(task.plannedAt
                 ? {
-                  start: task.plannedAt,
-                  end: (task.isDone && task.doneOn)
+                  start: new Date(task.plannedAt),
+                  end: new Date((task.isDone && task.doneOn)
                     ? (task.plannedAt as number) + task.timeSpentOnDay[TD_STR]
-                    : (task.plannedAt as number) + timeToGo,
+                    : (task.plannedAt as number) + timeToGo),
                 }
                 : {
                   allDay: true,
@@ -191,6 +204,8 @@ export class CalendarComponent {
           };
         });
 
+      console.log(tasks, events);
+
       return {
         ...this.DEFAULT_CAL_OPTS,
         events,
@@ -202,7 +217,16 @@ export class CalendarComponent {
     private _workContextService: WorkContextService,
     private _taskService: TaskService,
   ) {
-    this.calOptions$.subscribe((v) => console.log('calOptions$', v));
+    // setInterval(() => {
+    //   if (this.calendarEl) {
+    //     const api = this.calendarEl.getApi();
+    //     console.log(api);
+    //     api.render();
+    //
+    //   }
+    // }, 1000);
+
+    // this.calOptions$.subscribe((v) => console.log('calOptions$', v));
   }
 
   // private handleDateClick(arg: any) {
