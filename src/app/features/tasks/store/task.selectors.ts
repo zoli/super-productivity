@@ -124,14 +124,19 @@ export const selectPlannedTasks = createSelector(selectTaskFeatureState, (s): Ta
   const allTasks: Task[] = [];
   const allParent = s.ids
     .map(id => s.entities[id] as Task)
-    .filter(task => task.plannedAt || task.tagIds.includes(TODAY_TAG.id));
+    .filter(task => !task.parentId && (task.plannedAt || task.tagIds.includes(TODAY_TAG.id)));
 
   allParent.forEach((pt) => {
     if (pt.subTaskIds.length) {
       pt.subTaskIds.forEach(subId => {
         const st = s.entities[subId] as Task;
+        // planned are added already
         if (!st.plannedAt) {
-          allTasks.push(st);
+          const par: Task = s.entities[st.parentId as string] as Task;
+          allTasks.push({
+            ...st,
+            plannedAt: par.plannedAt,
+          });
         }
       });
     } else {

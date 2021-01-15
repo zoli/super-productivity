@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
 import { CalendarOptions, FullCalendarComponent } from '@fullcalendar/angular';
 import { Observable } from 'rxjs';
-import { debounceTime, map, withLatestFrom } from 'rxjs/operators';
+import { map, withLatestFrom } from 'rxjs/operators';
 import { EventChangeArg, EventClickArg, EventDropArg, EventInput } from '@fullcalendar/common';
 import { WorkContextService } from '../work-context/work-context.service';
 import { TaskService } from '../tasks/task.service';
@@ -141,13 +141,12 @@ export class CalendarComponent {
 
   calOptions$: Observable<CalendarOptions> = this._taskService.plannedTasks$.pipe(
     // give the calendar some time to render
-    debounceTime(1000),
     // take(1),
     withLatestFrom(this._workContextService.allWorkContextColors$),
     map(([tasks, colorMap]): CalendarOptions => {
       const TD_STR = getWorklogStr();
       const events: EventInput[] = tasks
-        .filter(task => task.plannedAt || !task.isDone)
+        // .filter(task => !!task.plannedAt || !task.isDone)
         .map((task): EventInput => {
           let timeToGo: number = (task.timeEstimate - task.timeSpent);
           const classNames: string[] = [];
