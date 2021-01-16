@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, ViewChild } from '@angular/core';
 import { CalendarOptions, FullCalendarComponent } from '@fullcalendar/angular';
-import { Observable } from 'rxjs';
+import { Observable, Subscription } from 'rxjs';
 import { map, withLatestFrom } from 'rxjs/operators';
 import { EventChangeArg, EventClickArg, EventDropArg, EventInput } from '@fullcalendar/common';
 import { WorkContextService } from '../work-context/work-context.service';
@@ -22,8 +22,9 @@ const WEIRD_MAGIC_HOUR = 60000 * 60;
   styleUrls: ['./calendar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class CalendarComponent {
+export class CalendarComponent implements OnDestroy {
   @ViewChild('calendar') calendarEl?: FullCalendarComponent;
+  calOptions?: CalendarOptions;
 
   private DEFAULT_CAL_OPTS: CalendarOptions = {
     editable: true,
@@ -202,7 +203,6 @@ export class CalendarComponent {
             ),
           };
         });
-
       console.log(tasks, events);
 
       return {
@@ -212,20 +212,20 @@ export class CalendarComponent {
     })
   );
 
+  private _subs: Subscription = new Subscription();
+
   constructor(
     private _workContextService: WorkContextService,
     private _taskService: TaskService,
   ) {
-    // setInterval(() => {
-    //   if (this.calendarEl) {
-    //     const api = this.calendarEl.getApi();
-    //     console.log(api);
-    //     api.render();
-    //
-    //   }
-    // }, 1000);
+    // NOTE: this somehow fixes the duplication issue
+    this._subs.add(this.calOptions$.subscribe((v) => {
+      this.calOptions = v;
+    }));
+  }
 
-    // this.calOptions$.subscribe((v) => console.log('calOptions$', v));
+  ngOnDestroy() {
+    this._subs.unsubscribe();
   }
 
   // private handleDateClick(arg: any) {
