@@ -51,7 +51,10 @@ export class CalendarComponent implements OnDestroy {
   };
 
   calOptions$: Observable<CalendarOptions> = this._taskService.plannedTasks$.pipe(
-    withLatestFrom(this._workContextService.allWorkContextColors$),
+    withLatestFrom(
+      this._workContextService.allWorkContextColors$,
+      this._taskService.currentTaskId$,
+    ),
     map(this._mapTasksToCalOptions.bind(this))
   );
 
@@ -126,7 +129,7 @@ export class CalendarComponent implements OnDestroy {
     }
   }
 
-  private _mapTasksToCalOptions([tasks, colorMap]: [Task[], WorkContextColorMap]): CalendarOptions {
+  private _mapTasksToCalOptions([tasks, colorMap, currentTaskId]: [Task[], WorkContextColorMap, string | null]): CalendarOptions {
     const TD_STR = getWorklogStr();
     const events: EventInput[] = tasks.map((task: Task): EventInput => {
       let timeToGo: number = (task.timeEstimate - task.timeSpent);
@@ -145,6 +148,11 @@ export class CalendarComponent implements OnDestroy {
 
       if (task.reminderId) {
         classNames.push('hasAlarm');
+      }
+      if (task.id === currentTaskId) {
+        console.log('XXXXXXXXXXXXXXXXXXXXXXXX');
+
+        classNames.push('isCurrent');
       }
 
       return {

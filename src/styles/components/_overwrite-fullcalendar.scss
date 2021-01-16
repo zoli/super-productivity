@@ -28,13 +28,21 @@
   box-shadow: $shadow-card-shadow;
 }
 
-.fc-timegrid-event.isDone .fc-event-title {
-  text-decoration: line-through;
-}
+.fc-timegrid-event {
+  &.isDone .fc-event-title {
+    text-decoration: line-through;
+  }
 
-.fc-timegrid-event.hasAlarm {
-  .fc-event-title:before {
-    content: '⏰ ';
+  &.hasAlarm {
+    .fc-event-title:before {
+      content: '⏰ ';
+    }
+  }
+
+  &.isCurrent {
+    border-width: 2px;
+    border-color: $c-accent !important;
+    box-shadow: $shadow-card-shadow;
   }
 }
 
