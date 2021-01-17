@@ -83,10 +83,6 @@ export class CalendarComponent implements OnDestroy {
   private _handleResize(calEvent: EventChangeArg) {
     const start = calEvent.event._instance?.range.start as Date;
     const task: TaskWithReminderData = calEvent.event.extendedProps as TaskWithReminderData;
-    // TODO make it work for other days than today
-    const TD_STR = getWorklogStr();
-    const timeSpentToday: number = task.timeSpentOnDay[TD_STR] || 0;
-
     this._taskService.reScheduleTask({
       taskId: task.id,
       plannedAt: start.getTime() - WEIRD_MAGIC_HOUR,
@@ -95,22 +91,19 @@ export class CalendarComponent implements OnDestroy {
       remindCfg: task.reminderData && millisecondsDiffToRemindOption(task.plannedAt as number, task.reminderData.remindAt),
     });
 
-    const timeLeft: number = (task.timeEstimate || 0) - (task.timeSpent || 0);
-    const withTimeSpentToday: number = timeLeft + timeSpentToday;
-    // const withMinDuration: number = Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION);
-    const withDelta: number = withTimeSpentToday + (calEvent as any).endDelta.milliseconds;
-    const timeEstimate: number = Math.max(timeSpentToday, withDelta);
-
-    console.log({
-      timeEstimate: timeEstimate / 60000,
-      timeLeft: timeLeft / 60000,
-      withTimeSpentToday: withTimeSpentToday / 60000,
-      withDelta: withDelta / 60000,
-    });
+    const prevEstimate: number = (task.timeEstimate || 0);
+    const withDelta: number = prevEstimate + (calEvent as any).endDelta.milliseconds;
+    const timeEstimate: number = Math.max((task.timeSpent || 0), withDelta);
+    const withMinDuration: number = Math.max(timeEstimate, CALENDAR_MIN_TASK_DURATION);
+    // console.log({
+    //   timeEstimate: timeEstimate / 60000,
+    //   prevEstimate: prevEstimate / 60000,
+    //   withDelta: withDelta / 60000,
+    // });
     // TODO show toast for cannot be smaller than timeSpentToday
 
     this._taskService.update(task.id, {
-      timeEstimate
+      timeEstimate: withMinDuration
     });
   }
 
