@@ -90,9 +90,11 @@ export class CalendarComponent implements OnDestroy {
       remindCfg: task.reminderData && millisecondsDiffToRemindOption(task.plannedAt as number, task.reminderData.remindAt),
     });
 
+    // tslint:disable-next-line:max-line-length
+    // console.log(task.timeEstimate / 60000, Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION) / 60000, (calEvent as any).endDelta.milliseconds / 60000, '==>', (Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION) + (calEvent as any).endDelta.milliseconds) / 60000);
     this._taskService.update(task.id, {
       // timeEstimate: calEvent.endDelta.milliseconds + (task.timeSpent)
-      timeEstimate: task.timeEstimate + (calEvent as any).endDelta.milliseconds
+      timeEstimate: Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION) + (calEvent as any).endDelta.milliseconds
     });
   }
 
