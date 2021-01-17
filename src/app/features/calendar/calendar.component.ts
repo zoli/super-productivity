@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, ViewChild } from '@angular/core';
 import { CalendarOptions, FullCalendarComponent } from '@fullcalendar/angular';
 import { Observable, Subscription } from 'rxjs';
 import { map, withLatestFrom } from 'rxjs/operators';
@@ -63,10 +63,12 @@ export class CalendarComponent implements OnDestroy {
   constructor(
     private _workContextService: WorkContextService,
     private _taskService: TaskService,
+    private _changeDetectorRef: ChangeDetectorRef,
   ) {
     // NOTE: this somehow fixes the duplication issue
     this._subs.add(this.calOptions$.subscribe((v) => {
       this.calOptions = v;
+      this._changeDetectorRef.markForCheck();
     }));
   }
 
@@ -81,6 +83,9 @@ export class CalendarComponent implements OnDestroy {
   private _handleResize(calEvent: EventChangeArg) {
     const start = calEvent.event._instance?.range.start as Date;
     const task: TaskWithReminderData = calEvent.event.extendedProps as TaskWithReminderData;
+    // TODO make it work for other days than today
+    const TD_STR = getWorklogStr();
+    const timeSpentToday: number = task.timeSpentOnDay[TD_STR] || 0;
 
     this._taskService.reScheduleTask({
       taskId: task.id,
@@ -90,11 +95,22 @@ export class CalendarComponent implements OnDestroy {
       remindCfg: task.reminderData && millisecondsDiffToRemindOption(task.plannedAt as number, task.reminderData.remindAt),
     });
 
-    // tslint:disable-next-line:max-line-length
-    // console.log(task.timeEstimate / 60000, Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION) / 60000, (calEvent as any).endDelta.milliseconds / 60000, '==>', (Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION) + (calEvent as any).endDelta.milliseconds) / 60000);
+    const timeLeft: number = (task.timeEstimate || 0) - (task.timeSpent || 0);
+    const withTimeSpentToday: number = timeLeft + timeSpentToday;
+    // const withMinDuration: number = Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION);
+    const withDelta: number = withTimeSpentToday + (calEvent as any).endDelta.milliseconds;
+    const timeEstimate: number = Math.max(timeSpentToday, withDelta);
+
+    console.log({
+      timeEstimate: timeEstimate / 60000,
+      timeLeft: timeLeft / 60000,
+      withTimeSpentToday: withTimeSpentToday / 60000,
+      withDelta: withDelta / 60000,
+    });
+    // TODO show toast for cannot be smaller than timeSpentToday
+
     this._taskService.update(task.id, {
-      // timeEstimate: calEvent.endDelta.milliseconds + (task.timeSpent)
-      timeEstimate: Math.max(task.timeEstimate, CALENDAR_MIN_TASK_DURATION) + (calEvent as any).endDelta.milliseconds
+      timeEstimate
     });
   }
 
@@ -132,17 +148,20 @@ export class CalendarComponent implements OnDestroy {
   }
 
   private _mapTasksToCalOptions([tasks, colorMap, currentTaskId]: [Task[], WorkContextColorMap, string | null]): CalendarOptions {
+    // TODO make it work for other days than today
     const TD_STR = getWorklogStr();
+
     const events: EventInput[] = tasks.map((task: Task): EventInput => {
+      const timeSpentToday: number = task.timeSpentOnDay[TD_STR] || 0;
       let timeToGo: number = (task.timeEstimate - task.timeSpent);
       const classNames: string[] = [];
-      const timeSpentToday = task.timeSpentOnDay[TD_STR] || 0;
-      if (timeToGo < timeSpentToday) {
-        timeToGo = timeSpentToday;
-      }
-      timeToGo = ((timeToGo > (CALENDAR_MIN_TASK_DURATION))
+      timeToGo = ((timeToGo + timeSpentToday > (CALENDAR_MIN_TASK_DURATION))
         ? timeToGo
         : CALENDAR_MIN_TASK_DURATION);
+
+      // if (task.title.match(/Something/)) {
+      //   console.log({timeToGo: timeToGo / 60000});
+      // }
 
       if (task.isDone) {
         classNames.push('isDone');
@@ -152,8 +171,6 @@ export class CalendarComponent implements OnDestroy {
         classNames.push('hasAlarm');
       }
       if (task.id === currentTaskId) {
-        console.log('XXXXXXXXXXXXXXXXXXXXXXXX');
-
         classNames.push('isCurrent');
       }
 
@@ -177,8 +194,8 @@ export class CalendarComponent implements OnDestroy {
             ? {
               start: new Date(task.plannedAt),
               end: new Date((task.isDone && task.doneOn)
-                ? (task.plannedAt as number) + task.timeSpentOnDay[TD_STR]
-                : (task.plannedAt as number) + timeToGo),
+                ? (task.plannedAt as number) + timeSpentToday
+                : (task.plannedAt as number) + timeToGo + timeSpentToday),
             }
             : {
               allDay: true,
@@ -190,7 +207,7 @@ export class CalendarComponent implements OnDestroy {
         ),
       };
     });
-    console.log(tasks, events);
+    // console.log(tasks, events);
 
     return {
       ...this.DEFAULT_CAL_OPTS,
