@@ -149,9 +149,6 @@ export class CalendarComponent implements OnDestroy {
       const timeSpentToday: number = task.timeSpentOnDay[TD_STR] || 0;
       let timeToGo: number = ((task.timeEstimate || 0) - (task.timeSpent || 0));
       timeToGo = timeToGo + timeSpentToday;
-      timeToGo = (((timeToGo) > (CALENDAR_MIN_TASK_DURATION))
-        ? timeToGo
-        : CALENDAR_MIN_TASK_DURATION);
 
       // if (task.title.match(/Something/)) {
       //   console.log({timeToGo: timeToGo / 60000, t: task.title});
@@ -188,8 +185,9 @@ export class CalendarComponent implements OnDestroy {
             ? {
               start: new Date(task.plannedAt),
               end: new Date((task.isDone && task.doneOn)
-                ? (task.plannedAt as number) + timeSpentToday
-                : (task.plannedAt as number) + timeToGo),
+                ? (task.plannedAt as number) + Math.max(timeSpentToday, CALENDAR_MIN_TASK_DURATION)
+                : (task.plannedAt as number) + Math.max(timeToGo, CALENDAR_MIN_TASK_DURATION)
+              ),
             }
             : {
               allDay: true,
