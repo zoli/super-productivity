@@ -94,7 +94,7 @@ export class CalendarComponent implements OnDestroy {
     const prevEstimate: number = (task.timeEstimate || 0);
     const withDelta: number = prevEstimate + (calEvent as any).endDelta.milliseconds;
     const timeEstimate: number = Math.max((task.timeSpent || 0), withDelta);
-    const withMinDuration: number = Math.max(timeEstimate, CALENDAR_MIN_TASK_DURATION);
+    const withMinDuration: number = Math.max(timeEstimate, CALENDAR_MIN_TASK_DURATION, task.timeSpent);
     // console.log({
     //   timeEstimate: timeEstimate / 60000,
     //   prevEstimate: prevEstimate / 60000,
@@ -145,15 +145,16 @@ export class CalendarComponent implements OnDestroy {
     const TD_STR = getWorklogStr();
 
     const events: EventInput[] = tasks.map((task: Task): EventInput => {
-      const timeSpentToday: number = task.timeSpentOnDay[TD_STR] || 0;
-      let timeToGo: number = (task.timeEstimate - task.timeSpent);
       const classNames: string[] = [];
-      timeToGo = ((timeToGo + timeSpentToday > (CALENDAR_MIN_TASK_DURATION))
+      const timeSpentToday: number = task.timeSpentOnDay[TD_STR] || 0;
+      let timeToGo: number = ((task.timeEstimate || 0) - (task.timeSpent || 0));
+      timeToGo = timeToGo + timeSpentToday;
+      timeToGo = (((timeToGo) > (CALENDAR_MIN_TASK_DURATION))
         ? timeToGo
         : CALENDAR_MIN_TASK_DURATION);
 
       // if (task.title.match(/Something/)) {
-      //   console.log({timeToGo: timeToGo / 60000});
+      //   console.log({timeToGo: timeToGo / 60000, t: task.title});
       // }
 
       if (task.isDone) {
@@ -188,7 +189,7 @@ export class CalendarComponent implements OnDestroy {
               start: new Date(task.plannedAt),
               end: new Date((task.isDone && task.doneOn)
                 ? (task.plannedAt as number) + timeSpentToday
-                : (task.plannedAt as number) + timeToGo + timeSpentToday),
+                : (task.plannedAt as number) + timeToGo),
             }
             : {
               allDay: true,
