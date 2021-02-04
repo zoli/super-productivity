@@ -16,6 +16,11 @@ import { CALENDAR_MIN_TASK_DURATION, STATIC_CALENDAR_OPTS } from './calendar.con
 
 const WEIRD_MAGIC_HOUR = 60000 * 60;
 
+interface CalOpsAll extends CalendarOptions {
+  eventResize: any;
+  eventDrop: any;
+}
+
 @Component({
   // apparently calendar does not work, so we add a prefix
   selector: 'sup-calendar',
@@ -28,7 +33,7 @@ export class CalendarComponent implements OnDestroy {
 
   calOptions?: CalendarOptions;
 
-  private DEFAULT_CAL_OPTS: CalendarOptions = {
+  private DEFAULT_CAL_OPTS: CalOpsAll = {
     ...STATIC_CALENDAR_OPTS,
     eventResize: this._handleResize.bind(this),
     eventDrop: this._handleDrop.bind(this),
