@@ -517,7 +517,7 @@ export class TaskService {
     reminderId,
     remindCfg,
     title
-  }: { taskId: string, plannedAt: number, title: string, reminderId?: string, remindCfg: TaskReminderOptionId}) {
+  }: { taskId: string; plannedAt: number; title: string; reminderId?: string; remindCfg: TaskReminderOptionId}) {
 
     this._store.dispatch(new ReScheduleTask({
       id: taskId,
