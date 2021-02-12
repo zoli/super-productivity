@@ -5,6 +5,9 @@ export const remindOptionToMilliseconds = (plannedAt: number, remindOptId: TaskR
     case TaskReminderOptionId.AtStart : {
       return plannedAt;
     }
+    case TaskReminderOptionId.m5 : {
+      return plannedAt - 5 * 60 * 1000;
+    }
     case TaskReminderOptionId.m10 : {
       return plannedAt - 10 * 60 * 1000;
     }
@@ -35,6 +38,8 @@ export const millisecondsDiffToRemindOption = (plannedAt: number, remindAt?: num
     return TaskReminderOptionId.m15;
   } else if (diff >= 10 * 60 * 1000) {
     return TaskReminderOptionId.m10;
+  } else if (diff >= 5 * 60 * 1000) {
+    return TaskReminderOptionId.m5;
   } else if (diff === 0) {
     return TaskReminderOptionId.AtStart;
   } else {

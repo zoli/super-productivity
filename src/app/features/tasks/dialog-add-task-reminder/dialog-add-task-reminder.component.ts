@@ -34,6 +34,9 @@ export class DialogAddTaskReminderComponent {
     id: TaskReminderOptionId.AtStart,
     title: 'when it starts',
   }, {
+    id: TaskReminderOptionId.m5,
+    title: '5 minutes before it starts',
+  }, {
     id: TaskReminderOptionId.m10,
     title: '10 minutes before it starts',
   }, {

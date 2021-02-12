@@ -20,6 +20,7 @@ export type DropListModelSource = 'UNDONE' | 'DONE' | 'BACKLOG';
 export enum TaskReminderOptionId {
   DoNotRemind = 'DoNotRemind',
   AtStart = 'AtStart',
+  m5 = 'm5',
   m10 = 'm10',
   m15 = 'm15',
   m30 = 'm30',
