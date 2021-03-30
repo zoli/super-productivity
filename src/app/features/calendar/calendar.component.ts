@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnDestroy, ViewChild } from '@angular/core';
 import { CalendarOptions, FullCalendarComponent } from '@fullcalendar/angular';
-import { Observable, Subscription } from 'rxjs';
-import { map, withLatestFrom } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, EMPTY, Observable, Subscription } from 'rxjs';
+import { map, switchMap, withLatestFrom } from 'rxjs/operators';
 import { EventChangeArg, EventClickArg, EventDropArg, EventInput } from '@fullcalendar/common';
 import { WorkContextService } from '../work-context/work-context.service';
 import { TaskService } from '../tasks/task.service';
@@ -14,7 +14,10 @@ import { millisecondsDiffToRemindOption } from '../tasks/util/remind-option-to-m
 import { WorkContextColorMap } from '../work-context/work-context.model';
 import { CALENDAR_MIN_TASK_DURATION, STATIC_CALENDAR_OPTS } from './calendar.const';
 
-const WEIRD_MAGIC_HOUR = 60000 * 60;
+// const WEIRD_MAGIC_HOUR = 60000 * 60;
+// TODO with summer time??
+// TODO probably the time zone offset
+const WEIRD_MAGIC_HOUR = 60000 * 60 * 2;
 
 interface CalOpsAll extends CalendarOptions {
   eventResize: any;
@@ -33,8 +36,21 @@ export class CalendarComponent implements OnDestroy {
 
   calOptions?: CalendarOptions;
 
+  private _isDragging$ = new BehaviorSubject<boolean>(false);
+  private _isResizing$ = new BehaviorSubject<boolean>(false);
+  private _isBlockUpdates$ = combineLatest([
+    this._isDragging$,
+    this._isResizing$,
+  ]).pipe(
+    map(([isDragging, isResizing]) => isDragging || isResizing),
+  );
+
   private DEFAULT_CAL_OPTS: CalOpsAll = {
     ...STATIC_CALENDAR_OPTS,
+    eventDragStart: () => this._isDragging$.next(true),
+    eventDragStop: () => this._isDragging$.next(false),
+    eventResizeStart: () => this._isResizing$.next(true),
+    eventResizeStop: () => this._isResizing$.next(false),
     eventResize: this._handleResize.bind(this),
     eventDrop: this._handleDrop.bind(this),
     eventClick: (calEvent: EventClickArg) => {
@@ -55,12 +71,15 @@ export class CalendarComponent implements OnDestroy {
     // },
   };
 
-  calOptions$: Observable<CalendarOptions> = this._taskService.plannedTasks$.pipe(
+  calOptions$: Observable<CalendarOptions> = this._isBlockUpdates$.pipe(
+    switchMap((isBlockUpdates) => isBlockUpdates
+      ? EMPTY
+      : this._taskService.plannedTasks$),
     withLatestFrom(
       this._workContextService.allWorkContextColors$,
       this._taskService.currentTaskId$,
     ),
-    map(this._mapTasksToCalOptions.bind(this))
+    map(this._mapTasksToCalOptions.bind(this)),
   );
 
   private _subs: Subscription = new Subscription();
