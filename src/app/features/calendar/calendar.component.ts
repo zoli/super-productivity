@@ -20,8 +20,12 @@ import { CALENDAR_MIN_TASK_DURATION, STATIC_CALENDAR_OPTS } from './calendar.con
 const WEIRD_MAGIC_HOUR = 60000 * 60 * 2;
 
 interface CalOpsAll extends CalendarOptions {
-  eventResize: any;
-  eventDrop: any;
+  eventResize: (ev: EventChangeArg) => void;
+  eventDrop: (ev: EventDropArg) => void;
+  eventDragStart: (ev: unknown) => void;
+  eventDragStop: (ev: unknown) => void;
+  eventResizeStart: (ev: unknown) => void;
+  eventResizeStop: (ev: unknown) => void;
 }
 
 @Component({
@@ -71,15 +75,17 @@ export class CalendarComponent implements OnDestroy {
     // },
   };
 
-  calOptions$: Observable<CalendarOptions> = this._isBlockUpdates$.pipe(
+  calOptions$: Observable<CalOpsAll> = this._isBlockUpdates$.pipe(
     switchMap((isBlockUpdates) => isBlockUpdates
       ? EMPTY
-      : this._taskService.plannedTasks$),
-    withLatestFrom(
-      this._workContextService.allWorkContextColors$,
-      this._taskService.currentTaskId$,
+      : this._taskService.plannedTasks$.pipe(
+        withLatestFrom(
+          this._workContextService.allWorkContextColors$,
+          this._taskService.currentTaskId$,
+        ),
+        map(this._mapTasksToCalOptions.bind(this)),
+      )
     ),
-    map(this._mapTasksToCalOptions.bind(this)),
   );
 
   private _subs: Subscription = new Subscription();
@@ -164,7 +170,7 @@ export class CalendarComponent implements OnDestroy {
     }
   }
 
-  private _mapTasksToCalOptions([tasks, colorMap, currentTaskId]: [Task[], WorkContextColorMap, string | null]): CalendarOptions {
+  private _mapTasksToCalOptions([tasks, colorMap, currentTaskId]: [Task[], WorkContextColorMap, string | null]): CalOpsAll {
     // TODO make it work for other days than today
     const TD_STR = getWorklogStr();
 
