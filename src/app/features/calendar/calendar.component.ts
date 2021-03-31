@@ -223,8 +223,8 @@ export class CalendarComponent implements OnDestroy {
               allDay: true,
               // start: TD_STR,
               duration: 2000000,
-              start: Date.now(),
-              end: Date.now() + timeToGo
+              start: (task.isDone && task.doneOn) || Date.now(),
+              end: ((task.isDone && task.doneOn) || Date.now()) + timeToGo
             }
         ),
       };

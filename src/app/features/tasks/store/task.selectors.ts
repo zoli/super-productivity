@@ -133,7 +133,9 @@ export const selectPlannedTasks = createSelector(selectTaskFeatureState, (s): Ta
         // const par: Task = s.entities[st.parentId as string] as Task;
         allTasks.push({
           ...st,
-          plannedAt: st.plannedAt || (s.entities[st.parentId as string] as Task).plannedAt
+          plannedAt: st.plannedAt || (!st.isDone
+            ? (s.entities[st.parentId as string] as Task).plannedAt
+            : null)
         });
       });
     } else {
