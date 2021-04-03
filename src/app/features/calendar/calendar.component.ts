@@ -195,7 +195,7 @@ export class CalendarComponent implements OnDestroy {
         classNames.push('isCurrent');
       }
 
-      return {
+      const base = {
         title: task.title
           + ' '
           + msToString(task.timeSpent)
@@ -210,24 +210,33 @@ export class CalendarComponent implements OnDestroy {
         backgroundColor: task.projectId
           ? colorMap[task.projectId]
           : colorMap[task.tagIds[0]],
-
-        ...(task.plannedAt
-            ? {
-              start: new Date(task.plannedAt),
-              end: new Date((task.isDone && task.doneOn)
-                ? (task.plannedAt as number) + Math.max(timeSpentToday, CALENDAR_MIN_TASK_DURATION)
-                : (task.plannedAt as number) + Math.max(timeToGo, CALENDAR_MIN_TASK_DURATION)
-              ),
-            }
-            : {
-              allDay: true,
-              // start: TD_STR,
-              duration: 2000000,
-              start: (task.isDone && task.doneOn) || Date.now(),
-              end: ((task.isDone && task.doneOn) || Date.now()) + timeToGo
-            }
-        ),
       };
+
+      if (task.plannedAt) {
+        return {
+          ...base,
+          start: new Date(task.plannedAt),
+          end: new Date((task.isDone && task.doneOn)
+            ? (task.plannedAt as number) + Math.max(timeSpentToday, CALENDAR_MIN_TASK_DURATION)
+            : (task.plannedAt as number) + Math.max(timeToGo, CALENDAR_MIN_TASK_DURATION)
+          ),
+        };
+      } else if (task.isDone && task.doneOn) {
+        return {
+          ...base,
+          start: task.doneOn - Math.max(timeSpentToday, CALENDAR_MIN_TASK_DURATION),
+          end: task.doneOn
+        };
+      } else {
+        return {
+          ...base,
+          allDay: true,
+          // start: TD_STR,
+          duration: 2000000,
+          start: Date.now(),
+          end: Date.now() + timeToGo
+        };
+      }
     });
     // console.log(tasks, events);
 
