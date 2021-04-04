@@ -47,6 +47,7 @@ export class CalendarComponent implements OnDestroy {
     this._isResizing$,
   ]).pipe(
     map(([isDragging, isResizing]) => isDragging || isResizing),
+    // mapTo(false),
   );
 
   private DEFAULT_CAL_OPTS: CalOpsAll = {
@@ -86,6 +87,7 @@ export class CalendarComponent implements OnDestroy {
         map(this._mapTasksToCalOptions.bind(this)),
       )
     ),
+    // debounceTime(200),
   );
 
   private _subs: Subscription = new Subscription();
@@ -111,6 +113,12 @@ export class CalendarComponent implements OnDestroy {
   // }
 
   private _handleResize(calEvent: EventChangeArg) {
+    // can sometimes happen
+    if (!calEvent.event) {
+      console.warn(':( @fullcalendar event not ready');
+      return;
+    }
+
     const start = calEvent.event._instance?.range.start as Date;
     const task: TaskWithReminderData = calEvent.event.extendedProps as TaskWithReminderData;
     this._taskService.reScheduleTask({
@@ -138,6 +146,12 @@ export class CalendarComponent implements OnDestroy {
   }
 
   private _handleDrop(calEvent: EventDropArg) {
+    // can sometimes happen
+    if (!calEvent.event) {
+      console.warn(':( @fullcalendar event not ready');
+      return;
+    }
+
     const task: TaskWithReminderData = calEvent.event.extendedProps as TaskWithReminderData;
     const start = calEvent.event._instance?.range.start as Date;
     console.log(calEvent);
